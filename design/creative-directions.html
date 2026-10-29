@@ -1,0 +1,592 @@
+<title>Innovative Creative Directions</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=Schibsted+Grotesk:wght@400..700&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Onest:wght@300..700&family=Unbounded:wght@400..800&family=Hanken+Grotesk:wght@400..700&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400..700&display=swap">
+<style>
+/* Layout: a review board. One long column; each direction is a self-contained "world" (live hero preview + spec sheet), then a comparison and a recommendation. Single dark theme by choice: the brand is dark-first. */
+:root {
+  color-scheme: dark;
+  --bg: #0A0B0F;
+  --panel: #111219;
+  --panel-2: #161821;
+  --line: #232530;
+  --fg: #ECEDF3;
+  --muted: #9A9DAE;
+  --faint: #6A6D7E;
+  --pick: #B9A6FF;
+
+  --f-ui: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --f-label: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* Direction A: Signal */
+  --a-void: #05070C; --a-graphite: #0D1119; --a-line: #1B2230; --a-cyan: #3BE3DA; --a-violet: #7C5CFF; --a-text: #E4E9F2; --a-dim: #7E8899;
+  /* Direction B: Prism */
+  --b-obsidian: #050506; --b-smoke: #101014; --b-violet: #A07BFF; --b-blue: #4A7DFF; --b-ice: #A8E9FF; --b-text: #F1EFF6; --b-dim: #8D8A99;
+  /* Direction C: Module */
+  --c-navy: #090D1C; --c-indigo: #111733; --c-cell: #161D3D; --c-blue: #2F6BFF; --c-uv: #A65BFF; --c-mist: #C9D3FF; --c-text: #EEF1FF; --c-dim: #8B93B8;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--f-ui); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-font-smoothing: antialiased;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 1180px; margin: 0 auto; }
+h1, h2, h3, h4 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--pick); outline-offset: 3px; border-radius: 4px; }
+.label { font-family: var(--f-label); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+
+/* ---------- Board header ---------- */
+.top { padding-block: 56px 32px; display: grid; gap: 28px; }
+.top h1 { font-size: clamp(32px, 5vw, 52px); font-weight: 600; letter-spacing: -.025em; line-height: 1.05; }
+.top h1 span { color: var(--muted); font-weight: 400; }
+.lede { max-width: 64ch; color: var(--muted); font-size: 16px; }
+.findings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.findings > div { background: var(--panel); padding: 18px 20px; display: grid; gap: 6px; align-content: start; }
+.findings strong { font-weight: 600; font-size: 15px; }
+.findings p { color: var(--muted); font-size: 14px; }
+.jump { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
+.jump .wrap { display: flex; gap: 6px; padding-block: 10px; overflow-x: auto; }
+.jump a { text-decoration: none; white-space: nowrap; font-size: 13px; padding: 6px 12px; border-radius: 999px; color: var(--muted); border: 1px solid transparent; }
+.jump a:hover { color: var(--fg); border-color: var(--line); }
+
+/* ---------- Direction shells ---------- */
+.dir { padding-block: 72px 24px; display: grid; gap: 28px; scroll-margin-top: 40px; }
+.dir-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: start; }
+.dir-letter { font-family: var(--f-label); font-size: 13px; width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); }
+.dir-head h2 { font-size: clamp(26px, 3.4vw, 36px); font-weight: 600; letter-spacing: -.02em; line-height: 1.1; }
+.dir-head .thesis { color: var(--muted); font-size: 16px; max-width: 70ch; margin-top: 8px; }
+.tag-rec { display: inline-block; vertical-align: middle; margin-left: 10px; font-family: var(--f-label); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--pick); border: 1px solid color-mix(in srgb, var(--pick) 40%, transparent); padding: 3px 8px; border-radius: 999px; }
+
+.browser { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: #000; box-shadow: 0 40px 80px -40px rgba(0,0,0,.8); }
+.browser-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #0E0F14; border-bottom: 1px solid var(--line); }
+.browser-bar i { width: 10px; height: 10px; border-radius: 50%; background: #2A2C36; display: inline-block; }
+.browser-bar .dots { display: flex; gap: 6px; }
+.browser-bar .url { font-family: var(--f-label); font-size: 11.5px; color: var(--faint); background: #15161D; border-radius: 6px; padding: 4px 12px; flex: 0 1 320px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.spec { display: grid; grid-template-columns: 1.05fr 1fr 1.15fr; gap: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.card h4 { font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: .01em; }
+.swatches { display: grid; gap: 8px; }
+.sw { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.sw b { width: 36px; height: 36px; border-radius: 8px; border: 1px solid rgba(255,255,255,.08); display: block; }
+.sw span { font-size: 13.5px; }
+.sw small { display: block; color: var(--faint); font-size: 12px; }
+.sw code { font-family: var(--f-label); font-size: 11.5px; color: var(--muted); }
+.typespec { display: grid; gap: 16px; }
+.typespec .row { display: grid; gap: 2px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.typespec .row:last-child { border-bottom: 0; padding-bottom: 0; }
+.typespec .meta { font-family: var(--f-label); font-size: 11px; color: var(--faint); letter-spacing: .04em; }
+.points { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.points li { display: grid; gap: 2px; font-size: 14px; color: var(--muted); }
+.points li strong { color: var(--fg); font-weight: 600; font-size: 14px; }
+
+.across { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.across > div { background: var(--panel); padding: 18px; display: grid; gap: 6px; align-content: start; }
+.across p { font-size: 13.5px; color: var(--muted); }
+.across .watch { background: var(--panel-2); }
+
+/* ---------- Shared mini-site nav ---------- */
+.mnav { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px clamp(18px, 4vw, 40px); }
+.mnav .links { display: flex; gap: 22px; font-size: 13px; }
+.mnav .brand { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 15px; letter-spacing: -.01em; }
+.mbtn { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; padding: 9px 16px; border-radius: 9px; text-decoration: none; cursor: pointer; border: 1px solid transparent; transition: transform .2s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease; }
+.mbtn:hover { transform: translateY(-1px); }
+
+/* ================= A: SIGNAL ================= */
+.hA { position: relative; background: var(--a-void); color: var(--a-text); font-family: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif; overflow: hidden; }
+.hA::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(var(--a-line) 1px, transparent 1px), linear-gradient(90deg, var(--a-line) 1px, transparent 1px); background-size: 56px 56px; opacity: .45; mask-image: radial-gradient(ellipse 80% 70% at 30% 30%, #000 30%, transparent 85%); -webkit-mask-image: radial-gradient(ellipse 80% 70% at 30% 30%, #000 30%, transparent 85%); }
+.hA .mnav .links { color: var(--a-dim); }
+.logoA { width: 18px; height: 18px; border: 1.5px solid var(--a-text); border-radius: 4px; position: relative; }
+.logoA::after { content: ""; position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--a-cyan); right: -4px; top: -4px; box-shadow: 0 0 10px var(--a-cyan); }
+.hA .mbtn.pri { background: var(--a-text); color: var(--a-void); }
+.hA .mbtn.pri:hover { box-shadow: 0 0 0 4px color-mix(in srgb, var(--a-cyan) 25%, transparent); }
+.hA .mbtn.sec { border-color: var(--a-line); color: var(--a-text); }
+.hA .mbtn.sec:hover { border-color: var(--a-dim); }
+.hA-body { position: relative; z-index: 1; padding: clamp(24px, 5vw, 56px) clamp(18px, 4vw, 40px) 0; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 32px; align-items: end; }
+.coord { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11px; color: var(--a-dim); letter-spacing: .04em; }
+.hA h3 { font-family: "Archivo", sans-serif; font-stretch: 112%; font-weight: 700; font-size: clamp(34px, 5.6vw, 66px); line-height: .98; letter-spacing: -.035em; margin-top: 14px; }
+.hA h3 em { font-style: normal; color: transparent; background: linear-gradient(90deg, var(--a-cyan), var(--a-violet)); -webkit-background-clip: text; background-clip: text; }
+.hA-side { display: grid; gap: 20px; padding-bottom: 6px; }
+.hA-side p { color: var(--a-dim); font-size: 15px; max-width: 40ch; }
+.hA-side p b { color: var(--a-text); font-weight: 500; }
+.ctas { display: flex; gap: 10px; flex-wrap: wrap; }
+.pipe { position: relative; z-index: 1; margin: clamp(32px, 5vw, 56px) clamp(18px, 4vw, 40px) 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--a-line); }
+.pipe::before { content: ""; position: absolute; left: 0; top: -1px; height: 1px; width: 22%; background: linear-gradient(90deg, transparent, var(--a-cyan), transparent); animation: run 4.8s cubic-bezier(.6,0,.4,1) infinite; }
+@keyframes run { from { left: -22%; } to { left: 100%; } }
+.node { position: relative; padding: 22px 18px 26px 0; display: grid; gap: 8px; }
+.node + .node { padding-left: 18px; border-left: 1px dashed var(--a-line); }
+.node::before { content: ""; position: absolute; top: -5px; left: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--a-void); border: 1.5px solid var(--a-dim); }
+.node + .node::before { left: -5px; }
+.node.live::before { border-color: var(--a-cyan); background: var(--a-cyan); box-shadow: 0 0 12px var(--a-cyan); }
+.node .stage { font-family: "JetBrains Mono", monospace; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--a-dim); }
+.node .what { font-size: 14px; font-weight: 600; }
+.node .read { font-family: "JetBrains Mono", monospace; font-size: 11.5px; color: var(--a-dim); display: flex; gap: 6px; align-items: center; }
+.node .read i { width: 6px; height: 6px; border-radius: 50%; background: var(--a-cyan); display: inline-block; }
+.node:hover .what { color: var(--a-cyan); }
+.hA-foot { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 8px 28px; padding: 16px clamp(18px, 4vw, 40px) 22px; border-top: 1px solid var(--a-line); font-family: "JetBrains Mono", monospace; font-size: 11.5px; color: var(--a-dim); }
+.hA-foot b { color: var(--a-text); font-weight: 500; }
+
+/* ================= B: PRISM ================= */
+.hB { position: relative; background: var(--b-obsidian); color: var(--b-text); font-family: "Onest", ui-sans-serif, system-ui, sans-serif; overflow: hidden; }
+.hB::before { content: ""; position: absolute; width: 70%; aspect-ratio: 1; right: -18%; top: -30%; background: radial-gradient(closest-side, color-mix(in srgb, var(--b-violet) 26%, transparent), transparent); filter: blur(20px); }
+.hB .mnav .links { color: var(--b-dim); }
+.logoB { width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom: 16px solid var(--b-text); position: relative; }
+.hB .mbtn.pri { background: linear-gradient(180deg, #fff, #D9D3EA); color: #0B0A10; box-shadow: 0 8px 30px -8px color-mix(in srgb, var(--b-violet) 70%, transparent); border-radius: 999px; }
+.hB .mbtn.sec { color: var(--b-text); border-color: rgba(255,255,255,.12); border-radius: 999px; background: rgba(255,255,255,.03); }
+.hB .mbtn.sec:hover { background: rgba(255,255,255,.07); }
+.hB-body { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 16px; align-items: center; padding: clamp(20px, 4vw, 40px) clamp(18px, 4vw, 40px) clamp(36px, 5vw, 56px); }
+.pill { display: inline-flex; gap: 8px; align-items: center; font-size: 12px; color: var(--b-dim); border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); padding: 5px 12px 5px 6px; border-radius: 999px; }
+.pill b { font-weight: 500; color: var(--b-text); background: linear-gradient(90deg, var(--b-violet), var(--b-blue)); padding: 2px 8px; border-radius: 999px; font-size: 11px; }
+.hB h3 { font-weight: 500; font-size: clamp(34px, 5vw, 60px); line-height: 1.02; letter-spacing: -.04em; margin: 20px 0 18px; }
+.hB h3 em { font-family: "Instrument Serif", Georgia, serif; font-style: italic; font-weight: 400; letter-spacing: -.01em; background: linear-gradient(100deg, var(--b-violet) 10%, var(--b-blue) 55%, var(--b-ice)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: .06em; }
+.hB-copy p { color: var(--b-dim); max-width: 42ch; font-size: 15px; margin-bottom: 26px; }
+.prism { width: 100%; height: auto; display: block; }
+.prism .beam-out { transform-origin: 46% 50%; animation: breathe 6s ease-in-out infinite; }
+@keyframes breathe { 0%,100% { opacity: .85; } 50% { opacity: 1; } }
+.hB-logos { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 10px 34px; align-items: center; padding: 18px clamp(18px, 4vw, 40px) 22px; border-top: 1px solid rgba(255,255,255,.06); color: #5D5A68; font-weight: 600; letter-spacing: -.01em; font-size: 15px; }
+.hB-logos small { font-weight: 400; font-size: 12px; color: var(--b-dim); letter-spacing: 0; }
+
+/* ================= C: MODULE ================= */
+.hC { position: relative; background: var(--c-navy); color: var(--c-text); font-family: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif; overflow: hidden; }
+.hC::before { content: ""; position: absolute; inset: 0; background-image: repeating-linear-gradient(90deg, transparent 0 calc(100%/12 - 1px), rgba(201,211,255,.06) calc(100%/12 - 1px) calc(100%/12)); pointer-events: none; }
+.hC .mnav .links { color: var(--c-dim); }
+.logoC { display: grid; grid-template-columns: 7px 7px; gap: 2px; }
+.logoC i { width: 7px; height: 7px; background: var(--c-text); border-radius: 1.5px; display: block; }
+.logoC i:nth-child(4) { background: var(--c-blue); }
+.hC .mbtn.pri { background: var(--c-blue); color: #fff; border-radius: 6px; }
+.hC .mbtn.pri:hover { background: #4A80FF; }
+.hC .mbtn.sec { color: var(--c-text); border-color: #2A3462; border-radius: 6px; }
+.hC-body { position: relative; z-index: 1; padding: clamp(16px, 3vw, 28px) clamp(18px, 4vw, 40px) clamp(24px, 4vw, 40px); display: grid; gap: clamp(20px, 3vw, 32px); }
+.hC h3 { font-family: "Unbounded", sans-serif; font-weight: 700; font-size: clamp(32px, 6.4vw, 78px); line-height: .95; letter-spacing: -.045em; text-transform: none; }
+.hC h3 .o { color: transparent; -webkit-text-stroke: 1.5px var(--c-mist); }
+.hC-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: end; }
+.hC-row p { color: var(--c-dim); max-width: 52ch; font-size: 15px; }
+.bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: 74px; gap: 10px; }
+.cell { background: var(--c-cell); border: 1px solid #222B57; border-radius: 10px; padding: 12px 14px; position: relative; overflow: hidden; transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .35s; min-width: 0; }
+.cell:hover { transform: translateY(-4px); border-color: var(--c-blue); }
+.cell .k { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: var(--c-dim); letter-spacing: .06em; text-transform: uppercase; }
+.c1 { grid-column: span 3; grid-row: span 2; background: linear-gradient(160deg, #1B2350, #121A3C); }
+.c2 { grid-column: span 4; grid-row: span 1; }
+.c3 { grid-column: span 5; grid-row: span 2; background: #0B1027; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--c-mist); }
+.c4 { grid-column: span 4; grid-row: span 1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.phone { position: absolute; left: 50%; bottom: -26px; transform: translateX(-50%); width: 62%; height: 150px; border: 1.5px solid #3A4686; border-radius: 16px; background: #0D1330; padding: 14px 10px; display: grid; gap: 6px; align-content: start; }
+.phone i { display: block; height: 8px; border-radius: 3px; background: #26306A; }
+.phone i:first-child { width: 50%; background: var(--c-uv); }
+.phone i:nth-child(3) { width: 70%; }
+.phone i:nth-child(4) { height: 26px; background: linear-gradient(90deg, var(--c-blue), var(--c-uv)); opacity: .8; }
+.c2 svg { position: absolute; inset: auto 0 0 0; width: 100%; height: 44px; }
+.c2 .big { font-family: "Unbounded", sans-serif; font-weight: 600; font-size: 17px; margin-top: 2px; }
+.c3 .ln { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.75; }
+.c3 .ok { color: #7CF0C5; }
+.c3 .dim { color: var(--c-dim); }
+.tog { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.tog s { text-decoration: none; width: 30px; height: 18px; border-radius: 999px; background: var(--c-blue); position: relative; display: inline-block; }
+.tog s::after { content: ""; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #fff; top: 2px; right: 2px; }
+.tog.off s { background: #2A3462; }
+.tog.off s::after { right: auto; left: 2px; }
+.c4b { grid-column: span 4; grid-row: span 1; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-color: color-mix(in srgb, var(--c-uv) 50%, #222B57); background: linear-gradient(90deg, #1B1A45, #161D3D); }
+.c4b .price { font-family: "Unbounded", sans-serif; font-weight: 600; font-size: 18px; }
+
+/* ---------- Compare + recommend ---------- */
+.section { padding-block: 72px 24px; display: grid; gap: 24px; scroll-margin-top: 40px; }
+.section h2 { font-size: clamp(26px, 3.4vw, 36px); font-weight: 600; letter-spacing: -.02em; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; }
+table { width: 100%; border-collapse: collapse; min-width: 640px; font-size: 14px; }
+th, td { text-align: left; padding: 14px 18px; border-bottom: 1px solid var(--line); vertical-align: top; }
+thead th { font-weight: 600; background: var(--panel); font-size: 13px; color: var(--muted); }
+tbody th { font-weight: 500; color: var(--muted); width: 26%; }
+tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+.meter { display: inline-flex; gap: 3px; vertical-align: middle; margin-right: 8px; }
+.meter i { width: 14px; height: 5px; border-radius: 2px; background: var(--line); display: block; }
+.meter i.on { background: var(--fg); }
+td small { color: var(--faint); font-size: 12.5px; }
+.rec { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; }
+.rec .card.main { border-color: color-mix(in srgb, var(--pick) 35%, var(--line)); }
+.rec .card p { color: var(--muted); }
+.rec .card p b { color: var(--fg); font-weight: 600; }
+.next { margin: 0; padding-left: 20px; display: grid; gap: 8px; color: var(--muted); font-size: 14px; }
+.next li::marker { color: var(--faint); font-family: var(--f-label); font-size: 12px; }
+.reply { display: grid; gap: 8px; }
+.reply code { font-family: var(--f-label); font-size: 12.5px; background: var(--panel-2); border: 1px solid var(--line); padding: 8px 12px; border-radius: 8px; display: block; color: var(--fg); overflow-x: auto; white-space: nowrap; }
+footer { padding-block: 56px 64px; color: var(--faint); font-size: 13px; border-top: 1px solid var(--line); margin-top: 64px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 980px) {
+  .spec { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .spec .card:last-child { grid-column: 1 / -1; }
+  .across { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mnav .links { display: none; }
+  .hA-body, .hB-body { grid-template-columns: minmax(0, 1fr); }
+  .rec { grid-template-columns: minmax(0, 1fr); }
+  .bento { grid-auto-rows: 64px; }
+  .c1 { grid-column: span 4; } .c2 { grid-column: span 8; } .c3 { grid-column: span 8; } .c4, .c4b { grid-column: span 6; }
+}
+@media (max-width: 640px) {
+  .findings, .spec, .across { grid-template-columns: minmax(0, 1fr); }
+  .pipe { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .node:nth-child(3) { padding-left: 0; border-left: 0; border-top: 1px solid var(--a-line); }
+  .node:nth-child(3)::before { left: 0; }
+  .node:nth-child(4) { border-top: 1px solid var(--a-line); }
+  .hC-row { grid-template-columns: minmax(0, 1fr); }
+  .bento { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .c1 { grid-column: span 2; grid-row: span 2; } .c2 { grid-column: span 4; } .c3 { grid-column: span 4; grid-row: span 1; } .c4, .c4b { grid-column: span 6; }
+  .c3 .ln:nth-child(n+3) { display: none; }
+  .dir-head { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .browser-bar .url { flex-basis: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .pipe::before, .prism .beam-out { animation: none; }
+  .pipe::before { left: 0; width: 100%; opacity: .5; }
+  .cell, .mbtn { transition: none; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="label">Innovative · Phase 2 · Creative direction review · 29 Oct 2026</span>
+    <h1>Three ways Innovative could look. <span>Pick one, or tell me what to blend.</span></h1>
+    <p class="lede">Each direction below is shown as a live homepage hero, plus the palette, type and layout rules that would carry it through Services, Work, About, Contact and the Quotation Builder. All three are dark-first and use the electric purple, blue and cyan family you asked for. They differ in the idea the brand is built around.</p>
+    <div class="findings">
+      <div><span class="label">Phase 1 · Repository</span><strong>Empty, greenfield</strong><p>The repo has no commits, code, tokens or assets yet. Nothing existing to preserve or align with.</p></div>
+      <div><span class="label">Phase 1 · Implication</span><strong>Free to define the system</strong><p>The design system from Phase 3 becomes the source of truth. Tokens will be written so they map 1:1 to CSS variables and Tailwind later.</p></div>
+      <div><span class="label">Phase 3 · Mockup format</span><strong>Static HTML/CSS screens</strong><p>Interactive, responsive, clickable between pages. No backend or business logic, pricing labelled as indicative.</p></div>
+    </div>
+  </header>
+</div>
+
+<nav class="jump" aria-label="Directions">
+  <div class="wrap">
+    <a href="#signal">A · Signal</a>
+    <a href="#prism">B · Prism</a>
+    <a href="#module">C · Module</a>
+    <a href="#compare">Compare</a>
+    <a href="#recommendation">Recommendation</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- ================= A ================= -->
+  <section class="dir" id="signal">
+    <div class="dir-head">
+      <span class="dir-letter">A</span>
+      <div>
+        <h2>Signal <span class="tag-rec">Recommended</span></h2>
+        <p class="thesis">Engineered precision. The brand is a live system: a single signal line runs through the whole site and connects Design, Build, Deploy and Maintain. It proves the "full lifecycle" promise visually instead of claiming it in copy.</p>
+      </div>
+    </div>
+
+    <div class="browser">
+      <div class="browser-bar"><span class="dots"><i></i><i></i><i></i></span><span class="url">innovative.dev</span></div>
+      <div class="hA">
+        <div class="mnav">
+          <div class="brand"><span class="logoA"></span>innovative</div>
+          <div class="links"><span>Services</span><span>Work</span><span>Process</span><span>About</span><span>Contact</span></div>
+          <a class="mbtn pri" tabindex="-1">Get a Quote</a>
+        </div>
+        <div class="hA-body">
+          <div>
+            <span class="coord">[ 01 ] SOFTWARE STUDIO · DESIGN → OPERATIONS</span>
+            <h3>From first sketch to <em>production uptime.</em></h3>
+          </div>
+          <div class="hA-side">
+            <p>We design, build, deploy and run digital products. <b>One team owns the whole line</b>, so nothing gets lost between the designer, the developer and the server.</p>
+            <div class="ctas"><a class="mbtn pri" tabindex="-1">Get a Quote →</a><a class="mbtn sec" tabindex="-1">Explore Our Work</a></div>
+          </div>
+        </div>
+        <div class="pipe" aria-label="Lifecycle pipeline">
+          <div class="node live"><span class="stage">Design</span><span class="what">UI/UX &amp; prototypes</span><span class="read"><i></i>48 screens · v3 approved</span></div>
+          <div class="node live"><span class="stage">Build</span><span class="what">Web, mobile &amp; APIs</span><span class="read"><i></i>main · 8f3a2c1 · tests 412/412</span></div>
+          <div class="node live"><span class="stage">Deploy</span><span class="what">Cloud &amp; DevOps</span><span class="read"><i></i>eu-central-1 · 41s rollout</span></div>
+          <div class="node live"><span class="stage">Maintain</span><span class="what">Monitoring &amp; support</span><span class="read"><i></i>uptime 99.98% · 90d</span></div>
+        </div>
+        <div class="hA-foot"><span><b>120+</b> products shipped</span><span><b>9 yrs</b> average client relationship</span><span><b>&lt; 4h</b> support response</span><span><b>14</b> industries</span></div>
+      </div>
+    </div>
+
+    <div class="spec">
+      <div class="card">
+        <h4>Palette</h4>
+        <div class="swatches">
+          <div class="sw"><b style="background: var(--a-void)"></b><span>Void<small>Page background</small></span><code>#05070C</code></div>
+          <div class="sw"><b style="background: var(--a-graphite)"></b><span>Graphite<small>Surfaces, cards</small></span><code>#0D1119</code></div>
+          <div class="sw"><b style="background: var(--a-line)"></b><span>Trace<small>Grid, borders, rules</small></span><code>#1B2230</code></div>
+          <div class="sw"><b style="background: var(--a-cyan)"></b><span>Signal Cyan<small>Live state, the line, focus</small></span><code>#3BE3DA</code></div>
+          <div class="sw"><b style="background: var(--a-violet)"></b><span>Volt Violet<small>Secondary accent, gradients</small></span><code>#7C5CFF</code></div>
+          <div class="sw"><b style="background: var(--a-text)"></b><span>Paper<small>Primary text, primary button</small></span><code>#E4E9F2</code></div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Typography</h4>
+        <div class="typespec">
+          <div class="row"><span style="font-family: Archivo, sans-serif; font-stretch: 112%; font-weight: 700; font-size: 34px; letter-spacing: -.035em; line-height: 1">Ship it.</span><span class="meta">ARCHIVO EXPANDED 700 · DISPLAY</span></div>
+          <div class="row"><span style="font-family: 'Schibsted Grotesk', sans-serif; font-size: 16px; line-height: 1.5">Clear, sturdy body copy with a slightly editorial edge for case studies.</span><span class="meta">SCHIBSTED GROTESK 400/500 · BODY</span></div>
+          <div class="row"><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--a-cyan)">uptime 99.98% · p95 182ms</span><span class="meta">JETBRAINS MONO · DATA, LABELS, READOUTS</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Layout &amp; signature</h4>
+        <ul class="points">
+          <li><strong>The signal line</strong>A 1px trace that runs between sections and pulses when you scroll into a new stage. Services, process and the quote builder all hang off it.</li>
+          <li><strong>Blueprint grid</strong>A visible 56px grid in hero areas only, faded out with a mask. Content sits on it like a technical drawing.</li>
+          <li><strong>Readouts, not icons</strong>Credibility shown as live-looking telemetry (commit hashes, uptime, response times) rather than stock icon rows.</li>
+          <li><strong>Asymmetric 12-col</strong>Headline left, supporting text bottom-aligned right. Wide display type, generous negative space.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="across">
+      <div><span class="label">Services</span><p>A vertical pipeline. Each service is a node; expanding it shows deliverables, problems solved and stack. Packages are drawn as routes that light up several nodes at once.</p></div>
+      <div><span class="label">Work</span><p>Case studies as "build logs": a large mockup, then challenge, solution and result as timestamped entries with real metrics.</p></div>
+      <div><span class="label">Quote builder</span><p>The configurator is a schematic. Each selection adds a node and a cost line to a running "bill of materials" panel that stays docked on the right.</p></div>
+      <div class="watch"><span class="label">Watch out for</span><p>Can drift cold or too "developer-only". Countered with warm case-study photography and human copy on About.</p></div>
+    </div>
+  </section>
+
+  <!-- ================= B ================= -->
+  <section class="dir" id="prism">
+    <div class="dir-head">
+      <span class="dir-letter">B</span>
+      <div>
+        <h2>Prism</h2>
+        <p class="thesis">Luminous depth. Light is the material. One idea enters a glass prism and leaves as a spectrum of products: web, mobile, AI, cloud. Softer, more cinematic and more emotional than Signal.</p>
+      </div>
+    </div>
+
+    <div class="browser">
+      <div class="browser-bar"><span class="dots"><i></i><i></i><i></i></span><span class="url">innovative.dev</span></div>
+      <div class="hB">
+        <div class="mnav">
+          <div class="brand"><span class="logoB"></span>innovative</div>
+          <div class="links"><span>Services</span><span>Work</span><span>Process</span><span>About</span><span>Contact</span></div>
+          <a class="mbtn sec" tabindex="-1">Get a Quote</a>
+        </div>
+        <div class="hB-body">
+          <div class="hB-copy">
+            <span class="pill"><b>New</b>AI integration studio is open</span>
+            <h3>Ideas, <em>refracted</em> into products people rely on.</h3>
+            <p>Innovative turns a single idea into a complete product: designed, engineered, launched and looked after by one team.</p>
+            <div class="ctas"><a class="mbtn pri" tabindex="-1">Get a Quote</a><a class="mbtn sec" tabindex="-1">Explore Our Work</a></div>
+          </div>
+          <svg class="prism" viewBox="0 0 560 360" role="img" aria-label="A beam of light enters a glass prism and splits into four colored bands labelled Web, Mobile, AI and Cloud">
+            <defs>
+              <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".22"/><stop offset=".5" stop-color="#FFFFFF" stop-opacity=".04"/><stop offset="1" stop-color="#A07BFF" stop-opacity=".18"/></linearGradient>
+              <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".7"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".1"/></linearGradient>
+              <linearGradient id="bv" x1="0" x2="1"><stop offset="0" stop-color="#A07BFF" stop-opacity=".95"/><stop offset="1" stop-color="#A07BFF" stop-opacity="0"/></linearGradient>
+              <linearGradient id="bb" x1="0" x2="1"><stop offset="0" stop-color="#4A7DFF" stop-opacity=".95"/><stop offset="1" stop-color="#4A7DFF" stop-opacity="0"/></linearGradient>
+              <linearGradient id="bc" x1="0" x2="1"><stop offset="0" stop-color="#3FD3FF" stop-opacity=".9"/><stop offset="1" stop-color="#3FD3FF" stop-opacity="0"/></linearGradient>
+              <linearGradient id="bi" x1="0" x2="1"><stop offset="0" stop-color="#A8E9FF" stop-opacity=".9"/><stop offset="1" stop-color="#A8E9FF" stop-opacity="0"/></linearGradient>
+              <linearGradient id="in" x1="0" x2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".95"/></linearGradient>
+              <filter id="soft" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
+            </defs>
+            <rect x="0" y="176" width="232" height="2" fill="url(#in)"/>
+            <rect x="0" y="172" width="232" height="10" fill="url(#in)" opacity=".25" filter="url(#soft)"/>
+            <g class="beam-out" filter="url(#soft)">
+              <polygon points="282,172 560,40 560,92 282,176" fill="url(#bv)"/>
+              <polygon points="282,175 560,118 560,166 282,178" fill="url(#bb)"/>
+              <polygon points="282,178 560,196 560,244 282,181" fill="url(#bc)"/>
+              <polygon points="282,181 560,272 560,326 282,184" fill="url(#bi)"/>
+            </g>
+            <polygon points="256,72 330,290 182,290" fill="url(#glass)" stroke="url(#edge)" stroke-width="1.2"/>
+            <polygon points="256,72 268,290 182,290" fill="#FFFFFF" opacity=".05"/>
+            <g font-family="Onest, sans-serif" font-size="12" fill="#F1EFF6">
+              <text x="470" y="62">Web</text><text x="470" y="138">Mobile</text><text x="470" y="216">AI</text><text x="470" y="296">Cloud</text>
+            </g>
+            <g font-family="Onest, sans-serif" font-size="10.5" fill="#8D8A99">
+              <text x="470" y="78">apps &amp; sites</text><text x="470" y="154">iOS · Android</text><text x="470" y="232">LLM features</text><text x="470" y="312">deploy · run</text>
+            </g>
+            <text x="18" y="164" font-family="Onest, sans-serif" font-size="11" fill="#8D8A99">your idea</text>
+          </svg>
+        </div>
+        <div class="hB-logos"><small>Trusted by teams at</small><span>Northwind</span><span>Halcyon Health</span><span>Paysera Labs</span><span>Atlas Freight</span><span>Kinetiq</span></div>
+      </div>
+    </div>
+
+    <div class="spec">
+      <div class="card">
+        <h4>Palette</h4>
+        <div class="swatches">
+          <div class="sw"><b style="background: var(--b-obsidian)"></b><span>Obsidian<small>Page background</small></span><code>#050506</code></div>
+          <div class="sw"><b style="background: var(--b-smoke)"></b><span>Smoke Glass<small>Frosted surfaces</small></span><code>#101014</code></div>
+          <div class="sw"><b style="background: var(--b-violet)"></b><span>Prism Violet<small>Primary accent</small></span><code>#A07BFF</code></div>
+          <div class="sw"><b style="background: var(--b-blue)"></b><span>Electric Blue<small>Gradient mid-tone, links</small></span><code>#4A7DFF</code></div>
+          <div class="sw"><b style="background: var(--b-ice)"></b><span>Ice<small>Highlights, edges of light</small></span><code>#A8E9FF</code></div>
+          <div class="sw"><b style="background: var(--b-text)"></b><span>Pearl<small>Primary text</small></span><code>#F1EFF6</code></div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Typography</h4>
+        <div class="typespec">
+          <div class="row"><span style="font-family: Onest, sans-serif; font-weight: 500; font-size: 32px; letter-spacing: -.04em; line-height: 1">Ideas, <em style="font-family: 'Instrument Serif', serif; font-weight: 400">refracted</em></span><span class="meta">ONEST 500 + INSTRUMENT SERIF ITALIC · DISPLAY</span></div>
+          <div class="row"><span style="font-family: Onest, sans-serif; font-size: 16px; line-height: 1.55; font-weight: 300">Light, airy body text with wide line spacing. Reads calm and premium.</span><span class="meta">ONEST 300/400 · BODY</span></div>
+          <div class="row"><span style="font-family: 'Instrument Serif', serif; font-style: italic; font-size: 22px; color: var(--b-ice)">"They shipped in eleven weeks."</span><span class="meta">INSTRUMENT SERIF · QUOTES, ONE WORD PER HEADLINE</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Layout &amp; signature</h4>
+        <ul class="points">
+          <li><strong>Refraction motif</strong>The prism returns as a section divider, a hover light on cards, and the loading state of the quote builder.</li>
+          <li><strong>Frosted glass layers</strong>Cards are translucent with a 1px top highlight, stacked at different depths to create parallax.</li>
+          <li><strong>One serif word</strong>Every headline gets exactly one italic serif word in gradient. It becomes the brand's voice.</li>
+          <li><strong>Cinematic pacing</strong>Fewer, taller sections. Large project imagery, slow fades, more breathing room.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="across">
+      <div><span class="label">Services</span><p>Four spectral families (Build, Design, Launch, Grow). Each opens into a glass panel with deliverables and stack. Packages shown as full-spectrum bundles.</p></div>
+      <div><span class="label">Work</span><p>Full-bleed, image-led gallery with color sampled from each project casting soft light onto the page.</p></div>
+      <div><span class="label">Quote builder</span><p>A centered glass card that changes hue as services are added. The summary is a "receipt of light" with each service in its band color.</p></div>
+      <div class="watch"><span class="label">Watch out for</span><p>Closest to the glowing-gradient look you want to avoid. Needs strict restraint: glow in one place per screen.</p></div>
+    </div>
+  </section>
+
+  <!-- ================= C ================= -->
+  <section class="dir" id="module">
+    <div class="dir-head">
+      <span class="dir-letter">C</span>
+      <div>
+        <h2>Module</h2>
+        <p class="thesis">Bold, modular, kinetic. Software is assembled from parts, and so is the site. Oversized type on a visible 12-column grid, with real UI fragments (a phone, a chart, a terminal, a price) as the visual language.</p>
+      </div>
+    </div>
+
+    <div class="browser">
+      <div class="browser-bar"><span class="dots"><i></i><i></i><i></i></span><span class="url">innovative.dev</span></div>
+      <div class="hC">
+        <div class="mnav">
+          <div class="brand"><span class="logoC"><i></i><i></i><i></i><i></i></span>innovative</div>
+          <div class="links"><span>Services</span><span>Work</span><span>Process</span><span>About</span><span>Contact</span></div>
+          <a class="mbtn pri" tabindex="-1">Get a Quote</a>
+        </div>
+        <div class="hC-body">
+          <h3>Built in modules.<br><span class="o">Shipped</span> as one.</h3>
+          <div class="hC-row">
+            <p>Websites, web apps, mobile, APIs, cloud and AI. Pick the parts you need and we assemble, launch and maintain the whole product.</p>
+            <div class="ctas"><a class="mbtn pri" tabindex="-1">Get a Quote</a><a class="mbtn sec" tabindex="-1">Explore Our Work</a></div>
+          </div>
+          <div class="bento" aria-hidden="true">
+            <div class="cell c1"><span class="k">Mobile</span><div class="phone"><i></i><i></i><i></i><i></i><i></i></div></div>
+            <div class="cell c2"><span class="k">Conversion</span><div class="big">+38%</div>
+              <svg viewBox="0 0 200 44" preserveAspectRatio="none"><path d="M0 40 L25 36 L50 38 L75 28 L100 30 L125 20 L150 22 L175 10 L200 6 L200 44 L0 44Z" fill="#2F6BFF" opacity=".18"/><path d="M0 40 L25 36 L50 38 L75 28 L100 30 L125 20 L150 22 L175 10 L200 6" fill="none" stroke="#2F6BFF" stroke-width="2"/></svg></div>
+            <div class="cell c3"><span class="ln dim">~/halcyon-portal</span><span class="ln">$ innovative deploy --prod</span><span class="ln dim">› build 2.1 MB · 418 routes</span><span class="ln ok">✓ live on eu-central-1 in 41s</span></div>
+            <div class="cell c4"><span class="tog"><s></s>Auth</span><span class="tog"><s></s>Payments</span><span class="tog off"><s></s>Chat</span></div>
+            <div class="cell c4b"><span class="k">Indicative quote</span><span class="price">€18,400</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec">
+      <div class="card">
+        <h4>Palette</h4>
+        <div class="swatches">
+          <div class="sw"><b style="background: var(--c-navy)"></b><span>Midnight Navy<small>Page background</small></span><code>#090D1C</code></div>
+          <div class="sw"><b style="background: var(--c-indigo)"></b><span>Deep Indigo<small>Sections, panels</small></span><code>#111733</code></div>
+          <div class="sw"><b style="background: var(--c-cell)"></b><span>Cell<small>Modules, cards</small></span><code>#161D3D</code></div>
+          <div class="sw"><b style="background: var(--c-blue)"></b><span>Cobalt<small>Primary action, data</small></span><code>#2F6BFF</code></div>
+          <div class="sw"><b style="background: var(--c-uv)"></b><span>Ultraviolet<small>Highlights, featured</small></span><code>#A65BFF</code></div>
+          <div class="sw"><b style="background: var(--c-mist)"></b><span>Mist<small>Outline type, quiet text</small></span><code>#C9D3FF</code></div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Typography</h4>
+        <div class="typespec">
+          <div class="row"><span style="font-family: Unbounded, sans-serif; font-weight: 700; font-size: 30px; letter-spacing: -.045em; line-height: 1">Shipped.</span><span class="meta">UNBOUNDED 700 · DISPLAY</span></div>
+          <div class="row"><span style="font-family: 'Hanken Grotesk', sans-serif; font-size: 16px; line-height: 1.5">Friendly, compact body copy that holds up next to very loud headlines.</span><span class="meta">HANKEN GROTESK 400/600 · BODY</span></div>
+          <div class="row"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--c-mist)">$ innovative deploy --prod</span><span class="meta">IBM PLEX MONO · CODE, TAGS, PRICES</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Layout &amp; signature</h4>
+        <ul class="points">
+          <li><strong>Visible grid</strong>Faint 12-column guides stay on screen. Everything snaps to them, which makes the precision part of the look.</li>
+          <li><strong>Modules as proof</strong>Instead of illustrations, real UI fragments show what we build. They rearrange as you scroll.</li>
+          <li><strong>Outline + solid type</strong>Huge Unbounded headlines that mix solid and outlined words.</li>
+          <li><strong>Snap motion</strong>Short, springy transitions. Cards lift and snap rather than fade.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="across">
+      <div><span class="label">Services</span><p>A modular board: each service is a tile you can open. Packages are pre-built module sets ("Launch Kit", "Product Suite").</p></div>
+      <div><span class="label">Work</span><p>Masonry of project modules at different sizes with category filters that reshuffle the grid with snap motion.</p></div>
+      <div><span class="label">Quote builder</span><p>Drag-or-tap modules onto a build plate. Each module carries its price chip, and the total updates at the bottom like a cart.</p></div>
+      <div class="watch"><span class="label">Watch out for</span><p>Bento grids are everywhere right now. This only works if every module is real UI, never decorative boxes.</p></div>
+    </div>
+  </section>
+
+  <!-- ================= Compare ================= -->
+  <section class="section" id="compare">
+    <span class="label">Side by side</span>
+    <h2>How they compare</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th scope="col">Criterion</th><th scope="col">A · Signal</th><th scope="col">B · Prism</th><th scope="col">C · Module</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Recognizable identity</th>
+            <td><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><br><small>The line becomes the brand</small></td>
+            <td><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><br><small>Prism is memorable, gradients less so</small></td>
+            <td><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span><br><small>Bento layouts are common</small></td></tr>
+          <tr><th scope="row">Technical credibility</th>
+            <td><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></td>
+            <td><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></td>
+            <td><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td></tr>
+          <tr><th scope="row">Warmth for non-technical buyers</th>
+            <td><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></td>
+            <td><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></td>
+            <td><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td></tr>
+          <tr><th scope="row">Tells the full-lifecycle story</th>
+            <td><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><br><small>Literally drawn as a pipeline</small></td>
+            <td><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span><br><small>Shows breadth, not sequence</small></td>
+            <td><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><br><small>Shows breadth and assembly</small></td></tr>
+          <tr><th scope="row">Quotation builder fit</th>
+            <td><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><br><small>Bill of materials is transparent by nature</small></td>
+            <td><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></td>
+            <td><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><br><small>Modules map directly to line items</small></td></tr>
+          <tr><th scope="row">Build effort later</th>
+            <td><small>Moderate. Mostly CSS, one SVG line system.</small></td>
+            <td><small>Higher. Glass, blur and light effects need performance tuning on mobile.</small></td>
+            <td><small>Moderate. Many small UI fragments to design and keep consistent.</small></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= Recommendation ================= -->
+  <section class="section" id="recommendation">
+    <span class="label">My call</span>
+    <h2>Go with Signal, borrow one idea from Module</h2>
+    <div class="rec">
+      <div class="card main">
+        <p><b>Signal fits Innovative's positioning best.</b> Your core message is that you design, develop, deploy and maintain. Signal is the only direction where that sentence is the visual system itself: the lifecycle line connects every page, and the quotation builder becomes a transparent bill of materials that grows as clients configure.</p>
+        <p>From Module, I would borrow <b>real UI fragments as proof</b> on the homepage and portfolio, so the site shows actual product craft and avoids feeling like a pure developer tool. Prism's glass and gradients would be held back to a single moment: the final call to action.</p>
+      </div>
+      <div class="card">
+        <h4>What happens after you choose</h4>
+        <ol class="next">
+          <li>Design system sheet: tokens, type scale, spacing, components and motion rules.</li>
+          <li>Homepage at desktop, tablet and mobile.</li>
+          <li>Services, Work, case study, About and Contact.</li>
+          <li>Quotation builder: all four steps plus the summary, with working interactions and indicative pricing.</li>
+          <li>Self-review pass, then a review link for you.</li>
+        </ol>
+        <div class="reply">
+          <span class="label">Reply with, for example</span>
+          <code>Go with A</code>
+          <code>A, but warmer, with B's serif accent</code>
+          <code>C, with Signal's pipeline for the process section</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>Innovative · Creative direction board for review. Company names, client logos and metrics in the previews are placeholder content.</footer>
+</main>
