@@ -17,3 +17,9 @@ Design and mockup phase only. No application code yet.
 Chosen direction: **B · Prism**, with the reference's violet-black palette.
 
 - `prism-hero.html`: the homepage hero. A canvas renders a white beam that refracts through a glass prism (Snell's law per spectrum slice) and disperses into the brand spectrum. Dust lights up in the beam, the cursor tilts the prism, and the service labels ride their bands. Respects reduced motion and pauses when off screen.
+
+### v3 — 3D prism and naming (`prism-hero-3d.html`)
+- New palette: abyss black with a deep teal lift; color only in the light (amber, coral, rose, azure, aqua).
+- three.js 0.149 (jsDelivr): a glass prism turning about once every 54 s. Each side reflects a stage: the idea (sketch), the plan (blueprint), the product (live dashboard).
+- One beam in, five rays out to the steps Discover, Design, Build, Launch, Care, with pulses travelling along each ray.
+- Name exploration from the prism idea: Refract (recommended), Prismwork, Spectra, Fanout, plus Innovative for comparison. A review-only bar switches the name live. Domains and trademarks not checked.

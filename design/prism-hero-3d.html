@@ -1,0 +1,622 @@
+<title>Refract Prism Hero</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@1&family=Caveat:wght@500;600&display=swap">
+<style>
+/* Layout: three-part hero that reads left to right like the light does: the promise (copy), the prism (3D, turning), the result (five steps the light splits into).
+   Palette: abyss black with a deep teal lift; color only lives in the light itself (amber → coral → rose → azure → aqua). Single dark theme by choice. */
+:root {
+  color-scheme: dark;
+  --abyss: #04070B;
+  --deep: #071219;
+  --line: rgba(190, 225, 255, .10);
+  --line-2: rgba(190, 225, 255, .18);
+  --text: #F1F5F8;
+  --dim: #98A5B1;
+  --mute: #5E6B77;
+
+  --s1: #FFB547;  /* Discover: amber */
+  --s2: #FF7A59;  /* Design: coral */
+  --s3: #FF5C8A;  /* Build: rose */
+  --s4: #4C8DFF;  /* Launch: azure */
+  --s5: #3FE3C8;  /* Care: aqua */
+
+  --f-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --f-body: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --f-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --gutter: clamp(20px, 4.5vw, 64px);
+  --pad-l: max(var(--gutter), env(safe-area-inset-left, 0px));
+  --pad-r: max(var(--gutter), env(safe-area-inset-right, 0px));
+}
+* { box-sizing: border-box; }
+body { background: var(--abyss); color: var(--text); font-family: var(--f-body); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 50; background: var(--abyss); }
+h1, h2, h3, p, ol { margin: 0; }
+ol { padding: 0; list-style: none; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--s5); outline-offset: 3px; border-radius: 8px; }
+
+/* ---------- Review bar (not part of the site) ---------- */
+.review { display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; padding: 10px var(--pad-r) 10px var(--pad-l); background: #0A0F14; border-bottom: 1px solid var(--line); font-size: 12.5px; color: var(--dim); }
+.review .tag { font: 500 10.5px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
+.review .opts { display: flex; gap: 6px; flex-wrap: wrap; }
+.review button { cursor: pointer; background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 12.5px; color: var(--dim); transition: color .2s, border-color .2s, background .2s; }
+.review button:hover { color: var(--text); border-color: var(--line-2); }
+.review button[aria-pressed="true"] { color: var(--abyss); background: var(--text); border-color: var(--text); }
+
+/* ---------- Hero ---------- */
+.hero {
+  position: relative; isolation: isolate; overflow: hidden;
+  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto;
+  min-height: min(940px, max(760px, 100svh));
+  background:
+    radial-gradient(40% 50% at 52% 48%, rgba(20, 84, 104, .38), transparent 70%),
+    radial-gradient(30% 34% at 40% 0%, rgba(255, 181, 71, .10), transparent 70%),
+    radial-gradient(36% 46% at 92% 62%, rgba(76, 141, 255, .10), transparent 70%),
+    linear-gradient(180deg, #050A10 0%, var(--abyss) 70%, #020407 100%);
+}
+.hero::after { content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none; opacity: .08; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+.hero::before { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(130% 100% at 55% 45%, transparent 55%, rgba(1, 2, 4, .75) 100%); }
+#gl { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; display: block; }
+
+/* ---------- Nav ---------- */
+.nav { position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px var(--pad-r) 0 var(--pad-l); }
+.brand { display: flex; align-items: center; gap: 11px; font: 650 21px/1 var(--f-display); letter-spacing: -.035em; text-transform: lowercase; }
+.mark { width: 30px; height: 24px; display: block; flex: none; }
+.links { display: flex; gap: 2px; padding: 5px; border-radius: 999px; border: 1px solid var(--line); background: rgba(8, 14, 20, .45); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+.links a { font-size: 14px; color: var(--dim); padding: 8px 15px; border-radius: 999px; transition: color .2s, background .2s; }
+.links a:hover { color: var(--text); background: rgba(255,255,255,.05); }
+
+/* ---------- Buttons ---------- */
+.btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 10px; font: 500 15px/1 var(--f-body); padding: 16px 24px; border-radius: 999px; cursor: pointer; border: 0; white-space: nowrap; transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s, background .25s; }
+.btn svg { transition: transform .25s cubic-bezier(.2,.8,.2,1); }
+.btn:hover svg { transform: translateX(3px); }
+.btn-primary { color: #05080C; background: linear-gradient(180deg, #FFFFFF, #E3ECF2); box-shadow: inset 0 -1px 0 rgba(0,0,0,.12), 0 10px 40px -12px rgba(200, 235, 255, .55); }
+.btn-primary::before { content: ""; position: absolute; inset: -2px; border-radius: inherit; z-index: -1; opacity: 0; transition: opacity .3s; background: conic-gradient(from 200deg, var(--s1), var(--s2), var(--s3), var(--s4), var(--s5), var(--s1)); filter: blur(6px); }
+.btn-primary:hover { transform: translateY(-1px); }
+.btn-primary:hover::before { opacity: .9; }
+.btn-ghost { color: var(--text); background: rgba(255,255,255,.03); box-shadow: inset 0 0 0 1px var(--line-2); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.btn-ghost:hover { background: rgba(255,255,255,.07); }
+.btn-sm { padding: 12px 18px; font-size: 14px; }
+
+/* ---------- Hero body ---------- */
+.body { position: relative; z-index: 10; display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr) minmax(250px, .62fr); gap: clamp(16px, 2vw, 32px); align-items: center; padding: clamp(36px, 6vh, 72px) var(--pad-r) clamp(32px, 5vh, 56px) var(--pad-l); }
+.copy { display: grid; gap: 26px; max-width: 580px; }
+.eyebrow { justify-self: start; display: inline-flex; align-items: center; gap: 10px; font: 500 11.5px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+.eyebrow .beam { width: 34px; height: 1px; background: linear-gradient(90deg, transparent, #fff); position: relative; }
+.eyebrow .beam::after { content: ""; position: absolute; right: -1px; top: -2px; width: 5px; height: 5px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px #fff; }
+h1 { font-family: var(--f-display); font-weight: 600; font-size: clamp(44px, 5.5vw, 80px); line-height: .98; letter-spacing: -.032em; text-wrap: balance; font-variation-settings: "opsz" 96; }
+h1 .soft { color: #8C99A6; }
+h1 em { font-family: var(--f-serif); font-style: italic; font-weight: 400; letter-spacing: -.01em; padding-right: .06em;
+  background: linear-gradient(100deg, var(--s1) 0%, var(--s2) 28%, var(--s3) 52%, var(--s4) 78%, var(--s5) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lede { font-size: clamp(16px, 1.2vw, 18px); line-height: 1.6; color: var(--dim); max-width: 46ch; font-weight: 300; }
+.lede b { font-weight: 450; color: var(--text); }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+.proof { display: flex; flex-wrap: wrap; gap: 12px 28px; padding-top: 6px; font-size: 13px; color: var(--mute); }
+.proof b { display: block; font: 600 22px/1.1 var(--f-display); letter-spacing: -.03em; color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* Stage: an empty box that tells the 3D scene where the prism lives. */
+.stage { position: relative; align-self: stretch; min-height: 520px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 4px; }
+.faces { display: grid; gap: 10px; justify-items: center; text-align: center; }
+.faces .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; border: 1px solid var(--line); background: rgba(6, 12, 18, .55); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.faces .tabs span { font: 500 11px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--mute); padding: 7px 11px; border-radius: 999px; transition: color .5s, background .5s; white-space: nowrap; }
+.faces .tabs span.on { color: var(--abyss); background: var(--text); }
+.faces p { font-size: 12.5px; color: var(--mute); }
+
+/* Steps: where the five rays land */
+.steps { position: relative; display: grid; gap: 6px; }
+.steps .head { font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--mute); margin-bottom: 8px; }
+.step { position: relative; display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 14px; align-items: start; padding: 12px 14px 12px 0; border-radius: 12px; transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1); }
+.step .dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 4px; background: var(--c); box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 18%, transparent), 0 0 18px var(--c); }
+.step .row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.step b { font: 600 16px/1.2 var(--f-display); letter-spacing: -.02em; }
+.step b small { font: 500 10.5px/1 var(--f-mono); color: var(--mute); margin-right: 8px; letter-spacing: .04em; }
+.step time { font: 400 11.5px/1 var(--f-mono); color: var(--c); white-space: nowrap; }
+.step p { font-size: 13px; color: var(--dim); line-height: 1.45; margin-top: 3px; }
+.result { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line-2); background: linear-gradient(120deg, rgba(255,181,71,.07), rgba(255,92,138,.05) 45%, rgba(63,227,200,.07)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.result .ok { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--text); color: var(--abyss); flex: none; }
+.result b { display: block; font: 600 15px/1.2 var(--f-display); letter-spacing: -.02em; }
+.result span { font-size: 12.5px; color: var(--dim); }
+.hero.arming .step, .hero.arming .result { opacity: .12; transform: translateX(10px); }
+.hero.arming .step.lit, .hero.arming .result.lit { opacity: 1; transform: none; }
+
+.hint { position: absolute; left: var(--pad-l); bottom: 0; font: 400 11px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--mute); display: none; }
+
+/* ---------- Trust strip ---------- */
+.trust { position: relative; z-index: 10; display: flex; align-items: center; gap: 36px; padding: 22px var(--pad-r) 26px var(--pad-l); border-top: 1px solid var(--line); background: linear-gradient(180deg, rgba(4,7,11,0), rgba(4,7,11,.7)); }
+.trust > span { font-size: 13px; color: var(--mute); white-space: nowrap; }
+.logos { display: flex; gap: clamp(24px, 4vw, 56px); align-items: center; flex: 1; min-width: 0; overflow: hidden; mask-image: linear-gradient(90deg, #000 85%, transparent); -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); }
+.logos span { font: 600 17px/1 var(--f-display); letter-spacing: -.03em; color: #4D5964; white-space: nowrap; }
+.logos .serif { font-family: var(--f-serif); font-style: italic; font-weight: 400; font-size: 21px; letter-spacing: 0; }
+.logos .mono { font-family: var(--f-mono); font-weight: 500; font-size: 14px; letter-spacing: .05em; }
+
+/* ---------- Naming section ---------- */
+.naming { padding: 96px var(--pad-r) 40px var(--pad-l); display: grid; gap: 40px; max-width: 1240px; margin: 0 auto; }
+.naming header { display: grid; gap: 14px; max-width: 64ch; }
+.naming .kicker { font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--mute); }
+.naming h2 { font: 600 clamp(30px, 3.6vw, 46px)/1.02 var(--f-display); letter-spacing: -.04em; text-wrap: balance; }
+.naming header p { color: var(--dim); font-size: 16px; line-height: 1.6; }
+.names { border-top: 1px solid var(--line); }
+.name { display: grid; grid-template-columns: minmax(200px, .9fr) minmax(0, 1.6fr) auto; gap: 16px 32px; align-items: center; padding: 26px 0; border-bottom: 1px solid var(--line); }
+.name .word { display: flex; align-items: center; gap: 14px; font: 650 clamp(28px, 3vw, 38px)/1 var(--f-display); letter-spacing: -.045em; text-transform: lowercase; }
+.name .word .mark { width: 40px; height: 32px; }
+.name .why { display: grid; gap: 4px; min-width: 0; }
+.name .why b { font-weight: 500; font-size: 15px; }
+.name .why span { color: var(--dim); font-size: 14px; line-height: 1.55; }
+.name .rec { font: 500 10.5px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--abyss); background: var(--s5); padding: 4px 8px; border-radius: 999px; margin-left: 4px; vertical-align: middle; }
+.name button { cursor: pointer; border: 1px solid var(--line-2); background: transparent; border-radius: 999px; padding: 10px 16px; font-size: 13.5px; color: var(--text); white-space: nowrap; transition: background .2s, color .2s; }
+.name button:hover { background: rgba(255,255,255,.06); }
+.name button[aria-pressed="true"] { background: var(--text); color: var(--abyss); }
+.name.current .word { color: var(--text); }
+.name:not(.current) .word { color: #C7D0D8; }
+.fine { color: var(--mute); font-size: 12.5px; }
+
+/* ---------- Entrance ---------- */
+.rise { animation: rise .9s cubic-bezier(.2,.8,.2,1) both; }
+.d1 { animation-delay: .05s; } .d2 { animation-delay: .15s; } .d3 { animation-delay: .28s; } .d4 { animation-delay: .4s; } .d5 { animation-delay: .52s; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+
+/* ---------- No-WebGL fallback ---------- */
+.fallback { display: none; width: min(260px, 70%); margin: auto; }
+.hero.no-gl .fallback { display: block; }
+
+@media (hover: hover) and (min-width: 901px) { .hint { display: block; } }
+@media (max-width: 1180px) {
+  .links { display: none; }
+  .body { grid-template-columns: minmax(0, 1fr) minmax(0, .8fr) minmax(230px, .7fr); }
+}
+@media (max-width: 900px) {
+  .hero { min-height: 0; }
+  .body { grid-template-columns: minmax(0, 1fr); gap: 0; padding-block: 40px 28px; }
+  .stage { min-height: 440px; }
+  .steps { margin-top: 12px; }
+  .hero.arming .step, .hero.arming .result { transform: none; }
+  .trust { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .logos { width: 100%; }
+  .name { grid-template-columns: minmax(0, 1fr); }
+  .name button { justify-self: start; }
+}
+@media (max-width: 520px) {
+  .ctas .btn { flex: 1 1 auto; }
+  .nav .btn-sm { padding: 11px 14px; font-size: 13px; }
+  .faces .tabs span { padding: 7px 8px; font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise { animation: none; }
+  .btn, .btn svg, .step { transition: none; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="mk-glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#9FB3C2"/></linearGradient>
+    <symbol id="mark" viewBox="0 0 40 32">
+      <line x1="0.5" y1="19" x2="13.5" y2="16" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M17 4 27.5 27H6.5Z" fill="rgba(255,255,255,.06)" stroke="url(#mk-glass)" stroke-width="1.8" stroke-linejoin="round"/>
+      <line x1="21" y1="15.5" x2="39" y2="9" stroke="#FFB547" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="21.4" y1="16.5" x2="39" y2="15" stroke="#FF5C8A" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="21.6" y1="17.5" x2="39" y2="21" stroke="#3FE3C8" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="review" role="region" aria-label="Review controls">
+  <span class="tag">Review only · Name exploration</span>
+  <div class="opts" id="nameOpts"></div>
+</div>
+
+<section class="hero arming" id="hero" aria-label="Hero">
+  <canvas id="gl" aria-hidden="true"></canvas>
+
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="#hero"><svg class="mark" aria-hidden="true"><use href="#mark"/></svg><span data-name>refract</span></a>
+    <div class="links"><a href="#hero">Services</a><a href="#hero">Work</a><a href="#hero">Process</a><a href="#hero">About</a><a href="#hero">Contact</a></div>
+    <a class="btn btn-primary btn-sm" href="#hero">Get a Quote</a>
+  </nav>
+
+  <div class="body">
+    <div class="copy">
+      <span class="eyebrow rise d1"><span class="beam"></span>Software studio · Web, mobile, AI, cloud</span>
+      <h1 class="rise d2">One idea in. <span class="soft">A</span> <em>launched</em> <span class="soft">product out.</span></h1>
+      <p class="lede rise d3">Like light through a prism, <b data-name-cap>Refract</b> splits your idea into five clear steps. <b>Each one has an owner, a timeline and a price you can see</b>, and the same team carries it from the first workshop to the product running live.</p>
+      <div class="ctas rise d4">
+        <a class="btn btn-primary" href="#hero">Get a Quote
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="btn btn-ghost" href="#hero">Explore Our Work</a>
+      </div>
+      <div class="proof rise d5">
+        <span><b>120+</b>products shipped</span>
+        <span><b>11 wks</b>median idea to launch</span>
+        <span><b>99.98%</b>uptime on what we run</span>
+      </div>
+    </div>
+
+    <div class="stage" id="stage">
+      <svg class="fallback" viewBox="0 0 200 240" aria-hidden="true">
+        <path d="M100 20 170 200H30Z" fill="rgba(255,255,255,.06)" stroke="#fff" stroke-opacity=".7"/>
+        <line x1="0" y1="60" x2="78" y2="120" stroke="#fff" stroke-width="2"/>
+        <g stroke-width="3" stroke-linecap="round"><line x1="125" y1="125" x2="200" y2="95" stroke="#FFB547"/><line x1="125" y1="128" x2="200" y2="115" stroke="#FF7A59"/><line x1="125" y1="131" x2="200" y2="135" stroke="#FF5C8A"/><line x1="125" y1="134" x2="200" y2="155" stroke="#4C8DFF"/><line x1="125" y1="137" x2="200" y2="175" stroke="#3FE3C8"/></g>
+      </svg>
+      <div class="faces" aria-live="off">
+        <div class="tabs"><span data-face="0" class="on">The idea</span><span data-face="1">The plan</span><span data-face="2">The product</span></div>
+        <p>Each side of the prism reflects a stage of your project.</p>
+      </div>
+    </div>
+
+    <div class="steps" id="steps">
+      <span class="head">Your idea, refracted into</span>
+      <ol>
+        <li class="step" style="--c: var(--s1)"><span class="dot"></span><div><div class="row"><b><small>01</small>Discover</b><time>Week 1</time></div><p>Workshops, scope and a priced plan</p></div></li>
+        <li class="step" style="--c: var(--s2)"><span class="dot"></span><div><div class="row"><b><small>02</small>Design</b><time>Weeks 2–4</time></div><p>UX flows, UI design, clickable prototype</p></div></li>
+        <li class="step" style="--c: var(--s3)"><span class="dot"></span><div><div class="row"><b><small>03</small>Build</b><time>Weeks 4–10</time></div><p>Web, mobile, APIs and AI features</p></div></li>
+        <li class="step" style="--c: var(--s4)"><span class="dot"></span><div><div class="row"><b><small>04</small>Launch</b><time>Week 11</time></div><p>QA, cloud setup, CI/CD, go-live</p></div></li>
+        <li class="step" style="--c: var(--s5)"><span class="dot"></span><div><div class="row"><b><small>05</small>Care</b><time>Ongoing</time></div><p>Monitoring, support and new features</p></div></li>
+      </ol>
+      <div class="result"><span class="ok"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Your product, live</b><span>Typical timeline shown. Your quote sets the real one.</span></div></div>
+    </div>
+  </div>
+
+  <span class="hint">Move your cursor to tilt the prism</span>
+
+  <div class="trust">
+    <span>Trusted by product teams at</span>
+    <div class="logos"><span>Northwind</span><span class="serif">Halcyon Health</span><span class="mono">PAYSERA/LABS</span><span>Atlas Freight</span><span class="serif">Maison Verre</span><span>Kinetiq</span><span class="mono">ORBITAL</span></div>
+  </div>
+</section>
+
+<section class="naming" aria-labelledby="naming-title">
+  <header>
+    <span class="kicker">Naming · from the prism idea</span>
+    <h2 id="naming-title">One ray in, many out. Five names for that idea.</h2>
+    <p>Each name below comes from what a prism does to light, which is what the studio does to a client's idea. Pick one to preview it across the hero. My pick is Refract: it is a verb, it says exactly what you do, and it is short enough to own.</p>
+  </header>
+  <div class="names" id="names"></div>
+  <p class="fine">Domain and trademark availability has not been checked yet. I'll check before anything is final.</p>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script>
+(() => {
+  /* ===================== Names ===================== */
+  const NAMES = [
+    { id: 'refract', name: 'Refract', rec: true, line: 'The verb for what a prism does.', why: 'Bending one idea into every step it needs. Short, active, easy to say on a call, and it works as a verb in copy ("let’s refract it").' },
+    { id: 'prismwork', name: 'Prismwork', line: 'The prism plus the craft.', why: 'Sounds like a studio that makes things. Warmer than Refract, slightly longer.' },
+    { id: 'spectra', name: 'Spectra', line: 'The full spectrum of software.', why: 'Signals breadth: web, mobile, AI and cloud under one roof. Common word, harder to own in search.' },
+    { id: 'fanout', name: 'Fanout', line: 'One input driving many outputs.', why: 'An engineering term technical buyers will recognize instantly. Playful, very memorable, less obvious to non-technical clients.' },
+    { id: 'innovative', name: 'Innovative', line: 'The current name, for comparison.', why: 'Clear but generic. Many companies use it, so it is hard to rank for and hard to make recognizable.' },
+  ];
+  const opts = document.getElementById('nameOpts'), list = document.getElementById('names');
+  function setName(id) {
+    const n = NAMES.find(x => x.id === id) || NAMES[0];
+    document.querySelectorAll('[data-name]').forEach(el => el.textContent = n.name.toLowerCase());
+    document.querySelectorAll('[data-name-cap]').forEach(el => el.textContent = n.name);
+    document.querySelectorAll('[data-pick]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pick === n.id)));
+    document.querySelectorAll('.name').forEach(r => r.classList.toggle('current', r.dataset.id === n.id));
+    try { localStorage.setItem('prism-name', n.id); } catch (e) {}
+  }
+  NAMES.forEach(n => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.dataset.pick = n.id; b.textContent = n.name; b.addEventListener('click', () => setName(n.id));
+    opts.appendChild(b);
+    const row = document.createElement('div');
+    row.className = 'name'; row.dataset.id = n.id;
+    row.innerHTML = `<div class="word"><svg class="mark" aria-hidden="true"><use href="#mark"/></svg>${n.name.toLowerCase()}</div>
+      <div class="why"><b>${n.line}${n.rec ? '<span class="rec">Recommended</span>' : ''}</b><span>${n.why}</span></div>
+      <button type="button" data-pick="${n.id}">Preview in hero</button>`;
+    row.querySelector('button').addEventListener('click', () => { setName(n.id); document.getElementById('hero').scrollIntoView({ behavior: 'smooth' }); });
+    list.appendChild(row);
+  });
+  let saved = 'refract'; try { saved = localStorage.getItem('prism-name') || saved; } catch (e) {}
+  setName(saved);
+
+  /* ===================== 3D scene ===================== */
+  const hero = document.getElementById('hero'), stage = document.getElementById('stage'), canvas = document.getElementById('gl');
+  const stepEls = [...document.querySelectorAll('.step')], resultEl = document.querySelector('.result');
+  const tabs = [...document.querySelectorAll('.faces .tabs span')];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SPECTRUM = ['#FFB547', '#FF7A59', '#FF5C8A', '#4C8DFF', '#3FE3C8'];
+
+  function giveUp() { hero.classList.add('no-gl'); hero.classList.remove('arming'); }
+  const THREE = window.THREE;
+  if (!THREE) { giveUp(); return; }
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); }
+  catch (e) { giveUp(); return; }
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(30, 1, 1, 10000);
+
+  // ---- Studio environment the glass reflects: a top softbox and coloured side panels ----
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const envScene = new THREE.Scene();
+  envScene.add(new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100), new THREE.MeshBasicMaterial({ color: 0x030507, side: THREE.BackSide })));
+  function panel(w, h, hex, k, pos) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k), side: THREE.DoubleSide }));
+    m.position.set(...pos); m.lookAt(0, 0, 0); envScene.add(m);
+  }
+  panel(70, 6, 0xffffff, 5, [0, 42, 8]);
+  panel(6, 50, 0xffffff, 3, [30, 0, 40]);
+  panel(8, 46, 0xffb547, 2.4, [-46, 0, 6]);
+  panel(8, 46, 0x3fe3c8, 2.2, [46, 4, -8]);
+  panel(30, 8, 0xff5c8a, 1.8, [-10, -36, -36]);
+  panel(18, 18, 0x4c8dff, 2.2, [-28, 14, 40]);
+  const envTex = pmrem.fromScene(envScene, 0.015).texture;
+
+  // ---- Shared sprite texture ----
+  function glowTexture() {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.18, 'rgba(255,255,255,.55)'); gr.addColorStop(.5, 'rgba(255,255,255,.12)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(c);
+  }
+  const GLOW = glowTexture();
+  const sprite = (hex, op = 1) => {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: new THREE.Color(hex), transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, toneMapped: false }));
+    scene.add(s); return s;
+  };
+
+  // ---- Face art: what each side of the prism reflects ----
+  function faceArt(kind) {
+    const W = 520, H = 1000, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d');
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    const wob = (x, y, x2, y2, j = 2.5) => { g.beginPath(); g.moveTo(x + (Math.random() - .5) * j, y + (Math.random() - .5) * j); g.quadraticCurveTo((x + x2) / 2 + (Math.random() - .5) * j * 3, (y + y2) / 2 + (Math.random() - .5) * j * 3, x2, y2); g.stroke(); };
+    if (kind === 0) { // the idea: a napkin sketch
+      g.strokeStyle = 'rgba(255,236,205,.95)'; g.fillStyle = 'rgba(255,236,205,.95)'; g.lineWidth = 5;
+      g.font = '600 74px Caveat, cursive'; g.fillText('what if…', 70, 170);
+      // light bulb
+      g.beginPath(); g.arc(260, 330, 78, Math.PI * .8, Math.PI * 2.2); g.stroke();
+      wob(200, 380, 214, 450); wob(320, 380, 306, 450); wob(214, 452, 306, 452); wob(222, 478, 298, 478); wob(236, 502, 284, 502);
+      g.lineWidth = 3; [[-1, -1], [0, -1.3], [1, -1], [-1.3, 0], [1.3, 0]].forEach(([dx, dy]) => wob(260 + dx * 104, 330 + dy * 104, 260 + dx * 140, 330 + dy * 140, 1.5));
+      // phone wireframe sketch
+      g.lineWidth = 4; wob(120, 580, 400, 580); wob(400, 580, 400, 900); wob(400, 900, 120, 900); wob(120, 900, 120, 580);
+      g.lineWidth = 3; wob(150, 630, 300, 630); wob(150, 680, 370, 680); wob(150, 720, 330, 720);
+      g.strokeRect(150, 760, 220, 90);
+      g.font = '500 44px Caveat, cursive'; g.fillText('→ booking app?', 120, 960);
+    } else if (kind === 1) { // the plan: a blueprint
+      g.strokeStyle = 'rgba(160,220,255,.16)'; g.lineWidth = 1;
+      for (let x = 0; x <= W; x += 40) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
+      for (let y = 0; y <= H; y += 40) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+      g.font = '500 26px "Geist Mono", monospace'; g.fillStyle = 'rgba(210,240,255,.9)'; g.fillText('PLAN / v1.2', 50, 90);
+      const steps = ['DISCOVER', 'DESIGN', 'BUILD', 'LAUNCH', 'CARE'], span = [[0, 1], [1, 3], [3, 9], [9, 10], [10, 12]];
+      steps.forEach((s, i) => {
+        const y = 170 + i * 150;
+        g.strokeStyle = 'rgba(210,240,255,.85)'; g.lineWidth = 3; g.strokeRect(50, y, 420, 100);
+        g.fillStyle = 'rgba(210,240,255,.9)'; g.font = '500 24px "Geist Mono", monospace'; g.fillText(`0${i + 1}  ${s}`, 72, y + 40);
+        g.fillStyle = SPECTRUM[i]; g.globalAlpha = .9;
+        g.fillRect(72 + span[i][0] * 30, y + 62, (span[i][1] - span[i][0]) * 30 + 8, 14); g.globalAlpha = 1;
+        if (i < 4) { g.strokeStyle = 'rgba(210,240,255,.6)'; g.beginPath(); g.moveTo(260, y + 100); g.lineTo(260, y + 150); g.stroke(); }
+      });
+    } else { // the product: a polished live dashboard
+      const rr = (x, y, w, h, r) => { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); };
+      g.strokeStyle = 'rgba(230,245,255,.75)'; g.lineWidth = 3; rr(40, 60, 440, 880, 36); g.stroke();
+      g.fillStyle = 'rgba(230,245,255,.9)'; g.font = '600 30px "Bricolage Grotesque", sans-serif'; g.fillText('Bookings', 80, 140);
+      g.fillStyle = 'rgba(63,227,200,.95)'; rr(340, 112, 100, 38, 19); g.fill();
+      g.fillStyle = '#04070B'; g.font = '600 20px "Geist", sans-serif'; g.fillText('LIVE', 366, 138);
+      g.fillStyle = 'rgba(230,245,255,.95)'; g.font = '650 76px "Bricolage Grotesque", sans-serif'; g.fillText('2,481', 80, 260);
+      g.fillStyle = 'rgba(63,227,200,.95)'; g.font = '500 24px "Geist Mono", monospace'; g.fillText('+38% this month', 82, 302);
+      const pts = [0, 30, 22, 58, 48, 80, 70, 118, 104, 150, 168];
+      const grd = g.createLinearGradient(0, 360, 0, 560); grd.addColorStop(0, 'rgba(76,141,255,.55)'); grd.addColorStop(1, 'rgba(76,141,255,0)');
+      g.beginPath(); pts.forEach((v, i) => { const x = 80 + i * 36, y = 540 - v; i ? g.lineTo(x, y) : g.moveTo(x, y); });
+      g.lineTo(440, 560); g.lineTo(80, 560); g.closePath(); g.fillStyle = grd; g.fill();
+      g.beginPath(); pts.forEach((v, i) => { const x = 80 + i * 36, y = 540 - v; i ? g.lineTo(x, y) : g.moveTo(x, y); });
+      g.strokeStyle = 'rgba(140,190,255,1)'; g.lineWidth = 5; g.stroke();
+      ['Studio A · 10:30', 'Studio C · 12:00', 'Studio B · 15:45'].forEach((t, i) => {
+        const y = 620 + i * 100;
+        g.strokeStyle = 'rgba(230,245,255,.25)'; g.lineWidth = 2; rr(80, y, 360, 76, 18); g.stroke();
+        g.fillStyle = SPECTRUM[i]; g.beginPath(); g.arc(116, y + 38, 12, 0, Math.PI * 2); g.fill();
+        g.fillStyle = 'rgba(230,245,255,.9)'; g.font = '500 24px "Geist", sans-serif'; g.fillText(t, 146, y + 46);
+      });
+    }
+    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    return t;
+  }
+
+  // ---- The prism: a tall triangular glass column ----
+  const prism = new THREE.Group(); scene.add(prism);
+  const spin = new THREE.Group(); prism.add(spin);
+  const geo = new THREE.CylinderGeometry(1, 1, 1, 3, 1, false);
+  const glass = (side, opacity) => new THREE.MeshPhysicalMaterial({
+    color: 0xcfe6f5, roughness: .02, metalness: 0, envMap: envTex, envMapIntensity: 3.2,
+    clearcoat: 1, clearcoatRoughness: .02, iridescence: .85, iridescenceIOR: 1.45, iridescenceThicknessRange: [180, 620],
+    transparent: true, opacity, side, depthWrite: false, flatShading: true,
+  });
+  const back = new THREE.Mesh(geo, glass(THREE.BackSide, .16)); back.renderOrder = 1; spin.add(back);
+  const front = new THREE.Mesh(geo, glass(THREE.FrontSide, .2)); front.renderOrder = 5; spin.add(front);
+  const core = new THREE.Mesh(new THREE.CylinderGeometry(.82, .82, .96, 3), new THREE.MeshBasicMaterial({ color: 0x1a5266, transparent: true, opacity: .12, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  core.renderOrder = 2; spin.add(core);
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: .75, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  edges.renderOrder = 7; spin.add(edges);
+
+  // Reflection planes, one per side. Side k sits between corners at k*120° and (k+1)*120°.
+  const faces = [0, 1, 2].map(k => {
+    const theta = (k * 2 + 1) * Math.PI / 3; // face normal angle
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(Math.sqrt(3) * .9, .9), new THREE.MeshBasicMaterial({ map: null, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+    m.position.set(Math.sin(theta) * .505, 0, Math.cos(theta) * .505);
+    m.rotation.y = theta; m.renderOrder = 6; spin.add(m);
+    return { mesh: m, normal: new THREE.Vector3(Math.sin(theta), 0, Math.cos(theta)) };
+  });
+
+  // ---- Light beams: additive ribbons with a soft core ----
+  const beamGeo = new THREE.PlaneGeometry(1, 1); beamGeo.translate(.5, 0, 0);
+  function beam(c0, c1, a0, a1, coreK, order) {
+    const mat = new THREE.ShaderMaterial({
+      uniforms: { c0: { value: new THREE.Color(c0) }, c1: { value: new THREE.Color(c1) }, a0: { value: a0 }, a1: { value: a1 }, prog: { value: 0 }, time: { value: 0 }, coreK: { value: coreK } },
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+      fragmentShader: `uniform vec3 c0; uniform vec3 c1; uniform float a0; uniform float a1; uniform float prog; uniform float time; uniform float coreK; varying vec2 vUv;
+        void main(){
+          float y = abs(vUv.y - .5) * 2.0;
+          float glow = exp(-y*y*5.0)*.28 + exp(-y*y*38.0)*.55 + exp(-y*y*520.0)*coreK;
+          float a = mix(a0, a1, vUv.x) * glow;
+          a *= smoothstep(prog, prog - .05, vUv.x);
+          a *= .9 + .1 * sin(time * 1.7 + vUv.x * 18.0);
+          vec3 col = mix(c0, c1, smoothstep(0.0, .35, vUv.x));
+          col = mix(col, vec3(1.0), exp(-y*y*520.0) * .55);
+          gl_FragColor = vec4(col, a);
+        }`,
+      transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+    });
+    const m = new THREE.Mesh(beamGeo, mat); m.renderOrder = order; m.frustumCulled = false; scene.add(m); return m;
+  }
+  function placeBeam(m, p0, p1, width) {
+    const d = new THREE.Vector3().subVectors(p1, p0);
+    m.position.copy(p0); m.rotation.set(0, 0, Math.atan2(d.y, d.x)); m.scale.set(d.length(), width, 1);
+  }
+  const beamIn = beam('#FFF6E8', '#FFFFFF', .22, 1, 1, 3);
+  const beamInside = beam('#FFFFFF', '#E8F1FF', .9, .7, .8, 3);
+  const rays = SPECTRUM.map(c => beam('#FFFFFF', c, .95, .45, .7, 3));
+  const haze = SPECTRUM.map(c => beam(c, c, .22, .02, 0, 2));
+  const entryGlow = sprite('#FFFFFF', .9), exitGlow = sprite('#FFE7F0', .7), floor = sprite('#7FD8FF', .22);
+  const pulses = [];
+  SPECTRUM.forEach((c, i) => { for (let k = 0; k < 3; k++) pulses.push({ s: sprite(c, 0), ray: i, off: k / 3 + i * .07 }); });
+  for (let k = 0; k < 3; k++) pulses.push({ s: sprite('#FFFFFF', 0), ray: -1, off: k / 3 });
+
+  // ---- Dust motes ----
+  const DUST = 240, dpos = new Float32Array(DUST * 3), dgeo = new THREE.BufferGeometry();
+  dgeo.setAttribute('position', new THREE.BufferAttribute(dpos, 3));
+  const dust = new THREE.Points(dgeo, new THREE.PointsMaterial({ map: GLOW, color: 0xd6ecff, size: 6, sizeAttenuation: true, transparent: true, opacity: .45, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  dust.renderOrder = 0; scene.add(dust);
+
+  // ---- Layout: map CSS pixels to world units on the z = 0 plane ----
+  let W = 1, H = 1, P = { x: 0, y: 0 }, PH = 300, PR = 100, entry, exit, origin, anchors = [];
+  const toW = (x, y) => new THREE.Vector3(x - W / 2, H / 2 - y, 0);
+  function layout() {
+    const hr = hero.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+    W = hr.width; H = hr.height;
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.setSize(W, H, false);
+    camera.aspect = W / H;
+    const dist = (H / 2) / Math.tan(THREE.MathUtils.degToRad(15));
+    camera.position.set(0, 0, dist); camera.near = dist * .2; camera.far = dist * 4; camera.updateProjectionMatrix();
+    const narrow = W <= 900;
+    PH = Math.min(sr.height * (narrow ? .66 : .7), sr.width * (narrow ? .8 : 1.15), 460);
+    PR = PH * .33;
+    P = { x: sr.left - hr.left + sr.width * (narrow ? .44 : .5), y: sr.top - hr.top + sr.height * (narrow ? .42 : .44) };
+    prism.position.copy(toW(P.x, P.y));
+    spin.scale.set(PR, PH, PR);
+    const ex = { x: P.x - PR * .5, y: P.y - PH * .04 }, xx = { x: P.x + PR * .45, y: P.y + PH * .03 };
+    entry = toW(ex.x, ex.y); exit = toW(xx.x, xx.y);
+    const ang = THREE.MathUtils.degToRad(narrow ? 40 : 61);
+    origin = toW(ex.x - Math.cos(ang) * 3000, ex.y - Math.sin(ang) * 3000);
+    if (narrow) {
+      anchors = SPECTRUM.map((_, i) => toW(W + 40, xx.y - 110 + i * 55));
+    } else {
+      anchors = stepEls.map(el => { const r = el.querySelector('.dot').getBoundingClientRect(); return toW(r.left - hr.left + r.width / 2, r.top - hr.top + r.height / 2); });
+    }
+    placeBeam(beamIn, origin, entry, 90);
+    placeBeam(beamInside, entry, exit, 34);
+    rays.forEach((m, i) => placeBeam(m, exit, anchors[i], 46));
+    haze.forEach((m, i) => placeBeam(m, exit, anchors[i], 150));
+    entryGlow.position.copy(entry).setZ(5); entryGlow.scale.set(170, 170, 1);
+    exitGlow.position.copy(exit).setZ(5); exitGlow.scale.set(150, 150, 1);
+    floor.position.copy(toW(P.x + PR * .3, P.y + PH * .58)); floor.scale.set(PR * 5, PH * .16, 1);
+    for (let i = 0; i < DUST; i++) { dpos[i * 3] = (Math.random() - .5) * W * 1.1; dpos[i * 3 + 1] = (Math.random() - .5) * H * 1.1; dpos[i * 3 + 2] = (Math.random() - .5) * 400; }
+    dgeo.attributes.position.needsUpdate = true;
+  }
+
+  // ---- Animation ----
+  let mouse = { x: 0, y: 0 }, tilt = { x: 0, y: 0 }, t0 = performance.now(), last = t0, running = true, raf = 0, lastFace = -1;
+  const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const tmpQ = new THREE.Quaternion(), tmpV = new THREE.Vector3(), tmpC = new THREE.Vector3();
+
+  function render(now) {
+    const dt = Math.min(50, now - last); last = now;
+    const t = reduce ? 10 : (now - t0) / 1000;
+    // slow turn: one full revolution about every 54 seconds
+    // idea → plan → product, one side about every 18 seconds
+    spin.rotation.y = reduce ? -.9 : -.6 - t * .116;
+    tilt.x += (mouse.y * .12 - tilt.x) * Math.min(1, dt * .004);
+    tilt.y += (mouse.x * .18 - tilt.y) * Math.min(1, dt * .004);
+    prism.rotation.set(-.2 + tilt.x, tilt.y * .5, -.07 + Math.sin(t * .3) * .01);
+    prism.position.y = toW(P.x, P.y).y + (reduce ? 0 : Math.sin(t * .6) * 4);
+    prism.updateMatrixWorld(true);
+
+    // which side faces the viewer, and how strongly each side reflects
+    spin.getWorldQuaternion(tmpQ);
+    let best = 0, bestD = -2;
+    faces.forEach((f, i) => {
+      tmpV.copy(f.normal).applyQuaternion(tmpQ);
+      f.mesh.getWorldPosition(tmpC);
+      const view = camera.position.clone().sub(tmpC).normalize();
+      const d = tmpV.dot(view);
+      f.mesh.material.opacity = smooth(.25, .93, d) * .8;
+      if (d > bestD) { bestD = d; best = i; }
+    });
+    if (best !== lastFace) { tabs.forEach((s, i) => s.classList.toggle('on', i === best)); lastFace = best; }
+
+    // intro: beam arrives, then rays split out one after another
+    const pIn = reduce ? 1 : smooth(.2, 1.1, t);
+    beamIn.material.uniforms.prog.value = pIn;
+    beamInside.material.uniforms.prog.value = reduce ? 1 : smooth(1.0, 1.35, t);
+    const flicker = .92 + .08 * Math.sin(t * 2.3) * Math.sin(t * 1.3 + 1);
+    entryGlow.material.opacity = .9 * pIn * flicker;
+    exitGlow.material.opacity = .7 * smooth(1.2, 1.5, reduce ? 9 : t);
+    floor.material.opacity = .22 * smooth(1.2, 2, reduce ? 9 : t);
+    let allLit = true;
+    rays.forEach((m, i) => {
+      const p = reduce ? 1 : smooth(1.3 + i * .14, 2.1 + i * .14, t);
+      m.material.uniforms.prog.value = p; haze[i].material.uniforms.prog.value = p;
+      m.material.uniforms.time.value = t + i; haze[i].material.uniforms.time.value = t + i;
+      if (p > .92) stepEls[i].classList.add('lit'); else allLit = false;
+    });
+    beamIn.material.uniforms.time.value = t;
+    if (allLit) { resultEl.classList.add('lit'); }
+    if (allLit && t > 3.2) hero.classList.remove('arming');
+
+    // pulses carry light from the prism to each step
+    pulses.forEach(p => {
+      if (reduce) { p.s.material.opacity = 0; return; }
+      const k = ((t * .28 + p.off) % 1);
+      const a = p.ray < 0 ? origin.clone().lerp(entry, .55 + k * .45) : exit.clone().lerp(anchors[p.ray], k);
+      p.s.position.copy(a).setZ(6);
+      const size = p.ray < 0 ? 26 : 22;
+      p.s.scale.set(size, size, 1);
+      const gate = p.ray < 0 ? pIn : rays[p.ray].material.uniforms.prog.value;
+      p.s.material.opacity = Math.sin(Math.PI * k) * .9 * (gate > .99 ? 1 : 0);
+    });
+
+    // dust drifts upward
+    if (!reduce) {
+      for (let i = 0; i < DUST; i++) { dpos[i * 3 + 1] += dt * .008; if (dpos[i * 3 + 1] > H * .56) dpos[i * 3 + 1] = -H * .56; }
+      dgeo.attributes.position.needsUpdate = true;
+    }
+
+    renderer.render(scene, camera);
+    if (running && !reduce) raf = requestAnimationFrame(render);
+  }
+
+  hero.addEventListener('pointermove', e => {
+    const r = hero.getBoundingClientRect();
+    mouse = { x: (e.clientX - r.left) / r.width - .5, y: (e.clientY - r.top) / r.height - .5 };
+  });
+  hero.addEventListener('pointerleave', () => { mouse = { x: 0, y: 0 }; });
+
+  function start() {
+    faces.forEach((f, k) => { f.mesh.material.map = faceArt(k); f.mesh.material.needsUpdate = true; });
+    layout();
+    if (reduce) { hero.classList.remove('arming'); stepEls.forEach(s => s.classList.add('lit')); render(performance.now()); return; }
+    raf = requestAnimationFrame(render);
+  }
+  new ResizeObserver(() => { layout(); if (reduce) render(performance.now()); }).observe(hero);
+  new IntersectionObserver(([en]) => {
+    const was = running; running = en.isIntersecting;
+    if (running && !was && !reduce) { last = performance.now(); raf = requestAnimationFrame(render); }
+  }).observe(hero);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { running = false; cancelAnimationFrame(raf); }
+    else if (!reduce) { running = true; last = performance.now(); raf = requestAnimationFrame(render); }
+  });
+  // canvas art needs its fonts loaded before it is drawn
+  const want = ['600 74px Caveat', '500 26px "Geist Mono"', '600 30px "Bricolage Grotesque"', '500 24px Geist'];
+  (document.fonts ? Promise.all(want.map(f => document.fonts.load(f))).catch(() => {}) : Promise.resolve()).then(start);
+})();
+</script>
