@@ -13,4 +13,7 @@ Design and mockup phase only. No application code yet.
 - **B · Prism**: luminous depth; one idea refracted into a spectrum of products.
 - **C · Module**: bold, modular grid; real UI fragments as the visual language.
 
-Waiting on direction approval before Phase 3 (high-fidelity mockups).
+## Phase 3 — In progress
+Chosen direction: **B · Prism**, with the reference's violet-black palette.
+
+- `prism-hero.html`: the homepage hero. A canvas renders a white beam that refracts through a glass prism (Snell's law per spectrum slice) and disperses into the brand spectrum. Dust lights up in the beam, the cursor tilts the prism, and the service labels ride their bands. Respects reduced motion and pauses when off screen.

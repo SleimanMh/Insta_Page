@@ -1,0 +1,617 @@
+<title>Innovative Prism Hero</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@300..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: full-bleed hero. Copy holds the left column; the light experiment owns the right and its beam crosses the whole frame.
+   Physically based: a white beam refracts through a glass prism (Snell's law) and disperses into the brand spectrum. Single dark theme by choice. */
+:root {
+  color-scheme: dark;
+  --ink: #06051A;          /* page ground, violet-black */
+  --ink-2: #0D0A2A;        /* lifted surface */
+  --violet: #8B5CF6;       /* primary accent */
+  --orchid: #C084FC;       /* warm end of the spectrum */
+  --indigo: #6366F1;       /* cool mid */
+  --ice: #A5F3FC;          /* cold end, highlights */
+  --pearl: #F4F2FB;        /* text */
+  --haze: #A7A2C3;         /* secondary text */
+  --mute: #6E6990;         /* tertiary */
+  --hair: rgba(196, 181, 253, .14);
+
+  --f-sans: "Onest", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --gutter: clamp(20px, 5vw, 72px);
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--pearl); font-family: var(--f-sans); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 50; background: var(--ink); }
+h1, p { margin: 0; }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--orchid); outline-offset: 3px; border-radius: 999px; }
+
+/* ---------- Hero shell ---------- */
+.hero {
+  position: relative; isolation: isolate; overflow: hidden;
+  min-height: min(900px, max(720px, 100svh));
+  display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: minmax(0, 1fr);
+  background:
+    radial-gradient(60% 70% at 70% 46%, rgba(109, 40, 217, .30), transparent 62%),
+    radial-gradient(40% 45% at 92% 70%, rgba(79, 70, 229, .22), transparent 70%),
+    radial-gradient(50% 60% at 8% 0%, rgba(76, 29, 149, .22), transparent 70%),
+    linear-gradient(180deg, #08061F 0%, var(--ink) 60%, #040312 100%);
+}
+/* film grain: keeps gradients from banding and makes the light feel photographed */
+.hero::after {
+  content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: .09; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+/* soft vignette */
+.hero::before { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(120% 90% at 55% 45%, transparent 55%, rgba(2, 1, 10, .7) 100%); }
+#light { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; display: block; }
+
+/* ---------- Nav ---------- */
+.nav-wrap { position: relative; z-index: 10; padding: 18px var(--gutter) 0; padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: max(var(--gutter), env(safe-area-inset-right, 0px)); }
+.nav {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  padding: 10px 10px 10px 18px; border-radius: 999px;
+  background: rgba(14, 11, 40, .45); border: 1px solid var(--hair);
+  backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 17px; letter-spacing: -.02em; }
+.mark { width: 22px; height: 22px; display: block; }
+.links { display: flex; gap: 4px; }
+.links a { font-size: 14px; color: var(--haze); padding: 8px 14px; border-radius: 999px; transition: color .2s, background .2s; }
+.links a:hover { color: var(--pearl); background: rgba(255,255,255,.05); }
+.links a.on { color: var(--pearl); }
+
+/* ---------- Buttons ---------- */
+.btn { position: relative; display: inline-flex; align-items: center; gap: 10px; font: 500 15px/1 var(--f-sans); padding: 15px 24px; border-radius: 999px; cursor: pointer; border: 0; transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s, background .25s; white-space: nowrap; }
+.btn svg { transition: transform .25s cubic-bezier(.2,.8,.2,1); }
+.btn:hover svg { transform: translateX(3px); }
+.btn-primary {
+  color: #fff;
+  background: linear-gradient(180deg, #A07CFF 0%, #7C4DF4 55%, #6A3BE6 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -1px 0 rgba(0,0,0,.2), 0 0 0 1px rgba(167,139,250,.5), 0 14px 34px -10px rgba(139,92,246,.75);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,.4), inset 0 -1px 0 rgba(0,0,0,.2), 0 0 0 1px rgba(196,181,253,.7), 0 18px 44px -10px rgba(139,92,246,.95); }
+.btn-ghost { color: var(--pearl); background: rgba(255,255,255,.03); box-shadow: inset 0 0 0 1px rgba(196,181,253,.28); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.btn-ghost:hover { background: rgba(196,181,253,.08); box-shadow: inset 0 0 0 1px rgba(196,181,253,.5); }
+.btn-sm { padding: 11px 18px; font-size: 14px; }
+
+/* ---------- Copy ---------- */
+.body {
+  position: relative; z-index: 10; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); align-items: center;
+  padding-block: clamp(40px, 7vh, 88px) clamp(40px, 6vh, 72px);
+  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+}
+.copy { display: grid; gap: 28px; max-width: 600px; }
+.eyebrow { display: inline-flex; align-items: center; gap: 10px; justify-self: start; font-size: 13px; color: var(--haze); padding: 7px 14px 7px 8px; border-radius: 999px; background: rgba(139,92,246,.08); border: 1px solid rgba(196,181,253,.18); }
+.eyebrow .live { display: inline-flex; align-items: center; gap: 6px; font: 500 11px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: #CFFAFE; padding: 5px 8px; border-radius: 999px; background: rgba(34,211,238,.10); }
+.eyebrow .live i { width: 6px; height: 6px; border-radius: 50%; background: #67E8F9; box-shadow: 0 0 0 0 rgba(103,232,249,.6); animation: ping 2.4s ease-out infinite; }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(103,232,249,.55); } 70%, 100% { box-shadow: 0 0 0 7px rgba(103,232,249,0); } }
+h1 {
+  font-weight: 500; font-size: clamp(42px, 6.2vw, 84px); line-height: .98; letter-spacing: -.045em; text-wrap: balance;
+  background: linear-gradient(180deg, #FFFFFF 30%, #CFC8EA 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+h1 em {
+  font-family: var(--f-serif); font-style: italic; font-weight: 400; letter-spacing: -.015em; padding-right: .08em;
+  background: linear-gradient(95deg, #E9B6FF 0%, var(--orchid) 22%, #9B7BFF 52%, #7C8CFF 78%, #A5F3FC 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 28px rgba(167, 139, 250, .35));
+}
+.lede { font-size: clamp(16px, 1.25vw, 18.5px); line-height: 1.6; color: var(--haze); max-width: 46ch; font-weight: 300; }
+.lede b { color: var(--pearl); font-weight: 400; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+.proof { display: flex; flex-wrap: wrap; gap: 14px 28px; padding-top: 8px; }
+.proof div { display: grid; gap: 2px; }
+.proof strong { font-weight: 500; font-size: 22px; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.proof span { font-size: 13px; color: var(--mute); }
+.proof .sep { width: 1px; background: var(--hair); align-self: stretch; }
+
+/* The stage is an empty box: it tells the canvas where the prism lives. */
+.stage { position: relative; align-self: stretch; min-height: 460px; }
+.hint { position: absolute; right: 0; bottom: 6px; display: inline-flex; align-items: center; gap: 8px; font: 400 11px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--mute); }
+.hint svg { opacity: .8; }
+@media (hover: none) { .hint { display: none; } }
+
+/* Band labels ride the dispersed light. Positioned every frame from the physics. */
+.band { position: absolute; left: 0; top: 0; z-index: 11; display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 10px; border-radius: 12px; background: rgba(10, 8, 30, .38); border: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(12px) saturate(160%); -webkit-backdrop-filter: blur(12px) saturate(160%); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 10px 30px -12px rgba(0,0,0,.6); will-change: transform; opacity: 0; transition: opacity .6s ease; pointer-events: auto; cursor: default; }
+.band.on { opacity: 1; }
+.band i { width: 8px; height: 8px; border-radius: 50%; flex: none; box-shadow: 0 0 12px currentColor; background: currentColor; }
+.band b { display: block; font-weight: 500; font-size: 13.5px; letter-spacing: -.01em; white-space: nowrap; }
+.band small { display: block; font: 400 10.5px/1.3 var(--f-mono); color: var(--haze); white-space: nowrap; letter-spacing: .02em; }
+.band:hover { border-color: rgba(255,255,255,.28); }
+
+/* ---------- Trust strip ---------- */
+.trust { position: relative; z-index: 10; display: flex; align-items: center; gap: 36px; padding-block: 22px 26px; padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: max(var(--gutter), env(safe-area-inset-right, 0px)); border-top: 1px solid rgba(196,181,253,.08); background: linear-gradient(180deg, rgba(6,5,26,0), rgba(6,5,26,.6)); }
+.trust > span { font-size: 13px; color: var(--mute); white-space: nowrap; }
+.logos { display: flex; gap: clamp(24px, 4vw, 56px); align-items: center; flex: 1; min-width: 0; overflow: hidden; mask-image: linear-gradient(90deg, #000 85%, transparent); -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); }
+.logos span { font-weight: 600; font-size: 17px; letter-spacing: -.02em; color: #5E5A7E; white-space: nowrap; transition: color .3s; }
+.logos span:hover { color: var(--haze); }
+.logos .serif { font-family: var(--f-serif); font-style: italic; font-weight: 400; font-size: 20px; letter-spacing: 0; }
+.logos .mono { font-family: var(--f-mono); font-weight: 500; font-size: 14px; letter-spacing: .04em; }
+
+/* ---------- Entrance ---------- */
+.rise { animation: rise .9s cubic-bezier(.2,.8,.2,1) both; }
+.d1 { animation-delay: .05s; } .d2 { animation-delay: .15s; } .d3 { animation-delay: .28s; } .d4 { animation-delay: .4s; } .d5 { animation-delay: .52s; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+
+/* ---------- Legend for small screens ---------- */
+.legend { display: none; }
+
+/* ---------- Mockup note ---------- */
+.note { padding: 18px max(var(--gutter), env(safe-area-inset-right, 0px)) 28px max(var(--gutter), env(safe-area-inset-left, 0px)); color: var(--mute); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 6px 24px; justify-content: space-between; }
+
+@media (max-width: 1080px) {
+  .links { display: none; }
+}
+@media (max-width: 900px) {
+  .hero { min-height: 0; }
+  .body { grid-template-columns: minmax(0, 1fr); gap: 8px; padding-block: 44px 8px; }
+  .stage { min-height: 340px; }
+  .band { display: none; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; position: relative; z-index: 10; padding: 0 max(var(--gutter), env(safe-area-inset-right, 0px)) 24px max(var(--gutter), env(safe-area-inset-left, 0px)); }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; padding: 7px 12px; border-radius: 999px; background: rgba(10,8,30,.5); border: 1px solid rgba(255,255,255,.1); }
+  .legend i { width: 7px; height: 7px; border-radius: 50%; }
+  .trust { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .logos { width: 100%; }
+}
+@media (max-width: 520px) {
+  .nav .btn-sm { padding: 10px 14px; font-size: 13px; }
+  .proof .sep { display: none; }
+  .ctas .btn { flex: 1 1 auto; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise, .eyebrow .live i { animation: none; }
+  .btn, .btn svg, .band { transition: none; }
+}
+</style>
+
+<section class="hero" id="hero" aria-label="Innovative">
+  <canvas id="light" aria-hidden="true"></canvas>
+
+  <div class="nav-wrap">
+    <nav class="nav" aria-label="Main">
+      <a class="brand" href="#hero">
+        <svg class="mark" viewBox="0 0 24 24" aria-hidden="true">
+          <defs><linearGradient id="mk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".55" stop-color="#C4B5FD"/><stop offset="1" stop-color="#818CF8"/></linearGradient></defs>
+          <path d="M12 2.5 22 20.5H2Z" fill="none" stroke="url(#mk)" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M12 9.5 16.4 17.5" stroke="#C084FC" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        innovative
+      </a>
+      <div class="links">
+        <a href="#hero" class="on">Services</a><a href="#hero">Work</a><a href="#hero">Process</a><a href="#hero">About</a><a href="#hero">Contact</a>
+      </div>
+      <a class="btn btn-primary btn-sm" href="#hero">Get a Quote</a>
+    </nav>
+  </div>
+
+  <div class="body">
+    <div class="copy">
+      <span class="eyebrow rise d1"><span class="live"><i></i>Open</span>Booking new projects for Q1 2027</span>
+      <h1 class="rise d2">Ideas, <em>refracted</em> into products people rely on.</h1>
+      <p class="lede rise d3">One idea in. Web apps, mobile, AI and cloud out. <b>Innovative designs, builds, launches and maintains</b> the whole product, so you work with one team from first sketch to a stable release.</p>
+      <div class="ctas rise d4">
+        <a class="btn btn-primary" href="#hero">Get a Quote
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="btn btn-ghost" href="#hero">Explore Our Work</a>
+      </div>
+      <div class="proof rise d5">
+        <div><strong>120+</strong><span>products shipped</span></div>
+        <i class="sep"></i>
+        <div><strong>99.98%</strong><span>avg. uptime we run</span></div>
+        <i class="sep"></i>
+        <div><strong>4.9/5</strong><span>from 80+ client reviews</span></div>
+      </div>
+    </div>
+    <div class="stage" id="stage">
+      <span class="hint"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2l8 5-3.5 1L10.5 13 9 13.8 7 9.2 4.5 11.5Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>Move your cursor to bend the light</span>
+    </div>
+  </div>
+
+  <div class="legend" id="legend" aria-hidden="true"></div>
+
+  <div class="trust">
+    <span>Trusted by product teams at</span>
+    <div class="logos">
+      <span>Northwind</span><span class="serif">Halcyon Health</span><span class="mono">PAYSERA/LABS</span><span>Atlas Freight</span><span class="serif">Maison Verre</span><span>Kinetiq</span><span class="mono">ORBITAL</span>
+    </div>
+  </div>
+
+  <!-- Band labels: data-t is the position in the spectrum, 0 = least bent (warm), 1 = most bent (cold) -->
+  <div class="band" data-t=".08"><i></i><div><b>Web Apps</b><small>React · Next.js · Node</small></div></div>
+  <div class="band" data-t=".36"><i></i><div><b>Mobile</b><small>iOS · Android · Flutter</small></div></div>
+  <div class="band" data-t=".64"><i></i><div><b>AI Integration</b><small>LLMs · RAG · agents</small></div></div>
+  <div class="band" data-t=".92"><i></i><div><b>Cloud &amp; DevOps</b><small>AWS · CI/CD · 24/7 ops</small></div></div>
+</section>
+
+<div class="note"><span>Innovative · Hero concept, direction B "Prism" · v2</span><span>Mockup only. Client names and figures are placeholders.</span></div>
+
+<script>
+(() => {
+  const hero = document.getElementById('hero');
+  const stage = document.getElementById('stage');
+  const cv = document.getElementById('light');
+  const ctx = cv.getContext('2d');
+  const bands = [...document.querySelectorAll('.band')];
+  const legend = document.getElementById('legend');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- Brand spectrum: warm orchid (least refracted) to ice (most refracted) ----
+  const STOPS = [
+    [0.00, [255, 122, 214]],
+    [0.18, [217, 120, 255]],
+    [0.40, [150, 104, 255]],
+    [0.60, [108, 112, 255]],
+    [0.78, [64, 150, 255]],
+    [0.92, [56, 214, 250]],
+    [1.00, [170, 246, 255]],
+  ];
+  function col(t) {
+    t = Math.min(1, Math.max(0, t));
+    for (let i = 1; i < STOPS.length; i++) {
+      if (t <= STOPS[i][0]) {
+        const [t0, c0] = STOPS[i - 1], [t1, c1] = STOPS[i];
+        const k = (t - t0) / (t1 - t0);
+        return c0.map((v, j) => Math.round(v + (c1[j] - v) * k));
+      }
+    }
+    return STOPS[STOPS.length - 1][1];
+  }
+  const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+  // Paint label dots and the small-screen legend from the same spectrum
+  bands.forEach(b => {
+    const c = col(parseFloat(b.dataset.t));
+    b.querySelector('i').style.color = rgba(c, 1);
+    const s = document.createElement('span');
+    s.innerHTML = `<i style="background:${rgba(c, 1)}"></i>${b.querySelector('b').textContent}`;
+    legend.appendChild(s);
+  });
+
+  // ---- 2D optics ----
+  const V = (x, y) => ({ x, y });
+  const add = (a, b) => V(a.x + b.x, a.y + b.y);
+  const sub = (a, b) => V(a.x - b.x, a.y - b.y);
+  const mul = (a, k) => V(a.x * k, a.y * k);
+  const dot = (a, b) => a.x * b.x + a.y * b.y;
+  const len = a => Math.hypot(a.x, a.y);
+  const norm = a => mul(a, 1 / len(a));
+  const rot = (a, r) => V(a.x * Math.cos(r) - a.y * Math.sin(r), a.x * Math.sin(r) + a.y * Math.cos(r));
+  const lerp = (a, b, k) => V(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k);
+
+  // Snell refraction. I: unit incident, N: unit normal on the incident side, eta = n1/n2.
+  function refract(I, N, eta) {
+    const ci = -dot(I, N);
+    const k = 1 - eta * eta * (1 - ci * ci);
+    if (k < 0) return null; // total internal reflection
+    return norm(add(mul(I, eta), mul(N, eta * ci - Math.sqrt(k))));
+  }
+  function hit(P, d, A, B) {
+    const e = sub(B, A), den = d.x * e.y - d.y * e.x;
+    if (Math.abs(den) < 1e-9) return null;
+    const t = ((A.x - P.x) * e.y - (A.y - P.y) * e.x) / den;
+    return add(P, mul(d, t));
+  }
+  function outward(A, B, c) {
+    const e = sub(B, A); let n = norm(V(e.y, -e.x));
+    if (dot(n, sub(lerp(A, B, .5), c)) < 0) n = mul(n, -1);
+    return n;
+  }
+
+  const N_MIN = 1.50, N_MAX = 1.745, SLICES = 56;   // dispersion exaggerated for legibility
+  const PHI0 = -26 * Math.PI / 180;                  // resting tilt: beam rises steeply from below, spectrum leaves almost level
+  const FAN = 2.3;                                   // widen the physical fan so each band reads
+
+  let W = 0, H = 0, dpr = 1, S = 0, C = V(0, 0), D_IN = V(1, 0), RAY_P = V(0, 0), DEPTH = V(0, 0);
+  let phi = PHI0, phiTarget = PHI0, mouse = null;
+  let particles = [];
+
+  function prism(angle) {
+    const r = S / Math.sqrt(3);
+    const base = [V(0, -r), V(-S / 2, r / 2), V(S / 2, r / 2)];
+    return base.map(p => add(C, rot(p, angle)));
+  }
+
+  function layout() {
+    const hr = hero.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+    W = hr.width; H = hr.height; dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    const sx = sr.left - hr.left, sy = sr.top - hr.top, narrow = W < 900;
+    S = Math.max(140, Math.min(sr.width * (narrow ? .46 : .44), sr.height * .6, 320));
+    C = V(sx + sr.width * (narrow ? .38 : .40), sy + sr.height * (narrow ? .50 : .50));
+    DEPTH = V(S * .085, -S * .05);
+    // Fix the incoming ray at the resting pose, aimed for minimum deviation at the mid index.
+    const [A, B] = prism(PHI0);
+    const nIn = mul(outward(A, B, C), -1);
+    const nMid = (N_MIN + N_MAX) / 2;
+    const i = Math.asin(Math.min(.999, nMid * Math.sin(Math.PI / 6)));
+    D_IN = norm(rot(nIn, -i));
+    RAY_P = lerp(A, B, .52);
+    seed();
+  }
+
+  function seed() {
+    const n = Math.round(Math.min(220, (W * H) / 6500));
+    particles = Array.from({ length: n }, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      vx: (Math.random() - .5) * .12, vy: -.04 - Math.random() * .12,
+      r: .5 + Math.random() * 1.3, tw: Math.random() * Math.PI * 2,
+    }));
+  }
+
+  // Trace the beam through the prism for every slice of the spectrum.
+  function trace(angle) {
+    const [A, B, Cc] = prism(angle);
+    const E = hit(RAY_P, D_IN, A, B);
+    const nAB = outward(A, B, C), nAC = outward(A, Cc, C);
+    const rays = [];
+    for (let k = 0; k < SLICES; k++) {
+      const t = k / (SLICES - 1), n = N_MIN + (N_MAX - N_MIN) * t;
+      const inside = refract(D_IN, nAB, 1 / n); if (!inside) continue;
+      const X = hit(E, inside, A, Cc); if (!X) continue;
+      const out = refract(inside, mul(nAC, -1), n); if (!out) continue;
+      rays.push({ t, X, o: out });
+    }
+    // Keep the physical order and the response to tilt, but open the fan up.
+    if (rays.length > 1) {
+      const mid = rays[rays.length >> 1].o, am = Math.atan2(mid.y, mid.x);
+      for (const r of rays) r.o = rot(mid, (Math.atan2(r.o.y, r.o.x) - am) * FAN);
+    }
+    return { A, B, Cc, E, rays };
+  }
+
+  // ---------- drawing ----------
+  function strokeGlow(P, Q, layers, fadeFrom) {
+    ctx.lineCap = 'butt';
+    for (const [w, a, tint] of layers) {
+      const g = ctx.createLinearGradient(P.x, P.y, Q.x, Q.y);
+      g.addColorStop(0, rgba(tint, a * fadeFrom));
+      g.addColorStop(.7, rgba(tint, a * .9));
+      g.addColorStop(1, rgba(tint, a));
+      ctx.strokeStyle = g; ctx.lineWidth = w;
+      ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(Q.x, Q.y); ctx.stroke();
+    }
+  }
+  function radial(P, r, stops) {
+    const g = ctx.createRadialGradient(P.x, P.y, 0, P.x, P.y, r);
+    stops.forEach(([o, c]) => g.addColorStop(o, c));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(P.x, P.y, r, 0, Math.PI * 2); ctx.fill();
+  }
+  function streak(P, w, h, a, tint, angle = 0) {
+    ctx.save(); ctx.translate(P.x, P.y); ctx.rotate(angle);
+    const g = ctx.createLinearGradient(-w, 0, w, 0);
+    g.addColorStop(0, rgba(tint, 0)); g.addColorStop(.5, rgba(tint, a)); g.addColorStop(1, rgba(tint, 0));
+    ctx.fillStyle = g; ctx.fillRect(-w, -h / 2, w * 2, h); ctx.restore();
+  }
+  function poly(pts) { ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y); ctx.closePath(); }
+
+  const WHITE = [255, 255, 255], LAV = [214, 204, 255];
+
+  function draw(time, intro) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    const tr = trace(phi);
+    if (!tr.E || tr.rays.length < 2) return;
+    const { A, B, Cc, E, rays } = tr;
+    const Ab = add(A, DEPTH), Bb = add(B, DEPTH), Cb = add(Cc, DEPTH);
+    const shimmer = reduce ? 1 : .92 + .08 * Math.sin(time * .0021) * Math.sin(time * .0013 + 1.3);
+
+    const pIn = Math.min(1, intro / .45);
+    const pOut = Math.max(0, Math.min(1, (intro - .4) / .6));
+    const O = sub(E, mul(D_IN, Math.hypot(W, H) * 1.2));
+    const Ein = lerp(O, E, pIn);
+
+    // 1. glass behind the light: back face and depth edges
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.lineWidth = 1;
+    poly([Ab, Bb, Cb]); ctx.fillStyle = 'rgba(150,120,255,.05)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(220,210,255,.08)'; ctx.stroke();
+    ctx.strokeStyle = 'rgba(220,210,255,.16)';
+    [[A, Ab], [B, Bb], [Cc, Cb]].forEach(([p, q]) => { ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke(); });
+
+    ctx.globalCompositeOperation = 'lighter';
+
+    // 2. incoming white beam: stacked strokes give a soft volumetric falloff
+    strokeGlow(O, Ein, [[140, .014, LAV], [80, .022, LAV], [40, .04, LAV], [18, .07, WHITE], [8, .16, WHITE], [3.4, .5 * shimmer, WHITE], [1.5, .95, WHITE]], .2);
+
+    // 3. dust motes lit by the beam and the spectrum (Tyndall effect)
+    const r0 = rays[0], r1 = rays[rays.length - 1];
+    const Xm = lerp(r0.X, r1.X, .5);
+    const a0 = Math.atan2(r0.o.y, r0.o.x), a1 = Math.atan2(r1.o.y, r1.o.x);
+    const reach = Math.max(200, (W - Xm.x) * 1.25) * pOut;
+    for (const p of particles) {
+      let lit = 0, c = WHITE;
+      // distance to the incoming beam
+      const v = sub(p, O), along = dot(v, D_IN), L = len(sub(Ein, O));
+      if (along > 0 && along < L) {
+        const perp = Math.abs(v.x * D_IN.y - v.y * D_IN.x);
+        lit = Math.exp(-(perp * perp) / (2 * 16 * 16)) * (.25 + .75 * along / L);
+      }
+      // inside the dispersed fan
+      const w = sub(p, Xm), dist = len(w);
+      if (dist > 4 && dist < reach) {
+        const t = (Math.atan2(w.y, w.x) - a0) / (a1 - a0);
+        if (t > -.04 && t < 1.04) {
+          const edge = Math.min(1, Math.min(t + .04, 1.04 - t) * 12);
+          const l2 = edge * (1 - dist / reach) * 1.1;
+          if (l2 > lit) { lit = l2; c = col(t); }
+        }
+      }
+      if (lit < .03) continue;
+      const tw = .55 + .45 * Math.sin(p.tw + time * .003);
+      ctx.fillStyle = rgba(c, Math.min(1, lit * tw * .9));
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (1 + lit * .6), 0, Math.PI * 2); ctx.fill();
+    }
+
+    // 4. dispersed spectrum
+    if (pOut > 0) {
+      const reachOf = r => Math.max(260, ((W + 40) - r.X.x) / Math.max(.25, r.o.x)) * (.15 + .85 * pOut);
+      // 4a. wide haze: softens the outer edges like light scattering in air
+      for (let k = 0; k < rays.length - 1; k += 4) {
+        const a = rays[k], b = rays[Math.min(rays.length - 1, k + 4)];
+        const spread = .05;
+        const oa = rot(a.o, -spread), ob = rot(b.o, spread);
+        const L = reachOf(a) * .95, mid = lerp(a.X, b.X, .5);
+        const g = ctx.createLinearGradient(mid.x, mid.y, mid.x + a.o.x * L, mid.y + a.o.y * L);
+        const c = col((a.t + b.t) / 2);
+        g.addColorStop(0, rgba(c, .10 * shimmer)); g.addColorStop(.5, rgba(c, .05)); g.addColorStop(1, rgba(c, 0));
+        ctx.fillStyle = g;
+        poly([a.X, b.X, add(b.X, mul(ob, L)), add(a.X, mul(oa, L))]); ctx.fill();
+      }
+      // 4b. crisp bands
+      for (let k = 0; k < rays.length - 1; k++) {
+        const a = rays[k], b = rays[k + 1];
+        const L = reachOf(a), mid = lerp(a.X, b.X, .5);
+        const c = col((a.t + b.t) / 2);
+        const edge = Math.min(1, Math.min(a.t, 1 - b.t) * 9 + .35);
+        const g = ctx.createLinearGradient(mid.x, mid.y, mid.x + a.o.x * L, mid.y + a.o.y * L);
+        g.addColorStop(0, rgba(c, .75 * edge));
+        g.addColorStop(.18, rgba(c, .5 * edge * shimmer));
+        g.addColorStop(.6, rgba(c, .2 * edge));
+        g.addColorStop(1, rgba(c, 0));
+        ctx.fillStyle = g;
+        poly([a.X, b.X, add(b.X, mul(b.o, L)), add(a.X, mul(a.o, L))]); ctx.fill();
+      }
+      // 4c. faint light shafts drifting inside the fan
+      if (!reduce) {
+        for (let s = 0; s < 5; s++) {
+          const t = (.15 + .7 * ((s * .37 + time * .00003 * (s + 1)) % 1));
+          const i = Math.round(t * (rays.length - 1)), r = rays[i];
+          const L = reachOf(r) * .8;
+          const g = ctx.createLinearGradient(r.X.x, r.X.y, r.X.x + r.o.x * L, r.X.y + r.o.y * L);
+          g.addColorStop(0, rgba(WHITE, .10)); g.addColorStop(1, rgba(WHITE, 0));
+          ctx.strokeStyle = g; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(r.X.x, r.X.y); ctx.lineTo(r.X.x + r.o.x * L, r.X.y + r.o.y * L); ctx.stroke();
+        }
+      }
+    }
+
+    // 5. glass faces over the light
+    ctx.globalCompositeOperation = 'source-over';
+    const gf = ctx.createLinearGradient(A.x, A.y - S * .2, Cc.x, Cc.y);
+    gf.addColorStop(0, 'rgba(255,255,255,.13)'); gf.addColorStop(.45, 'rgba(200,185,255,.035)'); gf.addColorStop(1, 'rgba(130,100,255,.11)');
+    poly([A, B, Cc]); ctx.fillStyle = gf; ctx.fill();
+    const gs = ctx.createLinearGradient(A.x, A.y, Cb.x, Cb.y);
+    gs.addColorStop(0, 'rgba(255,255,255,.07)'); gs.addColorStop(1, 'rgba(120,100,255,.02)');
+    poly([A, Ab, Cb, Cc]); ctx.fillStyle = gs; ctx.fill();
+
+    ctx.globalCompositeOperation = 'lighter';
+    // 6. light travelling inside the glass, already starting to split
+    if (pIn >= 1) {
+      const gi = ctx.createLinearGradient(E.x, E.y, Xm.x, Xm.y);
+      gi.addColorStop(0, 'rgba(255,255,255,.75)'); gi.addColorStop(1, rgba(col(.45), .55));
+      poly([E, r0.X, r1.X]); ctx.fillStyle = gi; ctx.fill();
+      strokeGlow(E, Xm, [[14, .08, LAV], [5, .16, WHITE]], 1);
+      // the face where light enters glows
+      ctx.save(); poly([A, B, Cc]); ctx.clip();
+      radial(E, S * .55, [[0, 'rgba(230,220,255,.22)'], [1, 'rgba(230,220,255,0)']]);
+      radial(Xm, S * .45, [[0, rgba(col(.4), .2)], [1, rgba(col(.4), 0)]]);
+      ctx.restore();
+      // entry and exit flares
+      radial(E, 46, [[0, 'rgba(255,255,255,.85)'], [.15, 'rgba(240,235,255,.35)'], [1, 'rgba(200,180,255,0)']]);
+      streak(E, 150, 1.4, .45 * shimmer, WHITE);
+      streak(E, 60, 1, .25, LAV, Math.PI / 2);
+      if (pOut > 0) {
+        radial(Xm, 60 * pOut, [[0, 'rgba(255,255,255,.5)'], [.2, rgba(col(.3), .25)], [1, rgba(col(.6), 0)]]);
+        streak(Xm, 120, 1.2, .3 * pOut, col(.5));
+      }
+    } else {
+      radial(Ein, 18, [[0, 'rgba(255,255,255,.9)'], [1, 'rgba(255,255,255,0)']]);
+    }
+
+    // 7. edges: bright front edges, chromatic fringing, moving specular glint
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.shadowColor = 'rgba(220,210,255,.55)'; ctx.shadowBlur = 10;
+    const edges = [[A, B, .95, .35], [A, Cc, .95, .4], [B, Cc, .4, .3]];
+    for (const [p, q, ap, aq] of edges) {
+      const g = ctx.createLinearGradient(p.x, p.y, q.x, q.y);
+      g.addColorStop(0, `rgba(255,255,255,${ap})`); g.addColorStop(1, `rgba(220,210,255,${aq})`);
+      ctx.strokeStyle = g; ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineWidth = 1;
+    [[V(-.8, 0), 'rgba(255,90,200,.28)'], [V(.8, .3), 'rgba(80,220,255,.28)']].forEach(([off, c]) => {
+      ctx.strokeStyle = c; poly([add(A, off), add(B, off), add(Cc, off)]); ctx.stroke();
+    });
+    // glint sweeping the leading edge
+    const gl = reduce ? .3 : (time * .00018) % 1.6;
+    if (gl < 1) {
+      const P = lerp(A, Cc, gl);
+      radial(P, 12, [[0, 'rgba(255,255,255,.5)'], [1, 'rgba(255,255,255,0)']]);
+    }
+    radial(A, 12, [[0, 'rgba(255,255,255,.3)'], [1, 'rgba(255,255,255,0)']]);
+    ctx.globalCompositeOperation = 'source-over';
+
+    // 8. labels ride their band
+    placeLabels(rays, pOut);
+  }
+
+  function placeLabels(rays, pOut) {
+    if (W < 900) return;
+    const Xm = lerp(rays[0].X, rays[rays.length - 1].X, .5);
+    const spread = Math.abs(Math.atan2(rays[rays.length - 1].o.y, rays[rays.length - 1].o.x) - Math.atan2(rays[0].o.y, rays[0].o.x));
+    // distance where neighbouring labels clear each other vertically
+    const need = 56 / Math.max(.05, spread * .28);
+    const room = (W - Xm.x) - 150;
+    const D = Math.max(Math.min(240, room), Math.min(Math.max(need, 240), room));
+    bands.forEach(b => {
+      const t = parseFloat(b.dataset.t);
+      const r = rays[Math.round(t * (rays.length - 1))];
+      const P = add(r.X, mul(r.o, D));
+      const w = b.offsetWidth, h = b.offsetHeight;
+      const x = Math.min(W - w - 16, P.x - w / 2), y = P.y - h / 2;
+      b.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
+      b.classList.toggle('on', pOut > .85);
+    });
+  }
+
+  // ---------- loop ----------
+  let start = performance.now(), last = start, running = true, raf = 0;
+  function frame(now) {
+    const dt = Math.min(50, now - last); last = now;
+    const intro = reduce ? 1 : Math.min(1, (now - start) / 1800);
+    const idle = reduce ? 0 : Math.sin(now * .00035) * .018 + Math.sin(now * .00011) * .01;
+    const m = mouse ? (mouse.x - .5) * .11 + (mouse.y - .5) * .05 : 0;
+    phiTarget = PHI0 + idle + m;
+    phi += (phiTarget - phi) * Math.min(1, dt * .004);
+    if (!reduce) for (const p of particles) {
+      p.x += p.vx * dt * .06; p.y += p.vy * dt * .06;
+      if (p.y < -4) { p.y = H + 4; p.x = Math.random() * W; }
+      if (p.x < -4) p.x = W + 4; else if (p.x > W + 4) p.x = -4;
+    }
+    draw(now, intro);
+    if (running && !reduce) raf = requestAnimationFrame(frame);
+  }
+
+  function boot() {
+    layout();
+    if (reduce) { draw(0, 1); return; }
+    cancelAnimationFrame(raf); raf = requestAnimationFrame(frame);
+  }
+
+  hero.addEventListener('pointermove', e => {
+    const r = hero.getBoundingClientRect();
+    mouse = { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
+  });
+  hero.addEventListener('pointerleave', () => { mouse = null; });
+
+  new ResizeObserver(() => { layout(); if (reduce) draw(0, 1); }).observe(hero);
+  new IntersectionObserver(([en]) => {
+    const was = running; running = en.isIntersecting;
+    if (running && !was && !reduce) { last = performance.now(); raf = requestAnimationFrame(frame); }
+  }).observe(hero);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { running = false; cancelAnimationFrame(raf); }
+    else if (!reduce) { running = true; last = performance.now(); raf = requestAnimationFrame(frame); }
+  });
+
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(boot);
+})();
+</script>
