@@ -52,3 +52,9 @@ Feedback: back to the prism, but smooth, cute and innovative; name confirmed as 
 - Glass shading reflects a small studio (softbox, strip light, key light) with a Fresnel falloff; rainbow bands cross the facets where dispersed light hits them.
 - Inside: the beam crosses and starts to split, faint light bounces off the back faces, and specks in the glass twinkle. Lens starbursts mark the entry, exit and the brightest corners.
 - It stands on a glossy floor with its mirrored reflection, a rainbow caustic and a cool light pool around the base.
+
+### v9 — Separate rays, gentle sparkles, drag to spin
+- Outgoing light is five soft rays in lighter pastels with dark gaps between them; they leave the glass merged as white and separate as they travel. Fan coordinates are computed per pixel, so ray edges stay smooth.
+- Sparkles cut to ~56, riding the rays and fading in and out smoothly (no flashing).
+- Step cards show titles only; "Your product, live" keeps just its title.
+- Drag (or swipe) the pyramid to spin it, with inertia and a slow idle turn; a tap without dragging still wobbles it with a sparkle burst. Light is traced in a non-spinning frame so it stays correct at any angle.
