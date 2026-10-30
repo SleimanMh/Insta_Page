@@ -1,9 +1,12 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
+import Lenis from 'lenis';
 import { SNAPS, StoryState, clamp, stageCenter, stateFromProgress } from './progress';
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+// one clock for everything: smooth scroll, scroll progress and the story state advance together
+gsap.ticker.lagSmoothing(0);
 
 export type Mode = 'wide' | 'stack';
 
@@ -38,8 +41,8 @@ class StoryController {
   canvasWrapEl: HTMLElement | null = null;
   navEl: HTMLElement | null = null;
 
-  private raf = 0;
-  private last = 0;
+  private running = false;
+  private lenis: Lenis | null = null;
   private listeners = new Set<() => void>();
   private trigger: ScrollTrigger | null = null;
   private onStackScroll = () => this.setTarget(this.stackProgress());
@@ -77,10 +80,14 @@ class StoryController {
 
   // ---- Scroll binding ----
   bindScroll() {
-    this.trigger?.kill(); this.trigger = null;
-    window.removeEventListener('scroll', this.onStackScroll);
-    window.removeEventListener('resize', this.onStackScroll);
+    this.unbind();
     if (!this.root) return;
+    gsap.ticker.add(this.step); this.running = true;
+    // smooth wheel scrolling on desktop; touch keeps its native momentum, reduced motion keeps plain scrolling
+    if (this.mode === 'wide' && !this.reduce && this.finePointer) {
+      this.lenis = new Lenis({ lerp: .09, wheelMultiplier: .9, smoothWheel: true });
+      this.lenis.on('scroll', ScrollTrigger.update);
+    }
     if (this.mode === 'wide') {
       this.trigger = ScrollTrigger.create({
         trigger: this.root, start: 'top top', end: 'bottom bottom',
@@ -99,7 +106,8 @@ class StoryController {
     this.trigger?.kill(); this.trigger = null;
     window.removeEventListener('scroll', this.onStackScroll);
     window.removeEventListener('resize', this.onStackScroll);
-    cancelAnimationFrame(this.raf); this.raf = 0;
+    this.lenis?.destroy(); this.lenis = null;
+    if (this.running) { gsap.ticker.remove(this.step); this.running = false; }
   }
 
   /** Stacked layout: progress follows whichever block is passing the reading line. */
@@ -125,28 +133,26 @@ class StoryController {
     p = clamp(p);
     if (this.reduce) p = SNAPS.reduce((a, b) => (Math.abs(b - p) < Math.abs(a - p) ? b : a));
     this.target = p;
-    this.kick();
   }
 
   setHover(i: number) { this.hover = i; this.invalidate?.(); }
   setPointer(x: number, y: number) { this.pointer.x = x; this.pointer.y = y; this.invalidate?.(); }
 
-  kick() {
-    if (!this.raf) { this.last = performance.now(); this.raf = requestAnimationFrame(this.tick); }
-  }
-
-  private tick = (now: number) => {
-    this.raf = 0;
-    const dt = Math.min(.05, (now - this.last) / 1000); this.last = now;
+  /** Advance once per frame on the shared GSAP ticker. Does nothing once everything has settled. */
+  private step = (_time: number, deltaMs: number) => {
+    this.lenis?.raf(performance.now());
+    if (this.shown === this.target) return;
+    const dt = Math.min(.05, deltaMs / 1000);
     if (this.reduce) this.shown = this.target;
     else {
-      this.shown += (this.target - this.shown) * (1 - Math.exp(-dt * 7));
-      if (Math.abs(this.target - this.shown) < .0002) this.shown = this.target;
+      // with smooth scrolling already easing the page, follow it closely; without it, ease a little more
+      const rate = this.lenis ? 20 : 11;
+      this.shown += (this.target - this.shown) * (1 - Math.exp(-dt * rate));
+      if (Math.abs(this.target - this.shown) < .00005) this.shown = this.target;
     }
     this.state = stateFromProgress(this.shown);
     this.apply();
     this.invalidate?.();
-    if (this.shown !== this.target) this.kick();
   };
 
   private apply() {
@@ -176,7 +182,9 @@ class StoryController {
       const y = top + target * range;
       if (this.reduce) { window.scrollTo(0, y); return; }
       const distance = Math.abs(window.scrollY - y) / window.innerHeight;
-      gsap.to(window, { duration: clamp(.45 + distance * .25, .5, 1.6), ease: 'power2.inOut', scrollTo: { y, autoKill: true }, overwrite: true });
+      const duration = clamp(.45 + distance * .25, .5, 1.6);
+      if (this.lenis) this.lenis.scrollTo(y, { duration, easing: t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2) });
+      else gsap.to(window, { duration, ease: 'power2.inOut', scrollTo: { y, autoKill: true }, overwrite: true });
     } else {
       const el = i < 0 ? this.heroEl : i > 5 ? this.finalEl : this.stageEls[i];
       if (!el) return;

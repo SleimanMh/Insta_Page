@@ -26,9 +26,13 @@ const glintMaterial = () => new THREE.ShaderMaterial({
 });
 
 function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolean }) {
-  const { camera, gl, scene, size, invalidate } = useThree();
+  const { camera, gl, scene, size, invalidate, setDpr } = useThree();
   const born = useRef(performance.now());
   const parallax = useRef({ x: 0, y: 0 });
+  // layout reads are expensive mid-scroll; the leader's label position is cached and refreshed sparingly
+  const labelCache = useRef({ stage: -1, at: 0, x: 0, y: 0 });
+  // adaptive quality: if frames run long, step the resolution down (and bloom off) rather than stutter
+  const quality = useRef({ avg: 16, slow: 0, level: 0 });
 
   // ---------------------------------------------------------------- build once
   const world = useMemo(() => {
@@ -104,7 +108,13 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     };
   }, [world, post, invalidate, onReady]);
 
-  const v = useMemo(() => ({ a: new THREE.Vector3(), b: new THREE.Vector3(), c: new THREE.Vector3(), d: new THREE.Vector3(), m: new THREE.Matrix4(), s: new THREE.Matrix4(), q: new THREE.Quaternion(), up: new THREE.Vector3(0, 1, 0) }), []);
+  const v = useMemo(() => ({
+    a: new THREE.Vector3(), b: new THREE.Vector3(), c: new THREE.Vector3(), d: new THREE.Vector3(),
+    start: new THREE.Vector3(), mid: new THREE.Vector3(), end: new THREE.Vector3(), cs: new THREE.Vector3(), ce: new THREE.Vector3(),
+    m: new THREE.Matrix4(), s: new THREE.Matrix4(), q: new THREE.Quaternion(), up: new THREE.Vector3(0, 1, 0),
+    launch: Array.from({ length: 32 }, () => new THREE.Vector3()), ring: Array.from({ length: 97 }, () => new THREE.Vector3()),
+  }), []);
+  useEffect(() => { labelCache.current.stage = -1; }, [size]);
 
   // ---------------------------------------------------------------- every frame (only when invalidated)
   useFrame((_, delta) => {
@@ -112,6 +122,17 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     const cam = camera as THREE.PerspectiveCamera;
     const dt = Math.min(.05, delta);
     let busy = false;
+
+    const q = quality.current;
+    if (delta > 0 && delta < .25) {
+      q.avg += (delta * 1000 - q.avg) * .08;
+      q.slow = q.avg > 24 ? q.slow + 1 : 0;
+      if (q.slow > 45 && q.level < 2) {
+        q.level++; q.slow = 0;
+        setDpr(q.level === 1 ? 1.25 : 1);
+        if (q.level === 2) post.bloom.enabled = false;
+      }
+    }
 
     const reveal = reduce ? 1 : clamp((performance.now() - born.current) / 1000);   // short, non-blocking light reveal
     if (reveal < 1) busy = true;
@@ -172,14 +193,16 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     });
 
     // the beam enters from the left, crosses every layer and fades after the last
-    const first = Math.min(...poses.map(p => p.pos[2])) - SLAB_DEPTH, last = Math.max(...poses.map(p => p.pos[2])) + SLAB_DEPTH / 2;
+    let minZ = Infinity, maxZ = -Infinity;
+    for (const p of poses) { minZ = Math.min(minZ, p.pos[2]); maxZ = Math.max(maxZ, p.pos[2]); }
+    const first = minZ - SLAB_DEPTH, last = maxZ + SLAB_DEPTH / 2;
     const toWorld = (x: number, y: number, z: number, out: THREE.Vector3) => out.set(x, y, z).applyMatrix4(root.matrixWorld);
     const lead = 1.0 + 2.4 * smooth(.2, .8, s.open);   // beside the hero copy, not across it
-    const start = toWorld(0, BEAM_Y, first - lead, v.a).clone(), mid = toWorld(0, BEAM_Y, last, v.b).clone();
-    const end = toWorld(0, BEAM_Y, last + 2.6 - 1.9 * s.process, v.c).clone();
+    const start = toWorld(0, BEAM_Y, first - lead, v.start), mid = toWorld(0, BEAM_Y, last, v.mid);
+    const end = toWorld(0, BEAM_Y, last + 2.6 - 1.9 * s.process, v.end);
     world.glowIn.update([start, mid], cam, .006, .016); world.glowIn.uniforms.prog.value = reveal;
     world.glowOut.update([mid, end], cam, .016, .01); world.glowOut.uniforms.prog.value = smooth(.6, 1, reveal);
-    const cs = start.clone().lerp(mid, .3), ce = mid.clone().lerp(end, .25);
+    const cs = v.cs.copy(start).lerp(mid, .3), ce = v.ce.copy(mid).lerp(end, .25);
     const dir = v.d.subVectors(ce, cs), len = dir.length() * reveal;
     dir.normalize();
     world.core.position.copy(cs).addScaledVector(dir, len / 2);
@@ -202,22 +225,21 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     // launch path and the return ring
     const pa = paths(s);
     if (pa.launch > .01) {
-      const pts: THREE.Vector3[] = [];
       for (let i = 0; i < 32; i++) {
         const t = i / 31;
-        pts.push(toWorld(pp.pos[0] - .05 * t, pp.pos[1] + pp.h * .1 + Math.pow(t, 1.6) * .55, pp.pos[2] + .05 + t * 2.4, new THREE.Vector3()));
+        toWorld(pp.pos[0] - .05 * t, pp.pos[1] + pp.h * .1 + Math.pow(t, 1.6) * .55, pp.pos[2] + .05 + t * 2.4, v.launch[i]);
       }
-      world.launch.update(pts, cam, .01, .018);
+      world.launch.update(v.launch, cam, .01, .018);
       world.launch.uniforms.prog.value = pa.launch;
     }
     world.launch.mesh.visible = pa.launch > .01;
     if (pa.ring > .01) {
-      const rz = 1.0 + pa.ringOpen * 1.0, rx = .8 + pa.ringOpen * .2, pts: THREE.Vector3[] = [];
+      const rz = 1.0 + pa.ringOpen * 1.0, rx = .8 + pa.ringOpen * .2;
       for (let i = 0; i <= 96; i++) {
         const ang = Math.PI * .5 + (i / 96) * Math.PI * 2;
-        pts.push(toWorld(rx * Math.sin(ang), .02 + .1 * Math.sin(ang), rz * Math.cos(ang), new THREE.Vector3()));
+        toWorld(rx * Math.sin(ang), .02 + .1 * Math.sin(ang), rz * Math.cos(ang), v.ring[i]);
       }
-      world.ring.update(pts, cam, .01, .01);
+      world.ring.update(v.ring, cam, .01, .01);
       world.ring.uniforms.prog.value = pa.ring;
     }
     world.ring.mesh.visible = pa.ring > .01;
@@ -230,9 +252,13 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       if (label) {
         world.slabs[s.stage].g.localToWorld(v.d.set(0, APEX_Y + .03, 0)).project(cam);
         const ax = (v.d.x * .5 + .5) * size.width, ay = (-v.d.y * .5 + .5) * size.height;
-        const r = label.getBoundingClientRect(), host = gl.domElement.getBoundingClientRect();
+        const lc = labelCache.current, now = performance.now();
+        if (lc.stage !== s.stage || now - lc.at > 400) {
+          const r = label.getBoundingClientRect(), host = gl.domElement.getBoundingClientRect();
+          lc.stage = s.stage; lc.at = now; lc.x = r.left - host.left - 18; lc.y = r.top - host.top + r.height / 2;
+        }
         leader.line.setAttribute('x1', ax.toFixed(1)); leader.line.setAttribute('y1', ay.toFixed(1));
-        leader.line.setAttribute('x2', (r.left - host.left - 18).toFixed(1)); leader.line.setAttribute('y2', (r.top - host.top + r.height / 2).toFixed(1));
+        leader.line.setAttribute('x2', lc.x.toFixed(1)); leader.line.setAttribute('y2', lc.y.toFixed(1));
         leader.dot.setAttribute('cx', ax.toFixed(1)); leader.dot.setAttribute('cy', ay.toFixed(1));
         leader.line.parentElement!.style.opacity = (smooth(.6, 1, s.process) * (1 - s.tr * 5)).toFixed(3);
       } else leader.line.parentElement!.style.opacity = '0';
@@ -265,7 +291,7 @@ export default function Scene({ onReady }: { onReady: () => void }) {
   return (
     <Canvas
       frameloop="demand"
-      dpr={[1, lowCost ? 1.25 : 1.75]}
+      dpr={[1, lowCost ? 1.25 : 1.5]}
       gl={{ antialias: false, alpha: false, powerPreference: 'high-performance' }}
       camera={{ fov: FOV, position: [0, .4, 4.4], near: .1, far: 80 }}
       aria-hidden="true"
