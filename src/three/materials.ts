@@ -75,7 +75,7 @@ export function crystalMaterial(back: boolean, tri: THREE.Vector2[], seed: numbe
     uniforms: {
       hl: { value: 0 }, reveal: { value: 0 }, beamY: { value: 0 }, side: { value: back ? .5 : 1 }, fade: { value: 1 },
       triA: { value: tri[0] }, triB: { value: tri[1] }, triC: { value: tri[2] },
-      radiant: { value: 0 }, glowC: { value: new THREE.Vector2(0, -.17) }, seed: { value: seed },
+      radiant: { value: 0 }, glowC: { value: new THREE.Vector2(0, -.17) }, seed: { value: seed }, etch: { value: 0 },
     },
     vertexShader: slabVertex,
     fragmentShader: /* glsl */`
@@ -85,7 +85,7 @@ export function crystalMaterial(back: boolean, tri: THREE.Vector2[], seed: numbe
       ${RAYS}
       uniform float hl; uniform float reveal; uniform float beamY; uniform float side; uniform float fade;
       uniform vec2 triA; uniform vec2 triB; uniform vec2 triC;
-      uniform float radiant; uniform vec2 glowC; uniform float seed;
+      uniform float radiant; uniform vec2 glowC; uniform float seed; uniform float etch;
       varying vec3 vWN; varying vec3 vWP; varying vec3 vLN; varying vec3 vLP;
 
       // signed distance to the block's triangle; negative inside
@@ -100,6 +100,20 @@ export function crystalMaterial(back: boolean, tri: THREE.Vector2[], seed: numbe
                          vec2(dot(q1, q1), s * (v1.x * e1.y - v1.y * e1.x))),
                          vec2(dot(q2, q2), s * (v2.x * e2.y - v2.y * e2.x)));
         return -sqrt(d.x) * sign(d.y);
+      }
+
+      // outline of a box (centre, half size), as a thin line
+      float box(vec2 p, vec2 c, vec2 h){ vec2 q = abs(p - c) - h; float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0); return smoothstep(.004, .0, abs(d)); }
+      float seg(vec2 p, vec2 a, vec2 b){ vec2 pa = p - a, ba = b - a; float t = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return smoothstep(.0035, .0, length(pa - ba * t)); }
+      // a small interface wireframe: a frame, a header, an image tile with a mark, a tile with a circle, lines of text
+      float sketch(vec2 p){
+        float k = box(p, vec2(0.0, -.03), vec2(.17, .2));
+        k += seg(p, vec2(-.17, .12), vec2(.17, .12));
+        k += box(p, vec2(-.075, .02), vec2(.07, .07)) + seg(p, vec2(-.145, -.05), vec2(-.005, .09)) + seg(p, vec2(-.145, .09), vec2(-.005, -.05));
+        k += box(p, vec2(.085, .02), vec2(.06, .07)) + smoothstep(.004, .0, abs(length(p - vec2(.085, .02)) - .04));
+        k += seg(p, vec2(-.145, -.1), vec2(.1, -.1)) + seg(p, vec2(-.145, -.14), vec2(.05, -.14)) + seg(p, vec2(-.145, -.18), vec2(.12, -.18));
+        k += box(p, vec2(.125, .155), vec2(.02, .012));
+        return min(k, 1.0);
       }
 
       void main(){
@@ -138,6 +152,11 @@ export function crystalMaterial(back: boolean, tri: THREE.Vector2[], seed: numbe
           + champ * hl * .05;
         float a = .15 + sweep * .1 + F * .5 + bevel * .55 + rim * .3 + face * (inner1 * .35 + fringe * .2 + beamCore * .7 + beamWide * .08) + hl * .04;
 
+        if (etch > .001) {
+          float k = sketch(vLP.xy * vec2(sign(vLP.z), 1.0)) * face * etch;
+          col += vec3(.86, .85, .88) * k * .55;
+          a += k * .35;
+        }
         if (radiant > .001) {
           vec4 r = rays(vLP.xy - glowC, seed);
           float amt = radiant * mix(.7, smoothstep(.0, .035, d), face);

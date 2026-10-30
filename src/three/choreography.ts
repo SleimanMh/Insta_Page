@@ -5,33 +5,34 @@ import { APEX_Y, BASE_Y, GAP, SLABS, closedZ, openZ } from './geometry';
 // scroll, clicks and resizing all arrive as the same state, so they cannot compete.
 
 export const FOV = 30;
-const T = Math.tan((FOV / 2) * Math.PI / 180);
-export const YAW = 2.5;   // the depth axis recedes to the right; triangle faces turn toward the viewer
+export const YAW = 2.5;   // the row of blocks recedes to the right
 
 type V3 = [number, number, number];
 
-export interface Pose { dist: number; camY: number; lookY: number; sculptX: number; sculptY: number; yaw: number }
+export interface Pose { fov: number; dist: number; camY: number; lookY: number; sculptX: number; sculptY: number; yaw: number }
 
 export function cameraPose(s: StoryState, aspect: number, stacked: boolean): Pose {
   const e = easeInOut(clamp(s.open));
   let closed, open;
   if (stacked) {
     closed = { frac: .5, dist: 3.5 };
-    open = { frac: .5, dist: 6.1 };
+    open = { frac: .5, dist: 5.2 };
   } else {
     // on less wide windows the open sculpture sits further left and further away, clear of the copy
     const narrowness = clamp((1.75 - aspect) / .45);
     closed = { frac: .69, dist: 4.1 };
-    open = { frac: lerp(.37, .32, narrowness), dist: lerp(6.8, 8.0, narrowness) };
+    open = { frac: lerp(.43, .38, narrowness), dist: lerp(4.6, 5.5, narrowness) };
   }
+  // once open the camera comes close with a wider lens: near blocks loom large, far ones recede
   const fit = stacked ? Math.max(1, 1.15 / aspect) : Math.max(1, 1.6 / aspect);
   const dist = lerp(closed.dist, open.dist, e) * fit;
   const frac = lerp(closed.frac, open.frac, e);
+  const fov = lerp(FOV, 38, e);
   return {
-    dist,
+    fov, dist,
     camY: lerp(.36, .42, e),
     lookY: lerp(-.02, .02, e),
-    sculptX: (frac - .5) * 2 * T * dist * aspect,
+    sculptX: (frac - .5) * 2 * Math.tan((fov / 2) * Math.PI / 180) * dist * aspect,
     sculptY: stacked ? lerp(.02, .06, e) : 0,
     yaw: YAW + lerp(0, -.1, e),
   };
@@ -40,8 +41,10 @@ export function cameraPose(s: StoryState, aspect: number, stacked: boolean): Pos
 // ---- the blocks: each one has its own resting angle, its own route and its own timing ----
 // Resting pose once separated: every block turns and leans its own way (the first rocks onto a corner),
 // so six identical pieces of glass read as six different shapes.
-// Faces are seen at an angle, as in a photograph of real glass, not square-on.
-const REST_ROT: V3[] = [[.1, .3, .42], [-.06, .44, .14], [.04, .24, .06], [-.03, .48, -.05], [.06, .2, -.1], [-.05, .38, -.17]];
+// The faces turn steeply away from the row, so the blocks overlap like fanned cards and are seen at a
+// raking angle: wide up close on the left, narrow toward the middle, as in a photograph of real glass.
+// (the further along the row, the more a block turns back toward the viewer, so the far ones stay readable)
+const REST_ROT: V3[] = [[.06, -1.1, .3], [-.04, -1.14, .06], [.03, -1.2, -.02], [-.02, -1.3, .04], [.04, -1.4, -.05], [-.03, -1.5, -.08]];
 export const REST_SCALE = 1.22;
 // lift each block so its lowest corner stands on the floor line
 const REST_POS: V3[] = REST_ROT.map(([, , rz], i) => {
@@ -83,8 +86,8 @@ const splitOf = (s: StoryState) => clamp((s.open - .04) / .96);
 // While exploring, the layers part around the active stage so the product panel fits between them:
 // slabs up to the active one ease back, the ones after it ease forward, and the opening travels with the stage.
 const ROOM = .46;
-// after the last layer there is nothing to stand between, so the final stage uses the opening before it
-const gapAt = (s: StoryState) => Math.min(s.stageF, SLABS - 2);
+// the panel stands just before the active block (in front of the first one for the first stage)
+const gapAt = (s: StoryState) => Math.min(s.stageF - 1, SLABS - 2);
 const roomShift = (i: number, s: StoryState, exploring: number) => (smooth(-.5, .5, i - (gapAt(s) + .5)) - .5) * ROOM * exploring;
 
 /**
@@ -130,7 +133,7 @@ export function slabPoses(s: StoryState, hover: number): SlabPose[] {
       ],
       rot: [
         lerp(0, rr[0], t) + tum[0] * detour * .35,
-        lerp(0, rr[1], t) + tum[1] * detour * .35 - active * .35,   // the active block turns toward its edge
+        lerp(0, rr[1], t) + tum[1] * detour * .35 + active * .3,   // the active block turns onto its edge
         lerp(0, rr[2], t) + tum[2] * detour * .3,
       ],
       hl: Math.min(1, active + hov + (i === transit.crossSlab ? transit.flash * .9 : 0)),
@@ -155,7 +158,7 @@ export function planePose(s: StoryState): PlanePose {
     x: .06 + bump * .16 - launch * .06,
     y: BASE_Y + h / 2 + .03 + bump * .07 + launch * .03,
     z: (gapZ(T.k) + (gapZ(T.k + 1) - gapZ(T.k)) * punch(T.tr)) * e,
-    rot: [-bump * .12, .62 + Math.PI + bump * .38, Math.sin(Math.PI * 2 * T.tr) * .07] as V3,   // faces the viewer, tilts as it breaks through
+    rot: [-bump * .12, .3 + Math.PI + bump * .38, Math.sin(Math.PI * 2 * T.tr) * .07] as V3,   // faces the viewer, tilts as it breaks through
     w: w * (1 - bump * .05), h: h * (1 + bump * .03),
   };
   const inside = { x: -.01, y: -.045, z: 0, rot: [0, Math.PI, 0] as V3, w: .3, h: .45 };

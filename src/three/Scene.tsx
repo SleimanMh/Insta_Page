@@ -177,7 +177,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     parallax.current.x += (px - parallax.current.x) * (1 - Math.exp(-dt * 4));
     parallax.current.y += (py - parallax.current.y) * (1 - Math.exp(-dt * 4));
     if (Math.abs(px - parallax.current.x) + Math.abs(py - parallax.current.y) > .001) busy = true;
-    cam.fov = FOV; cam.near = .1; cam.far = 80;
+    cam.fov = pose.fov; cam.near = .1; cam.far = 80;
     cam.position.set(parallax.current.x * .2, pose.camY - parallax.current.y * .1, pose.dist);
     cam.lookAt(0, pose.lookY, 0);
     cam.updateProjectionMatrix();
@@ -201,6 +201,8 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       u.reveal.value = ub.reveal.value = reveal; u.beamY.value = ub.beamY.value = BEAM_Y; ub.hl.value = u.hl.value;
       u.fade.value = ub.fade.value = p.fade;
       u.radiant.value = ub.radiant.value = u.hl.value * .3 * s.process;   // a soft glow inside the active block
+      // the stages already behind keep a faint sketch of their work etched into the glass
+      u.etch.value = ub.etch.value = smooth(.3, 1, s.stageF - i) * s.process;
     });
 
     // the pyramid: charges with light, trembles as it cracks, swells a touch as it bursts, re-forms at the end
