@@ -5,18 +5,18 @@ import * as THREE from 'three';
 export const SLABS = 6;
 export const APEX_Y = 1 / Math.sqrt(3);          // 0.577
 export const BASE_Y = -APEX_Y / 2;               // -0.289
-export const SLAB_DEPTH = 0.19;
+export const SLAB_DEPTH = 0.2;
 export const SEAM = 0.012;                        // the hairline gap between closed slabs
-export const GAP = 0.64;                           // spacing once separated
+export const GAP = 0.6;                           // spacing once separated
 export const BEAM_Y = -0.05;                      // the beam runs just below the centroid
-const BEVEL = 0.013;
+const BEVEL = 0.026;
 
 export const closedZ = (i: number) => (i - (SLABS - 1) / 2) * (SLAB_DEPTH + SEAM);
 export const openZ = (i: number) => (i - (SLABS - 1) / 2) * GAP;
 
 /** A triangular slab with softly rounded corners and a small bevel that catches champagne light. */
 export function slabGeometry() {
-  const R = APEX_Y, r = 0.034;
+  const R = APEX_Y, r = 0.05;
   const pts = [0, 1, 2].map(k => {
     const a = Math.PI / 2 + k * 2 * Math.PI / 3;
     return new THREE.Vector2(Math.cos(a) * R, Math.sin(a) * R);
@@ -32,7 +32,7 @@ export function slabGeometry() {
   shape.closePath();
   const g = new THREE.ExtrudeGeometry(shape, {
     depth: SLAB_DEPTH - BEVEL * 2, bevelEnabled: true, bevelThickness: BEVEL, bevelSize: BEVEL * .9,
-    bevelSegments: 3, curveSegments: 10,
+    bevelSegments: 5, curveSegments: 12,
   });
   g.translate(0, 0, -(SLAB_DEPTH - BEVEL * 2) / 2);
   g.computeVertexNormals();

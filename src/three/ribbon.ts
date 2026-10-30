@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { TO_LINEAR } from './materials';
 
 // A camera-facing light ribbon along a polyline in world space: used for the beam,
 // the launch path and the return ring. Soft gaussian falloff, additive, drawn progressively.
@@ -9,13 +10,14 @@ const vertex = /* glsl */`
   void main(){ vUv = vec2(aU, uv.y); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 
 const fragment = /* glsl */`
+  ${TO_LINEAR}
   uniform vec3 color; uniform float a0; uniform float a1; uniform float prog; uniform float core;
   varying vec2 vUv;
   void main(){
     float y = abs(vUv.y - .5) * 2.0;
     float glow = exp(-y * y * 4.0) * .22 + exp(-y * y * 18.0) * .4 + exp(-y * y * 90.0) * core;
     float a = mix(a0, a1, vUv.x) * glow * smoothstep(prog, prog - .03, vUv.x);
-    gl_FragColor = vec4(mix(color, vec3(1.0), exp(-y * y * 90.0) * .5), a);
+    gl_FragColor = vec4(toLin(mix(color, vec3(1.0), exp(-y * y * 90.0) * .5)) * 1.6, a);
   }`;
 
 export class Ribbon {
