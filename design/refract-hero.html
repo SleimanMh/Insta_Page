@@ -1,0 +1,445 @@
+<title>Refract Hero</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400..700&family=Geist:wght@300..600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@1&display=swap">
+<style>
+/* Layout: copy on the left, a soft glass prism in the middle, the five steps its light lands on at the right.
+   Mood: smooth and cute. Twilight ground, pastel light, rounded shapes, springy motion. Single dark theme by choice. */
+:root {
+  color-scheme: dark;
+  --night: #11132A;       /* ground */
+  --night-2: #181A36;     /* lifted surface */
+  --line: rgba(220, 215, 255, .12);
+  --line-2: rgba(220, 215, 255, .2);
+  --text: #F4F2FF;
+  --dim: #B2AED0;
+  --mute: #7C789E;
+  --peach: #FFB3A7;
+  --butter: #FFE29A;
+  --mint: #9EF0C8;
+  --sky: #9CCBFF;
+  --lilac: #C9B3FF;
+  --ink: #17152E;         /* text on pastel */
+  --f-display: "Outfit", ui-rounded, "SF Pro Rounded", ui-sans-serif, system-ui, sans-serif;
+  --f-body: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-serif: "Instrument Serif", Georgia, serif;
+  --f-mono: "Geist Mono", ui-monospace, Menlo, monospace;
+  --pad-l: max(clamp(20px, 4.5vw, 64px), env(safe-area-inset-left, 0px));
+  --pad-r: max(clamp(20px, 4.5vw, 64px), env(safe-area-inset-right, 0px));
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+}
+* { box-sizing: border-box; }
+body { background: var(--night); color: var(--text); font-family: var(--f-body); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 50; background: var(--night); }
+h1, h2, p, ol { margin: 0; }
+ol { padding: 0; list-style: none; }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--lilac); outline-offset: 3px; border-radius: 12px; }
+
+.hero { position: relative; isolation: isolate; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; min-height: min(920px, max(760px, 100svh));
+  background: radial-gradient(40% 50% at 55% 48%, #2A2556, transparent 70%), radial-gradient(30% 40% at 85% 70%, #1D3A44, transparent 70%), var(--night); }
+#gl { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; display: block; }
+
+/* ---------- Nav ---------- */
+.nav { position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px var(--pad-r) 0 var(--pad-l); }
+.brand { display: flex; align-items: center; gap: 10px; font: 600 23px/1 var(--f-display); letter-spacing: -.03em; }
+.mark { width: 34px; height: 28px; flex: none; }
+.links { display: flex; gap: 2px; padding: 5px; border-radius: 999px; background: rgba(255,255,255,.04); border: 1px solid var(--line); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.links a { font-size: 14px; color: var(--dim); padding: 8px 15px; border-radius: 999px; transition: color .2s, background .2s; }
+.links a:hover { color: var(--text); background: rgba(255,255,255,.07); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; font: 600 15px/1 var(--f-display); letter-spacing: -.005em; padding: 16px 24px; border-radius: 999px; border: 0; cursor: pointer; white-space: nowrap; transition: transform .45s var(--spring), box-shadow .3s, background .3s; }
+.btn:hover { transform: translateY(-2px) scale(1.03); }
+.btn:active { transform: scale(.97); }
+.btn svg { transition: transform .45s var(--spring); }
+.btn:hover svg { transform: translateX(3px); }
+.btn-primary { color: var(--ink); background: linear-gradient(120deg, var(--peach), var(--lilac) 55%, var(--sky)); box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 14px 34px -14px rgba(201,179,255,.9); }
+.btn-ghost { color: var(--text); background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px var(--line-2); }
+.btn-ghost:hover { background: rgba(255,255,255,.09); }
+.btn-sm { padding: 12px 18px; font-size: 14px; }
+
+/* ---------- Body ---------- */
+.body { position: relative; z-index: 10; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr) minmax(250px, .6fr); gap: clamp(16px, 2vw, 32px); align-items: center; padding: clamp(32px, 6vh, 72px) var(--pad-r) clamp(28px, 5vh, 56px) var(--pad-l); }
+.copy { display: grid; gap: 26px; max-width: 580px; }
+.chip { justify-self: start; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dim); padding: 7px 14px 7px 10px; border-radius: 999px; background: rgba(255,255,255,.05); border: 1px solid var(--line); }
+.chip svg { color: var(--butter); }
+h1 { font: 600 clamp(44px, 5.6vw, 82px)/1 var(--f-display); letter-spacing: -.035em; text-wrap: balance; }
+h1 .soft { color: #8F8BB4; }
+h1 em { font-family: var(--f-serif); font-style: italic; font-weight: 400; letter-spacing: -.01em; padding-right: .06em;
+  background: linear-gradient(100deg, var(--peach), var(--butter) 30%, var(--mint) 55%, var(--sky) 78%, var(--lilac)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lede { font-size: clamp(16px, 1.2vw, 18px); line-height: 1.65; color: var(--dim); max-width: 46ch; font-weight: 300; }
+.lede b { color: var(--text); font-weight: 450; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+.proof { display: flex; flex-wrap: wrap; gap: 12px 28px; padding-top: 4px; font-size: 13px; color: var(--mute); }
+.proof b { display: block; font: 600 22px/1.15 var(--f-display); letter-spacing: -.02em; color: var(--text); font-variant-numeric: tabular-nums; }
+
+.stage { position: relative; align-self: stretch; min-height: 500px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+.stage.hot { cursor: pointer; }
+.tap { font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--mute); display: inline-flex; gap: 8px; align-items: center; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.04); border: 1px solid var(--line); pointer-events: none; }
+.tap i { width: 6px; height: 6px; border-radius: 50%; background: var(--butter); animation: twinkle 2.4s ease-in-out infinite; }
+@keyframes twinkle { 50% { opacity: .25; transform: scale(.6); } }
+
+/* ---------- Steps ---------- */
+.steps { display: grid; gap: 8px; }
+.steps .head { font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--mute); margin-bottom: 6px; padding-left: 4px; }
+.step { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 14px; border-radius: 18px; background: rgba(24, 26, 54, .36); border: 1px solid var(--line); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); transition: transform .5s var(--spring), border-color .3s, background .3s; }
+.step:hover { transform: translateX(-4px) scale(1.02); border-color: color-mix(in srgb, var(--c) 50%, transparent); background: color-mix(in srgb, rgba(24,26,54,.7) 85%, var(--c) 15%); }
+.step .dot { width: 14px; height: 14px; border-radius: 50%; margin-top: 2px; background: var(--c); box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 20%, transparent); }
+.step .row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.step b { font: 600 16px/1.2 var(--f-display); letter-spacing: -.01em; }
+.step time { font: 500 11px/1 var(--f-mono); color: var(--c); white-space: nowrap; }
+.step p { font-size: 12.5px; color: var(--dim); margin-top: 3px; line-height: 1.45; }
+.result { display: flex; gap: 12px; align-items: center; margin-top: 6px; padding: 14px 16px; border-radius: 18px; background: linear-gradient(120deg, rgba(255,179,167,.14), rgba(201,179,255,.14) 50%, rgba(156,203,255,.14)); border: 1px solid var(--line-2); }
+.result .ok { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--mint); color: var(--ink); flex: none; }
+.result b { display: block; font: 600 15px/1.2 var(--f-display); }
+.result span { font-size: 12.5px; color: var(--dim); }
+.hero.arming .step, .hero.arming .result { opacity: 0; transform: translateX(14px) scale(.96); }
+.hero.arming .step.lit, .hero.arming .result.lit { opacity: 1; transform: none; transition: opacity .5s ease, transform .7s var(--spring); }
+
+/* ---------- Trust ---------- */
+.trust { position: relative; z-index: 10; display: flex; align-items: center; gap: 36px; padding: 22px var(--pad-r) 26px var(--pad-l); border-top: 1px solid var(--line); }
+.trust > span { font-size: 13px; color: var(--mute); white-space: nowrap; }
+.logos { display: flex; gap: clamp(24px, 4vw, 52px); flex: 1; min-width: 0; overflow: hidden; mask-image: linear-gradient(90deg, #000 85%, transparent); -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); }
+.logos span { font: 600 17px/1 var(--f-display); letter-spacing: -.02em; color: #5E5A82; white-space: nowrap; }
+
+.rise { animation: rise .9s var(--spring) both; }
+.d2 { animation-delay: .08s; } .d3 { animation-delay: .16s; } .d4 { animation-delay: .24s; } .d5 { animation-delay: .32s; }
+@keyframes rise { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: none; } }
+
+.fallback { display: none; width: min(280px, 72%); margin: auto; }
+.hero.no-gl .fallback { display: block; }
+.hero.no-gl .tap { display: none; }
+
+@media (max-width: 1180px) { .links { display: none; } .body { grid-template-columns: minmax(0, 1fr) minmax(0, .8fr) minmax(230px, .7fr); } }
+@media (max-width: 900px) {
+  .hero { min-height: 0; }
+  .body { grid-template-columns: minmax(0, 1fr); gap: 0; padding-block: 40px 28px; }
+  .stage { min-height: 400px; }
+  .steps { margin-top: 18px; }
+  .trust { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .logos { width: 100%; }
+}
+@media (max-width: 520px) { .ctas .btn { flex: 1 1 auto; } .nav .btn-sm { padding: 11px 14px; font-size: 13px; } }
+@media (prefers-reduced-motion: reduce) {
+  .rise, .tap i { animation: none; }
+  .btn, .btn svg, .step { transition: none; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="mkfill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#C9B3FF"/></linearGradient>
+    <symbol id="mark" viewBox="0 0 42 34">
+      <path d="M1.5 21 13 18" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M15.6 6.2c.9-1.6 3.2-1.6 4.1 0l8.4 15.1c.9 1.6-.3 3.5-2.1 3.5H9.3c-1.8 0-3-1.9-2.1-3.5Z" fill="rgba(255,255,255,.12)" stroke="url(#mkfill)" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M24 16.5 40 11" stroke="#FFB3A7" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M24.6 18.2 40 18" stroke="#9EF0C8" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M24.4 19.9 40 25" stroke="#C9B3FF" stroke-width="2.4" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<section class="hero arming" id="hero" aria-label="Refract">
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="#hero"><svg class="mark" aria-hidden="true"><use href="#mark"/></svg>refract</a>
+    <div class="links"><a href="#hero">Services</a><a href="#hero">Work</a><a href="#hero">Process</a><a href="#hero">About</a><a href="#hero">Contact</a></div>
+    <a class="btn btn-primary btn-sm" href="#hero">Get a Quote</a>
+  </nav>
+
+  <div class="body">
+    <div class="copy">
+      <span class="chip rise"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0c.5 4.6 2.9 7 7.5 7.5v1C10.9 9 8.5 11.4 8 16h-1C6.5 11.4 4.1 9 -.5 8.5v-1C4.1 7 6.5 4.6 7 0Z" fill="currentColor"/></svg>Software studio · idea to launch</span>
+      <h1 class="rise d2">One idea in. <span class="soft">A</span> <em>launched</em> <span class="soft">product out.</span></h1>
+      <p class="lede rise d3">Like light through a prism, Refract splits your idea into five clear steps. <b>Each one has an owner, a timeline and a price you can see</b>, and one friendly team takes it from the first chat to the product running live.</p>
+      <div class="ctas rise d4">
+        <a class="btn btn-primary" href="#hero">Get a Quote <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="btn btn-ghost" href="#hero">Explore Our Work</a>
+      </div>
+      <div class="proof rise d5"><span><b>120+</b>products shipped</span><span><b>11 wks</b>median idea to launch</span><span><b>4.9/5</b>client rating</span></div>
+    </div>
+
+    <div class="stage" id="stage">
+      <svg class="fallback" viewBox="0 0 220 200" aria-hidden="true">
+        <defs><linearGradient id="fbfan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB3A7"/><stop offset=".25" stop-color="#FFE29A"/><stop offset=".5" stop-color="#9EF0C8"/><stop offset=".75" stop-color="#9CCBFF"/><stop offset="1" stop-color="#C9B3FF"/></linearGradient></defs>
+        <path d="M128 112 220 60V190Z" fill="url(#fbfan)" opacity=".6"/>
+        <path d="M100 38c4-7 12-7 16 0l34 60c4 7-1 14-8 14H74c-8 0-12-7-8-14Z" fill="rgba(255,255,255,.12)" stroke="#fff" stroke-opacity=".6" stroke-width="2"/>
+        <path d="M0 50 84 98" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/>
+      </svg>
+      <span class="tap"><i></i><span id="tapLabel">Click the prism</span></span>
+    </div>
+
+    <div class="steps">
+      <span class="head">Your idea, refracted into</span>
+      <ol>
+        <li class="step" style="--c: var(--peach)"><span class="dot"></span><div><div class="row"><b>Discover</b><time>Week 1</time></div><p>Workshops, scope and a priced plan</p></div></li>
+        <li class="step" style="--c: var(--butter)"><span class="dot"></span><div><div class="row"><b>Design</b><time>Weeks 2–4</time></div><p>UX flows, UI design, clickable prototype</p></div></li>
+        <li class="step" style="--c: var(--mint)"><span class="dot"></span><div><div class="row"><b>Build</b><time>Weeks 4–10</time></div><p>Web, mobile, APIs and AI features</p></div></li>
+        <li class="step" style="--c: var(--sky)"><span class="dot"></span><div><div class="row"><b>Launch</b><time>Week 11</time></div><p>Testing, cloud setup, go-live</p></div></li>
+        <li class="step" style="--c: var(--lilac)"><span class="dot"></span><div><div class="row"><b>Care</b><time>Ongoing</time></div><p>Monitoring, support, new features</p></div></li>
+      </ol>
+      <div class="result"><span class="ok"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Your product, live</b><span>Typical timeline. Your quote sets the real one.</span></div></div>
+    </div>
+  </div>
+
+  <div class="trust"><span>Trusted by product teams at</span><div class="logos"><span>Northwind</span><span>Halcyon Health</span><span>Paysera Labs</span><span>Atlas Freight</span><span>Maison Verre</span><span>Kinetiq</span><span>Orbital</span></div></div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script>
+(() => {
+  const hero = document.getElementById('hero'), stage = document.getElementById('stage'), canvas = document.getElementById('gl');
+  const stepEls = [...document.querySelectorAll('.step')], resultEl = document.querySelector('.result');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.getElementById('tapLabel').textContent = matchMedia('(hover: none)').matches ? 'Tap the prism' : 'Click the prism';
+  const giveUp = () => { hero.classList.add('no-gl'); hero.classList.remove('arming'); };
+  const THREE = window.THREE;
+  if (!THREE) { giveUp(); return; }
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' }); } catch (e) { giveUp(); return; }
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(30, 1, 1, 10000);
+  const VERT = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }';
+
+  // ---- Backdrop: soft pastel glows on twilight. It sits inside the scene so the glass can refract it. ----
+  const bg = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({
+    uniforms: { time: { value: 0 }, aspect: { value: 1 }, focus: { value: new THREE.Vector2(.55, .5) } },
+    vertexShader: VERT,
+    fragmentShader: `uniform float time; uniform float aspect; uniform vec2 focus; varying vec2 vUv;
+      vec3 blob(vec2 p, vec2 c, float r, vec3 col){ vec2 d = p - c; if (aspect > 1.0) d.x *= aspect; else d.y /= aspect; return col * exp(-dot(d,d)/(r*r)); }
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
+      void main(){
+        vec2 p = vUv;
+        vec3 col = vec3(.067,.075,.165);
+        col += blob(p, focus + vec2(.02*sin(time*.21), .03*cos(time*.17)), .22, vec3(.30,.22,.55)) * .9;
+        col += blob(p, focus + vec2(-.16 + .03*sin(time*.13), .2), .2, vec3(.42,.22,.30)) * .55;
+        col += blob(p, focus + vec2(.26, -.16 + .03*sin(time*.19)), .26, vec3(.12,.34,.33)) * .6;
+        col += blob(p, focus + vec2(.34 + .02*cos(time*.11), .24), .22, vec3(.16,.24,.45)) * .5;
+        col += (hash(p * 1000.0 + time) - .5) / 255.0 * 2.0;
+        gl_FragColor = vec4(col, 1.0);
+      }`,
+    depthWrite: false,
+  }));
+  bg.renderOrder = -1; scene.add(bg);
+
+  // ---- The prism: a rounded triangle, extruded with a deep bevel so every edge is soft ----
+  function prismGeometry() {
+    const r = .16, pts = [0, 1, 2].map(k => { const a = Math.PI / 2 + k * 2 * Math.PI / 3; return new THREE.Vector2(Math.cos(a) * .58, Math.sin(a) * .58); });
+    const shape = new THREE.Shape();
+    pts.forEach((p, i) => {
+      const prev = pts[(i + 2) % 3], next = pts[(i + 1) % 3];
+      const a = p.clone().add(prev.clone().sub(p).setLength(r)), b = p.clone().add(next.clone().sub(p).setLength(r));
+      i === 0 ? shape.moveTo(a.x, a.y) : shape.lineTo(a.x, a.y);
+      shape.quadraticCurveTo(p.x, p.y, b.x, b.y);
+    });
+    shape.closePath();
+    const g = new THREE.ExtrudeGeometry(shape, { depth: .5, bevelEnabled: true, bevelThickness: .12, bevelSize: .09, bevelSegments: 10, curveSegments: 28 });
+    g.center(); g.computeVertexNormals();
+    return g;
+  }
+  const prism = new THREE.Group(); scene.add(prism);
+  const body = new THREE.Group(); prism.add(body);
+  // Candy glass: pastel tint, glossy rim and soft highlights. Stylised instead of physically refracted,
+  // so it stays light on phones and reads the same on every device.
+  const candy = side => new THREE.ShaderMaterial({
+    uniforms: { time: { value: 0 }, k: { value: side === THREE.BackSide ? .55 : 1 } },
+    vertexShader: `varying vec3 vN; varying vec3 vV; varying vec3 vP;
+      void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); vP = position; gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `uniform float time; uniform float k; varying vec3 vN; varying vec3 vV; varying vec3 vP;
+      void main(){
+        vec3 N = normalize(vN); if (!gl_FrontFacing) N = -N; vec3 V = normalize(vV);
+        float fres = pow(1.0 - clamp(abs(dot(N, V)), 0.0, 1.0), 2.0);
+        vec3 lilac = vec3(.79,.70,1.0), sky = vec3(.61,.80,1.0), peach = vec3(1.0,.72,.68), mint = vec3(.62,.94,.78);
+        vec3 tint = mix(mix(lilac, sky, smoothstep(-.6, .8, vP.y)), peach, smoothstep(.1, .7, -vP.x) * .45);
+        vec3 irid = mix(mix(peach, mint, .5 + .5 * sin(fres * 7.0 + time * .4)), sky, .5 + .5 * sin(fres * 5.0 - time * .3 + 1.7));
+        vec3 L1 = normalize(vec3(-.45, .75, .6)), L2 = normalize(vec3(.7, -.3, .55));
+        float s1 = pow(max(dot(N, normalize(L1 + V)), 0.0), 70.0), s1b = pow(max(dot(N, normalize(L1 + V)), 0.0), 9.0);
+        float s2 = pow(max(dot(N, normalize(L2 + V)), 0.0), 40.0);
+        vec3 col = tint * .55 + irid * fres * .7 + vec3(1.0) * (s1 * 1.1 + s1b * .12) + mint * s2 * .5;
+        float a = (.14 + fres * .55 + s1 * .9 + s1b * .1 + s2 * .3) * k;
+        gl_FragColor = vec4(col, clamp(a, 0.0, 1.0));
+      }`,
+    transparent: true, depthWrite: false, side,
+  });
+  const geo = prismGeometry();
+  const back = new THREE.Mesh(geo, candy(THREE.BackSide)); back.renderOrder = 1; body.add(back);
+  const glass = new THREE.Mesh(geo, candy(THREE.FrontSide)); glass.renderOrder = 5;
+  body.add(glass);
+
+  // ---- Light ----
+  function texture(w, h, paint) { const c = document.createElement('canvas'); c.width = w; c.height = h; paint(c.getContext('2d'), w, h); return new THREE.CanvasTexture(c); }
+  const GLOW = texture(128, 128, g => { const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.25, 'rgba(255,255,255,.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); });
+  const STAR = texture(128, 128, g => {
+    const gr = g.createRadialGradient(64, 64, 0, 64, 64, 40); gr.addColorStop(0, 'rgba(255,255,255,.6)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    g.fillStyle = '#fff'; g.beginPath(); g.moveTo(64, 8); g.quadraticCurveTo(64, 64, 120, 64); g.quadraticCurveTo(64, 64, 64, 120); g.quadraticCurveTo(64, 64, 8, 64); g.quadraticCurveTo(64, 64, 64, 8); g.fill();
+  });
+  const sprite = (map, hex, op = 0) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map, color: new THREE.Color(hex), transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, toneMapped: false })); s.renderOrder = 6; scene.add(s); return s; };
+
+  const beamGeo = new THREE.PlaneGeometry(1, 1); beamGeo.translate(.5, 0, 0);
+  function beam(a0, a1, order) {
+    const m = new THREE.Mesh(beamGeo, new THREE.ShaderMaterial({
+      uniforms: { a0: { value: a0 }, a1: { value: a1 }, prog: { value: 0 }, time: { value: 0 } }, vertexShader: VERT,
+      fragmentShader: `uniform float a0; uniform float a1; uniform float prog; uniform float time; varying vec2 vUv;
+        void main(){ float y = abs(vUv.y - .5) * 2.0;
+          float glow = exp(-y*y*4.0)*.3 + exp(-y*y*26.0)*.55 + exp(-y*y*140.0)*.6;
+          float a = mix(a0, a1, vUv.x) * glow * smoothstep(prog, prog - .06, vUv.x) * (.94 + .06 * sin(time * 1.4 + vUv.x * 12.0));
+          gl_FragColor = vec4(vec3(1.0, .97, .94), a); }`,
+      transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+    }));
+    m.renderOrder = order; m.frustumCulled = false; scene.add(m); return m;
+  }
+  const place = (m, p0, p1, w) => { const d = p1.clone().sub(p0); m.position.copy(p0); m.rotation.set(0, 0, Math.atan2(d.y, d.x)); m.scale.set(d.length(), w, 1); };
+
+  // the dispersed light: one broad pastel fan, peach on top to lilac at the bottom
+  function fan(strength, soft, order) {
+    const SEG = 48, g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array((SEG + 1) * 6), 3));
+    const uv = [], idx = [];
+    for (let i = 0; i <= SEG; i++) { uv.push(i / SEG, 1, i / SEG, 0); if (i < SEG) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+    const m = new THREE.Mesh(g, new THREE.ShaderMaterial({
+      uniforms: { prog: { value: 0 }, time: { value: 0 }, fadeAt: { value: .6 }, strength: { value: strength }, soft: { value: soft } }, vertexShader: VERT,
+      fragmentShader: `uniform float prog; uniform float time; uniform float fadeAt; uniform float strength; uniform float soft; varying vec2 vUv;
+        vec3 spec(float s){
+          vec3 c1 = vec3(1.0,.70,.66), c2 = vec3(1.0,.89,.60), c3 = vec3(.62,.94,.78), c4 = vec3(.61,.80,1.0), c5 = vec3(.79,.70,1.0);
+          s = clamp(s, 0.0, 1.0) * 4.0;
+          if (s < 1.0) return mix(c1, c2, s); if (s < 2.0) return mix(c2, c3, s - 1.0); if (s < 3.0) return mix(c3, c4, s - 2.0); return mix(c4, c5, s - 3.0); }
+        void main(){
+          float u = vUv.x, v = vUv.y;
+          float edge = smoothstep(0.0, soft, v) * smoothstep(1.0, 1.0 - soft, v);
+          float along = mix(1.0, .22, smoothstep(0.0, fadeAt, u)) * (1.0 - .9 * smoothstep(fadeAt, 1.0, u));
+          float shafts = .9 + .06 * sin(v * 30.0 + time * .3) + .04 * sin(v * 11.0 - time * .2);
+          vec3 col = mix(spec((.9 - v) / .8), vec3(1.0), (1.0 - smoothstep(0.0, .12, u)) * .45);
+          gl_FragColor = vec4(col, edge * along * shafts * strength * smoothstep(prog, prog - .06, u)); }`,
+      transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, side: THREE.DoubleSide,
+    }));
+    m.frustumCulled = false; m.renderOrder = order; m.userData.SEG = SEG; scene.add(m); return m;
+  }
+  function placeFan(m, a0, a1, b0, b1) {
+    const p = m.geometry.attributes.position, SEG = m.userData.SEG;
+    for (let i = 0; i <= SEG; i++) { const u = i / SEG, t = a0.clone().lerp(a1, u), b = b0.clone().lerp(b1, u); p.setXYZ(i * 2, t.x, t.y, 0); p.setXYZ(i * 2 + 1, b.x, b.y, 0); }
+    p.needsUpdate = true;
+    m.userData.edges = [a0, a1, b0, b1];
+  }
+  const fanPoint = (m, u, v) => { const [a0, a1, b0, b1] = m.userData.edges; return a0.clone().lerp(a1, u).lerp(b0.clone().lerp(b1, u), 1 - v); };
+
+  const beamIn = beam(.25, .95, 3), beamInside = beam(.7, .6, 3);
+  const spectrum = fan(1.15, .16, 3), haze = fan(.32, .48, 2);
+  const entryGlow = sprite(GLOW, '#FFFFFF'), exitGlow = sprite(GLOW, '#FFF2F7'), innerGlow = sprite(GLOW, '#C9B3FF');
+  const PASTEL = ['#FFB3A7', '#FFE29A', '#9EF0C8', '#9CCBFF', '#C9B3FF'];
+  const sparkles = Array.from({ length: 16 }, (_, i) => ({ s: sprite(STAR, PASTEL[i % 5]), u: Math.random(), v: .08 + Math.random() * .84, ph: Math.random() * 6.28, sp: .015 + Math.random() * .02 }));
+  const burst = Array.from({ length: 14 }, (_, i) => ({ s: sprite(STAR, PASTEL[i % 5]), dir: new THREE.Vector2(Math.cos(i / 14 * 6.28), Math.sin(i / 14 * 6.28)), sp: 120 + Math.random() * 90 }));
+
+  // ---- Layout: CSS pixels to world units on the z = 0 plane ----
+  let W = 1, H = 1, P = { x: 0, y: 0 }, S = 200, dist = 1, entry, exit;
+  const toW = (x, y) => new THREE.Vector3(x - W / 2, H / 2 - y, 0);
+  function layout() {
+    const hr = hero.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+    W = hr.width; H = hr.height;
+    renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1)); renderer.setSize(W, H, false);
+    camera.aspect = W / H; dist = (H / 2) / Math.tan(THREE.MathUtils.degToRad(15));
+    camera.position.set(0, 0, dist); camera.near = dist * .2; camera.far = dist * 4; camera.updateProjectionMatrix();
+    const k = (dist + 400) / dist; bg.position.set(0, 0, -400); bg.scale.set(W * k * 1.05, H * k * 1.05, 1);
+    bg.material.uniforms.aspect.value = W / H;
+    const narrow = W <= 900;
+    S = Math.min(sr.width * (narrow ? .5 : .62), sr.height * .6, 320);
+    P = { x: sr.left - hr.left + sr.width * (narrow ? .42 : .47), y: sr.top - hr.top + sr.height * .42 };
+    bg.material.uniforms.focus.value.set(P.x / W, 1 - P.y / H);
+    prism.position.copy(toW(P.x, P.y)); body.scale.setScalar(S);
+    const ex = { x: P.x - S * .2, y: P.y + S * .02 }, xx = { x: P.x + S * .2, y: P.y + S * .06 };
+    entry = toW(ex.x, ex.y); exit = toW(xx.x, xx.y);
+    const ang = THREE.MathUtils.degToRad(narrow ? 38 : 52);
+    place(beamIn, toW(ex.x - Math.cos(ang) * 3000, ex.y - Math.sin(ang) * 3000), entry, 70);
+    place(beamInside, entry, exit, 34);
+    let topAt, botAt, dotX;
+    if (narrow) { dotX = W; topAt = xx.y - 110; botAt = xx.y + 140; }
+    else {
+      const r = stepEls.map(el => el.querySelector('.dot').getBoundingClientRect()), gap = (r[4].top - r[0].top) / 4;
+      dotX = r[0].left - hr.left + r[0].width / 2; topAt = r[0].top - hr.top + r[0].height / 2 - gap / 2; botAt = r[4].top - hr.top + r[4].height / 2 + gap / 2;
+    }
+    const endX = W + 60, kk = (endX - xx.x) / (dotX - xx.x), y0 = xx.y - S * .05, y1 = xx.y + S * .05, mid = (topAt + botAt) / 2;
+    placeFan(spectrum, toW(xx.x, y0), toW(endX, y0 + (topAt - y0) * kk), toW(xx.x, y1), toW(endX, y1 + (botAt - y1) * kk));
+    placeFan(haze, toW(xx.x, y0 - S * .06), toW(endX, xx.y + (mid - (mid - topAt) * 1.3 - xx.y) * kk), toW(xx.x, y1 + S * .06), toW(endX, xx.y + (mid + (botAt - mid) * 1.3 - xx.y) * kk));
+    [spectrum, haze].forEach(m => m.material.uniforms.fadeAt.value = narrow ? .75 : 1 / kk);
+    entryGlow.position.copy(entry).setZ(30); entryGlow.scale.set(S * .42, S * .42, 1);
+    exitGlow.position.copy(exit).setZ(30); exitGlow.scale.set(S * .48, S * .48, 1);
+  }
+
+  // ---- Interaction: springy tilt toward the cursor, jelly wobble and a sparkle burst on click ----
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  let mouse = { x: 0, y: 0 }, rx = { v: 0, vel: 0 }, ry = { v: 0, vel: 0 }, wob = 10, burstT = 10;
+  const spring = (s, target, dt) => { s.vel += ((target - s.v) * 40 - s.vel * 9) * dt; s.v += s.vel * dt; };
+  function overPrism(e) {
+    const r = hero.getBoundingClientRect();
+    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera); return ray.intersectObject(glass).length > 0;
+  }
+  hero.addEventListener('pointermove', e => {
+    const r = hero.getBoundingClientRect(); mouse = { x: (e.clientX - r.left) / r.width - .5, y: (e.clientY - r.top) / r.height - .5 };
+    stage.classList.toggle('hot', overPrism(e));
+  });
+  hero.addEventListener('pointerleave', () => { mouse = { x: 0, y: 0 }; stage.classList.remove('hot'); });
+  stage.addEventListener('click', e => { if (overPrism(e)) { wob = 0; burstT = 0; } });
+
+  // ---- Loop ----
+  let t0 = performance.now(), last = t0, running = true, raf = 0;
+  const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  function render(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    const t = reduce ? 10 : (now - t0) / 1000;
+    if (!reduce) { spring(ry, mouse.x * .5 + Math.sin(t * .35) * .16, dt); spring(rx, mouse.y * .3, dt); wob += dt; burstT += dt; }
+    prism.rotation.set(.12 + rx.v, -.55 + ry.v, Math.sin(t * .5) * .03);
+    prism.position.y = toW(P.x, P.y).y + (reduce ? 0 : Math.sin(t * .9) * 6);
+    const jelly = reduce ? 0 : .09 * Math.sin(wob * 16) * Math.exp(-wob * 3.5);
+    body.scale.set(S * (1 + jelly), S * (1 - jelly), S * (1 + jelly * .5));
+    bg.material.uniforms.time.value = t; glass.material.uniforms.time.value = t; back.material.uniforms.time.value = t;
+
+    const pIn = reduce ? 1 : smooth(.2, 1.1, t), pInside = reduce ? 1 : smooth(1, 1.3, t), pOut = reduce ? 1 : smooth(1.25, 2.5, t);
+    beamIn.material.uniforms.prog.value = pIn; beamIn.material.uniforms.time.value = t;
+    beamInside.material.uniforms.prog.value = pInside;
+    [spectrum, haze].forEach(m => { m.material.uniforms.prog.value = pOut * 1.06; m.material.uniforms.time.value = t; });
+    const flick = .94 + .06 * Math.sin(t * 2.1);
+    entryGlow.material.opacity = .75 * pIn * flick; exitGlow.material.opacity = .7 * pInside * flick;
+    innerGlow.position.copy(prism.position).setZ(20); innerGlow.scale.set(S * 1.3, S * 1.3, 1); innerGlow.material.opacity = (W <= 900 ? .12 : .22) * pInside;
+
+    sparkles.forEach(p => {
+      if (!reduce) { p.u += p.sp * dt; if (p.u > .95) { p.u = .05; p.v = .08 + Math.random() * .84; } }
+      const pos = fanPoint(spectrum, p.u, p.v); p.s.position.copy(pos).setZ(40);
+      const tw = .5 + .5 * Math.sin(t * 2.2 + p.ph), sz = 10 + 12 * tw;
+      p.s.scale.set(sz, sz, 1); p.s.material.opacity = (reduce ? .6 : tw) * .9 * smooth(.95, 1.05, pOut * 1.06 - p.u + .1) * (1 - p.u * .6);
+      p.s.material.rotation = t * .3 + p.ph;
+    });
+    burst.forEach(b => {
+      const k = burstT; if (k > 1.2 || reduce) { b.s.material.opacity = 0; return; }
+      const d = b.sp * (1 - Math.exp(-k * 4));
+      b.s.position.set(prism.position.x + b.dir.x * d, prism.position.y + b.dir.y * d, 60);
+      const sz = 22 * (1 - k / 1.2); b.s.scale.set(sz, sz, 1); b.s.material.opacity = 1 - k / 1.2; b.s.material.rotation = k * 4;
+    });
+
+    const reach = pOut * 1.06, fadeAt = spectrum.material.uniforms.fadeAt.value;
+    stepEls.forEach((el, i) => { if (reach > fadeAt * (.8 + i * .05)) el.classList.add('lit'); });
+    if (reach > fadeAt) resultEl.classList.add('lit');
+    if (t > 3.6) hero.classList.remove('arming');
+
+    renderer.render(scene, camera);
+    if (running && !reduce) raf = requestAnimationFrame(render);
+  }
+
+  function start() {
+    layout();
+    if (reduce) { hero.classList.remove('arming'); render(performance.now()); return; }
+    raf = requestAnimationFrame(render);
+  }
+  new ResizeObserver(() => { layout(); if (reduce) render(performance.now()); }).observe(hero);
+  new IntersectionObserver(([en]) => { const was = running; running = en.isIntersecting; if (running && !was && !reduce) { last = performance.now(); raf = requestAnimationFrame(render); } }).observe(hero);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { running = false; cancelAnimationFrame(raf); }
+    else if (!reduce) { running = true; last = performance.now(); raf = requestAnimationFrame(render); }
+  });
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(start);
+})();
+</script>

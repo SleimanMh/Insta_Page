@@ -34,3 +34,10 @@ Feedback: prism not wanted; needs to stay innovative but be more comfortable to 
 - **A · Layers**: the product as an exploded 3D stack (interface, APIs, data, cloud); hovering the legend lifts a layer.
 - **B · Sketch to ship**: one app window plays brief → wireframe → design → live, with a clickable timeline.
 - **C · Landscape**: a slow terrain of points with services pinned on it like places on a map.
+
+### v6 — Refract, smooth and cute (`refract-hero.html`)
+Feedback: back to the prism, but smooth, cute and innovative; name confirmed as **Refract**.
+- Rounded, bevelled triangular prism in a stylised "candy glass" shader (pastel tint, glossy rim, soft highlights, gentle iridescence). Light enough for phones.
+- Soft beam in, broad pastel rainbow out (peach, butter, mint, sky, lilac) landing on the five steps, with twinkling sparkles.
+- Springy tilt toward the cursor; clicking or tapping the prism makes it wobble like jelly and pop a ring of sparkles.
+- Twilight background with slowly drifting pastel glows, rounded Outfit headlines, bouncy buttons and step cards.
