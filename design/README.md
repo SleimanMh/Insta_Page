@@ -41,3 +41,8 @@ Feedback: back to the prism, but smooth, cute and innovative; name confirmed as 
 - Soft beam in, broad pastel rainbow out (peach, butter, mint, sky, lilac) landing on the five steps, with twinkling sparkles.
 - Springy tilt toward the cursor; clicking or tapping the prism makes it wobble like jelly and pop a ring of sparkles.
 - Twilight background with slowly drifting pastel glows, rounded Outfit headlines, bouncy buttons and step cards.
+
+### v7 — Real prism shape, traced light, glitter
+- The prism is now a true triangular prism (triangle ends, flat rectangular sides) with softly rounded edges; you see the end and its sides at a three-quarter angle.
+- The light is traced against the prism's pose every frame: soft beam into the left face (with dust catching the light), a faint reflection off that face, the beam bending and starting to split inside the glass, then leaving the far face.
+- The outgoing spectrum is one smooth gradient (no streaks) in real dispersion order, sprinkled with drifting, twinkling glitter in each band's colour.

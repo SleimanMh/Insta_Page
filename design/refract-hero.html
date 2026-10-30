@@ -198,14 +198,18 @@ h1 em { font-family: var(--f-serif); font-style: italic; font-weight: 400; lette
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' }); } catch (e) { giveUp(); return; }
   renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(30, 1, 1, 10000);
   const VERT = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }';
+  // The brand spectrum, in real dispersion order: least bent (warm) to most bent (violet).
+  const SPEC_GLSL = `vec3 spec(float s){
+      vec3 c1 = vec3(1.0,.66,.62), c2 = vec3(1.0,.87,.56), c3 = vec3(.58,.93,.75), c4 = vec3(.58,.78,1.0), c5 = vec3(.78,.67,1.0);
+      s = clamp(s, 0.0, 1.0) * 4.0;
+      if (s < 1.0) return mix(c1, c2, smoothstep(0.0, 1.0, s)); if (s < 2.0) return mix(c2, c3, smoothstep(1.0, 2.0, s));
+      if (s < 3.0) return mix(c3, c4, smoothstep(2.0, 3.0, s)); return mix(c4, c5, smoothstep(3.0, 4.0, s)); }`;
 
-  // ---- Backdrop: soft pastel glows on twilight. It sits inside the scene so the glass can refract it. ----
+  // ---- Backdrop: soft pastel glows on twilight ----
   const bg = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({
     uniforms: { time: { value: 0 }, aspect: { value: 1 }, focus: { value: new THREE.Vector2(.55, .5) } },
     vertexShader: VERT,
@@ -213,22 +217,21 @@ h1 em { font-family: var(--f-serif); font-style: italic; font-weight: 400; lette
       vec3 blob(vec2 p, vec2 c, float r, vec3 col){ vec2 d = p - c; if (aspect > 1.0) d.x *= aspect; else d.y /= aspect; return col * exp(-dot(d,d)/(r*r)); }
       float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
       void main(){
-        vec2 p = vUv;
-        vec3 col = vec3(.067,.075,.165);
+        vec2 p = vUv; vec3 col = vec3(.067,.075,.165);
         col += blob(p, focus + vec2(.02*sin(time*.21), .03*cos(time*.17)), .22, vec3(.30,.22,.55)) * .9;
         col += blob(p, focus + vec2(-.16 + .03*sin(time*.13), .2), .2, vec3(.42,.22,.30)) * .55;
         col += blob(p, focus + vec2(.26, -.16 + .03*sin(time*.19)), .26, vec3(.12,.34,.33)) * .6;
         col += blob(p, focus + vec2(.34 + .02*cos(time*.11), .24), .22, vec3(.16,.24,.45)) * .5;
         col += (hash(p * 1000.0 + time) - .5) / 255.0 * 2.0;
-        gl_FragColor = vec4(col, 1.0);
-      }`,
+        gl_FragColor = vec4(col, 1.0); }`,
     depthWrite: false,
   }));
   bg.renderOrder = -1; scene.add(bg);
 
-  // ---- The prism: a rounded triangle, extruded with a deep bevel so every edge is soft ----
+  // ---- A real triangular prism: triangle ends, three flat rectangular sides, softly rounded edges ----
   function prismGeometry() {
-    const r = .16, pts = [0, 1, 2].map(k => { const a = Math.PI / 2 + k * 2 * Math.PI / 3; return new THREE.Vector2(Math.cos(a) * .58, Math.sin(a) * .58); });
+    const R = 1 / Math.sqrt(3), r = .045;
+    const pts = [0, 1, 2].map(k => { const a = Math.PI / 2 + k * 2 * Math.PI / 3; return new THREE.Vector2(Math.cos(a) * R, Math.sin(a) * R); }); // apex, bottom-left, bottom-right
     const shape = new THREE.Shape();
     pts.forEach((p, i) => {
       const prev = pts[(i + 2) % 3], next = pts[(i + 1) % 3];
@@ -237,84 +240,79 @@ h1 em { font-family: var(--f-serif); font-style: italic; font-weight: 400; lette
       shape.quadraticCurveTo(p.x, p.y, b.x, b.y);
     });
     shape.closePath();
-    const g = new THREE.ExtrudeGeometry(shape, { depth: .5, bevelEnabled: true, bevelThickness: .12, bevelSize: .09, bevelSegments: 10, curveSegments: 28 });
-    g.center(); g.computeVertexNormals();
-    return g;
+    const g = new THREE.ExtrudeGeometry(shape, { depth: 1.3, bevelEnabled: true, bevelThickness: .035, bevelSize: .03, bevelSegments: 5, curveSegments: 10 });
+    g.computeBoundingBox(); const c = g.boundingBox.getCenter(new THREE.Vector3()); g.translate(-c.x, -c.y, -c.z); g.computeVertexNormals();
+    return { g, pts: pts.map(p => new THREE.Vector3(p.x - c.x, p.y - c.y, 0)) };
   }
-  const prism = new THREE.Group(); scene.add(prism);
-  const body = new THREE.Group(); prism.add(body);
-  // Candy glass: pastel tint, glossy rim and soft highlights. Stylised instead of physically refracted,
-  // so it stays light on phones and reads the same on every device.
+  // Candy glass: flat faces shade differently so the prism reads as a solid; rims and highlights stay glossy.
   const candy = side => new THREE.ShaderMaterial({
-    uniforms: { time: { value: 0 }, k: { value: side === THREE.BackSide ? .55 : 1 } },
+    uniforms: { time: { value: 0 }, k: { value: side === THREE.BackSide ? .5 : 1 } },
     vertexShader: `varying vec3 vN; varying vec3 vV; varying vec3 vP;
       void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); vP = position; gl_Position = projectionMatrix * mv; }`,
     fragmentShader: `uniform float time; uniform float k; varying vec3 vN; varying vec3 vV; varying vec3 vP;
       void main(){
         vec3 N = normalize(vN); if (!gl_FrontFacing) N = -N; vec3 V = normalize(vV);
-        float fres = pow(1.0 - clamp(abs(dot(N, V)), 0.0, 1.0), 2.0);
-        vec3 lilac = vec3(.79,.70,1.0), sky = vec3(.61,.80,1.0), peach = vec3(1.0,.72,.68), mint = vec3(.62,.94,.78);
-        vec3 tint = mix(mix(lilac, sky, smoothstep(-.6, .8, vP.y)), peach, smoothstep(.1, .7, -vP.x) * .45);
+        float fres = pow(1.0 - clamp(abs(dot(N, V)), 0.0, 1.0), 2.2);
+        vec3 lilac = vec3(.80,.72,1.0), sky = vec3(.64,.82,1.0), peach = vec3(1.0,.74,.70), mint = vec3(.62,.94,.78);
+        vec3 tint = mix(mix(lilac, sky, smoothstep(-.4, .5, vP.y)), peach, smoothstep(.0, .5, -vP.x) * .35);
         vec3 irid = mix(mix(peach, mint, .5 + .5 * sin(fres * 7.0 + time * .4)), sky, .5 + .5 * sin(fres * 5.0 - time * .3 + 1.7));
         vec3 L1 = normalize(vec3(-.45, .75, .6)), L2 = normalize(vec3(.7, -.3, .55));
-        float s1 = pow(max(dot(N, normalize(L1 + V)), 0.0), 70.0), s1b = pow(max(dot(N, normalize(L1 + V)), 0.0), 9.0);
-        float s2 = pow(max(dot(N, normalize(L2 + V)), 0.0), 40.0);
-        vec3 col = tint * .55 + irid * fres * .7 + vec3(1.0) * (s1 * 1.1 + s1b * .12) + mint * s2 * .5;
-        float a = (.14 + fres * .55 + s1 * .9 + s1b * .1 + s2 * .3) * k;
-        gl_FragColor = vec4(col, clamp(a, 0.0, 1.0));
-      }`,
+        float dif = .35 + .65 * max(dot(N, L1), 0.0);
+        float s1 = pow(max(dot(N, normalize(L1 + V)), 0.0), 90.0), s1b = pow(max(dot(N, normalize(L1 + V)), 0.0), 10.0);
+        float s2 = pow(max(dot(N, normalize(L2 + V)), 0.0), 50.0);
+        vec3 col = tint * (.25 + .45 * dif) + irid * fres * .8 + vec3(1.0) * (s1 * 1.2 + s1b * .1) + mint * s2 * .45;
+        float a = (.1 + dif * .1 + fres * .6 + s1 * .9 + s1b * .08 + s2 * .3) * k;
+        gl_FragColor = vec4(col, clamp(a, 0.0, 1.0)); }`,
     transparent: true, depthWrite: false, side,
   });
-  const geo = prismGeometry();
+  const prism = new THREE.Group(); scene.add(prism);
+  const body = new THREE.Group(); prism.add(body);
+  const { g: geo, pts: TRI } = prismGeometry();
   const back = new THREE.Mesh(geo, candy(THREE.BackSide)); back.renderOrder = 1; body.add(back);
-  const glass = new THREE.Mesh(geo, candy(THREE.FrontSide)); glass.renderOrder = 5;
-  body.add(glass);
+  const glass = new THREE.Mesh(geo, candy(THREE.FrontSide)); glass.renderOrder = 5; body.add(glass);
 
   // ---- Light ----
   function texture(w, h, paint) { const c = document.createElement('canvas'); c.width = w; c.height = h; paint(c.getContext('2d'), w, h); return new THREE.CanvasTexture(c); }
-  const GLOW = texture(128, 128, g => { const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.25, 'rgba(255,255,255,.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); });
+  const GLOW = texture(128, 128, g => { const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.25, 'rgba(255,255,255,.4)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); });
   const STAR = texture(128, 128, g => {
     const gr = g.createRadialGradient(64, 64, 0, 64, 64, 40); gr.addColorStop(0, 'rgba(255,255,255,.6)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
     g.fillStyle = '#fff'; g.beginPath(); g.moveTo(64, 8); g.quadraticCurveTo(64, 64, 120, 64); g.quadraticCurveTo(64, 64, 64, 120); g.quadraticCurveTo(64, 64, 8, 64); g.quadraticCurveTo(64, 64, 64, 8); g.fill();
   });
-  const sprite = (map, hex, op = 0) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map, color: new THREE.Color(hex), transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, toneMapped: false })); s.renderOrder = 6; scene.add(s); return s; };
+  const sprite = (map, hex, op = 0) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map, color: new THREE.Color(hex), transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false })); s.renderOrder = 8; scene.add(s); return s; };
 
+  // A soft beam: gaussian falloff across its width, no hard laser core.
   const beamGeo = new THREE.PlaneGeometry(1, 1); beamGeo.translate(.5, 0, 0);
-  function beam(a0, a1, order) {
+  function beam(a0, a1, order, tint = [1, .97, .94]) {
     const m = new THREE.Mesh(beamGeo, new THREE.ShaderMaterial({
-      uniforms: { a0: { value: a0 }, a1: { value: a1 }, prog: { value: 0 }, time: { value: 0 } }, vertexShader: VERT,
-      fragmentShader: `uniform float a0; uniform float a1; uniform float prog; uniform float time; varying vec2 vUv;
+      uniforms: { a0: { value: a0 }, a1: { value: a1 }, prog: { value: 0 }, time: { value: 0 }, tint: { value: new THREE.Vector3(...tint) } }, vertexShader: VERT,
+      fragmentShader: `uniform float a0; uniform float a1; uniform float prog; uniform float time; uniform vec3 tint; varying vec2 vUv;
         void main(){ float y = abs(vUv.y - .5) * 2.0;
-          float glow = exp(-y*y*4.0)*.3 + exp(-y*y*26.0)*.55 + exp(-y*y*140.0)*.6;
-          float a = mix(a0, a1, vUv.x) * glow * smoothstep(prog, prog - .06, vUv.x) * (.94 + .06 * sin(time * 1.4 + vUv.x * 12.0));
-          gl_FragColor = vec4(vec3(1.0, .97, .94), a); }`,
+          float glow = exp(-y*y*3.0)*.22 + exp(-y*y*14.0)*.5 + exp(-y*y*60.0)*.55;
+          float a = mix(a0, a1, vUv.x) * glow * smoothstep(prog, prog - .05, vUv.x) * (.96 + .04 * sin(time * 1.3 + vUv.x * 9.0));
+          gl_FragColor = vec4(mix(tint, vec3(1.0), exp(-y*y*60.0)), a); }`,
       transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
     }));
     m.renderOrder = order; m.frustumCulled = false; scene.add(m); return m;
   }
   const place = (m, p0, p1, w) => { const d = p1.clone().sub(p0); m.position.copy(p0); m.rotation.set(0, 0, Math.atan2(d.y, d.x)); m.scale.set(d.length(), w, 1); };
 
-  // the dispersed light: one broad pastel fan, peach on top to lilac at the bottom
-  function fan(strength, soft, order) {
+  // A dispersion fan: colour runs smoothly across its width (v), brightness fades along it (u).
+  function fan(strength, soft, whiteK, order) {
     const SEG = 48, g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array((SEG + 1) * 6), 3));
     const uv = [], idx = [];
     for (let i = 0; i <= SEG; i++) { uv.push(i / SEG, 1, i / SEG, 0); if (i < SEG) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
     g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
     const m = new THREE.Mesh(g, new THREE.ShaderMaterial({
-      uniforms: { prog: { value: 0 }, time: { value: 0 }, fadeAt: { value: .6 }, strength: { value: strength }, soft: { value: soft } }, vertexShader: VERT,
-      fragmentShader: `uniform float prog; uniform float time; uniform float fadeAt; uniform float strength; uniform float soft; varying vec2 vUv;
-        vec3 spec(float s){
-          vec3 c1 = vec3(1.0,.70,.66), c2 = vec3(1.0,.89,.60), c3 = vec3(.62,.94,.78), c4 = vec3(.61,.80,1.0), c5 = vec3(.79,.70,1.0);
-          s = clamp(s, 0.0, 1.0) * 4.0;
-          if (s < 1.0) return mix(c1, c2, s); if (s < 2.0) return mix(c2, c3, s - 1.0); if (s < 3.0) return mix(c3, c4, s - 2.0); return mix(c4, c5, s - 3.0); }
+      uniforms: { prog: { value: 0 }, fadeAt: { value: .6 }, strength: { value: strength }, soft: { value: soft }, whiteK: { value: whiteK } }, vertexShader: VERT,
+      fragmentShader: `uniform float prog; uniform float fadeAt; uniform float strength; uniform float soft; uniform float whiteK; varying vec2 vUv;
+        ${SPEC_GLSL}
         void main(){
           float u = vUv.x, v = vUv.y;
           float edge = smoothstep(0.0, soft, v) * smoothstep(1.0, 1.0 - soft, v);
-          float along = mix(1.0, .22, smoothstep(0.0, fadeAt, u)) * (1.0 - .9 * smoothstep(fadeAt, 1.0, u));
-          float shafts = .9 + .06 * sin(v * 30.0 + time * .3) + .04 * sin(v * 11.0 - time * .2);
-          vec3 col = mix(spec((.9 - v) / .8), vec3(1.0), (1.0 - smoothstep(0.0, .12, u)) * .45);
-          gl_FragColor = vec4(col, edge * along * shafts * strength * smoothstep(prog, prog - .06, u)); }`,
+          float along = mix(1.0, .55, smoothstep(0.0, fadeAt, u)) * (1.0 - .92 * smoothstep(fadeAt, 1.0, u));
+          vec3 col = mix(spec((.9 - v) / .8), vec3(1.0), whiteK * (1.0 - smoothstep(0.0, .14, u)));
+          gl_FragColor = vec4(col, edge * along * strength * smoothstep(prog, prog - .06, u)); }`,
       transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, side: THREE.DoubleSide,
     }));
     m.frustumCulled = false; m.renderOrder = order; m.userData.SEG = SEG; scene.add(m); return m;
@@ -323,50 +321,122 @@ h1 em { font-family: var(--f-serif); font-style: italic; font-weight: 400; lette
     const p = m.geometry.attributes.position, SEG = m.userData.SEG;
     for (let i = 0; i <= SEG; i++) { const u = i / SEG, t = a0.clone().lerp(a1, u), b = b0.clone().lerp(b1, u); p.setXYZ(i * 2, t.x, t.y, 0); p.setXYZ(i * 2 + 1, b.x, b.y, 0); }
     p.needsUpdate = true;
-    m.userData.edges = [a0, a1, b0, b1];
   }
-  const fanPoint = (m, u, v) => { const [a0, a1, b0, b1] = m.userData.edges; return a0.clone().lerp(a1, u).lerp(b0.clone().lerp(b1, u), 1 - v); };
 
-  const beamIn = beam(.25, .95, 3), beamInside = beam(.7, .6, 3);
-  const spectrum = fan(1.15, .16, 3), haze = fan(.32, .48, 2);
+  // Glitter sprinkled through the spectrum: each grain drifts outward and twinkles in its band's colour.
+  function glitter(count) {
+    const g = new THREE.BufferGeometry(), U = [], Vv = [], PH = [], SZ = [], SP = [];
+    for (let i = 0; i < count; i++) {
+      U.push(Math.random()); Vv.push(.06 + Math.random() * .88); PH.push(Math.random() * 6.28);
+      SZ.push(Math.random() < .14 ? 9 + Math.random() * 7 : 2 + Math.random() * 3.5); SP.push(.018 + Math.random() * .03);
+    }
+    g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(count * 3), 3));
+    [['aU', U], ['aV', Vv], ['aPh', PH], ['aSz', SZ], ['aSp', SP]].forEach(([n, a]) => g.setAttribute(n, new THREE.Float32BufferAttribute(a, 1)));
+    const m = new THREE.Points(g, new THREE.ShaderMaterial({
+      uniforms: { a0: { value: new THREE.Vector3() }, a1: { value: new THREE.Vector3() }, b0: { value: new THREE.Vector3() }, b1: { value: new THREE.Vector3() }, time: { value: 0 }, prog: { value: 0 }, fadeAt: { value: .6 }, pr: { value: 1 }, uMax: { value: 1 } },
+      vertexShader: `uniform vec3 a0; uniform vec3 a1; uniform vec3 b0; uniform vec3 b1; uniform float time; uniform float prog; uniform float fadeAt; uniform float pr; uniform float uMax;
+        attribute float aU; attribute float aV; attribute float aPh; attribute float aSz; attribute float aSp;
+        varying vec3 vC; varying float vA; varying float vBig;
+        ${SPEC_GLSL}
+        void main(){
+          float u = fract(aU + time * aSp / uMax) * uMax;
+          float v = clamp(aV + sin(time * .8 + aPh) * .02, 0.0, 1.0);
+          vec3 pos = mix(mix(b0, b1, u), mix(a0, a1, u), v);
+          float tw = .5 + .5 * sin(time * (1.6 + aSp * 50.0) + aPh * 3.0);
+          vC = mix(spec((.9 - v) / .8), vec3(1.0), .35);
+          vA = tw * smoothstep(.02, .08, u) * (1.0 - smoothstep(fadeAt * .85, min(1.0, fadeAt * 1.25), u)) * step(u, prog);
+          vBig = aSz;
+          gl_PointSize = aSz * (.55 + .6 * tw) * pr;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0); }`,
+      fragmentShader: `varying vec3 vC; varying float vA; varying float vBig;
+        void main(){
+          vec2 c = gl_PointCoord - .5; float d = length(c);
+          float dot_ = pow(smoothstep(.5, 0.0, d), 2.5);
+          float star = max(smoothstep(.07, 0.0, abs(c.x)) * smoothstep(.5, .0, abs(c.y)), smoothstep(.07, 0.0, abs(c.y)) * smoothstep(.5, .0, abs(c.x)));
+          float a = (dot_ + star * step(6.0, vBig) * .8) * vA;
+          gl_FragColor = vec4(vC, a); }`,
+      transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+    }));
+    m.frustumCulled = false; m.renderOrder = 7; scene.add(m); return m;
+  }
+  // Dust in the incoming beam: only visible where the light catches it.
+  function motes(count) {
+    const g = new THREE.BufferGeometry(), T = [], O = [], PH = [];
+    for (let i = 0; i < count; i++) { T.push(Math.random()); O.push((Math.random() - .5) * 2); PH.push(Math.random() * 6.28); }
+    g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(count * 3), 3));
+    g.setAttribute('aT', new THREE.Float32BufferAttribute(T, 1)); g.setAttribute('aO', new THREE.Float32BufferAttribute(O, 1)); g.setAttribute('aPh', new THREE.Float32BufferAttribute(PH, 1));
+    const m = new THREE.Points(g, new THREE.ShaderMaterial({
+      uniforms: { p0: { value: new THREE.Vector3() }, p1: { value: new THREE.Vector3() }, width: { value: 20 }, time: { value: 0 }, prog: { value: 0 }, pr: { value: 1 } },
+      vertexShader: `uniform vec3 p0; uniform vec3 p1; uniform float width; uniform float time; uniform float prog; uniform float pr;
+        attribute float aT; attribute float aO; attribute float aPh; varying float vA;
+        void main(){
+          float t = fract(aT + time * .012);
+          vec3 d = normalize(p1 - p0); vec3 n = vec3(-d.y, d.x, 0.0);
+          vec3 pos = mix(p0, p1, .35 + t * .65) + n * (aO * width + sin(time * .5 + aPh) * 3.0);
+          float tw = .5 + .5 * sin(time * 1.7 + aPh * 4.0);
+          vA = exp(-aO * aO * 2.5) * tw * smoothstep(.0, .2, t) * step(.35 + t * .65, prog);
+          gl_PointSize = (1.5 + 2.0 * tw) * pr;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0); }`,
+      fragmentShader: `varying float vA; void main(){ float d = length(gl_PointCoord - .5); gl_FragColor = vec4(1.0, .98, .95, pow(smoothstep(.5, 0.0, d), 2.0) * vA * .9); }`,
+      transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+    }));
+    m.frustumCulled = false; m.renderOrder = 7; scene.add(m); return m;
+  }
+
+  const beamIn = beam(.3, .95, 3), reflected = beam(.22, 0, 3, [.92, .9, 1]);
+  const inside = fan(.85, .25, .7, 2);           // light inside the glass, already starting to split
+  const spectrum = fan(1.15, .2, .22, 3), haze = fan(.26, .5, .15, 2);
+  const sparkle = glitter(220), dust = motes(70);
   const entryGlow = sprite(GLOW, '#FFFFFF'), exitGlow = sprite(GLOW, '#FFF2F7'), innerGlow = sprite(GLOW, '#C9B3FF');
   const PASTEL = ['#FFB3A7', '#FFE29A', '#9EF0C8', '#9CCBFF', '#C9B3FF'];
-  const sparkles = Array.from({ length: 16 }, (_, i) => ({ s: sprite(STAR, PASTEL[i % 5]), u: Math.random(), v: .08 + Math.random() * .84, ph: Math.random() * 6.28, sp: .015 + Math.random() * .02 }));
   const burst = Array.from({ length: 14 }, (_, i) => ({ s: sprite(STAR, PASTEL[i % 5]), dir: new THREE.Vector2(Math.cos(i / 14 * 6.28), Math.sin(i / 14 * 6.28)), sp: 120 + Math.random() * 90 }));
 
-  // ---- Layout: CSS pixels to world units on the z = 0 plane ----
-  let W = 1, H = 1, P = { x: 0, y: 0 }, S = 200, dist = 1, entry, exit;
+  // ---- Layout ----
+  let W = 1, H = 1, P = { x: 0, y: 0 }, S = 200, dist = 1, ends = null;
   const toW = (x, y) => new THREE.Vector3(x - W / 2, H / 2 - y, 0);
+  const toPx = v => ({ x: v.x + W / 2, y: H / 2 - v.y });
+  const tmp = new THREE.Vector3();
+  // project a point on the prism to the z = 0 drawing plane, in CSS pixels
+  const onScreen = local => { tmp.copy(local).applyMatrix4(glass.matrixWorld).project(camera); return { x: (tmp.x * .5 + .5) * W, y: (-tmp.y * .5 + .5) * H }; };
+
   function layout() {
     const hr = hero.getBoundingClientRect(), sr = stage.getBoundingClientRect();
     W = hr.width; H = hr.height;
-    renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1)); renderer.setSize(W, H, false);
+    const pr = Math.min(2, devicePixelRatio || 1);
+    renderer.setPixelRatio(pr); renderer.setSize(W, H, false);
+    sparkle.material.uniforms.pr.value = pr; dust.material.uniforms.pr.value = pr;
     camera.aspect = W / H; dist = (H / 2) / Math.tan(THREE.MathUtils.degToRad(15));
     camera.position.set(0, 0, dist); camera.near = dist * .2; camera.far = dist * 4; camera.updateProjectionMatrix();
     const k = (dist + 400) / dist; bg.position.set(0, 0, -400); bg.scale.set(W * k * 1.05, H * k * 1.05, 1);
     bg.material.uniforms.aspect.value = W / H;
     const narrow = W <= 900;
-    S = Math.min(sr.width * (narrow ? .5 : .62), sr.height * .6, 320);
-    P = { x: sr.left - hr.left + sr.width * (narrow ? .42 : .47), y: sr.top - hr.top + sr.height * .42 };
+    S = Math.min(sr.width * (narrow ? .5 : .5), sr.height * .52, 280);
+    P = { x: sr.left - hr.left + sr.width * (narrow ? .42 : .5), y: sr.top - hr.top + sr.height * .44 };
     bg.material.uniforms.focus.value.set(P.x / W, 1 - P.y / H);
-    prism.position.copy(toW(P.x, P.y)); body.scale.setScalar(S);
-    const ex = { x: P.x - S * .2, y: P.y + S * .02 }, xx = { x: P.x + S * .2, y: P.y + S * .06 };
-    entry = toW(ex.x, ex.y); exit = toW(xx.x, xx.y);
-    const ang = THREE.MathUtils.degToRad(narrow ? 38 : 52);
-    place(beamIn, toW(ex.x - Math.cos(ang) * 3000, ex.y - Math.sin(ang) * 3000), entry, 70);
-    place(beamInside, entry, exit, 34);
-    let topAt, botAt, dotX;
-    if (narrow) { dotX = W; topAt = xx.y - 110; botAt = xx.y + 140; }
+    body.scale.setScalar(S);
+    // where the spectrum lands: one band per step
+    if (narrow) ends = { dotX: W, top: P.y - 110, bot: P.y + 150, fadeAt: .75 };
     else {
       const r = stepEls.map(el => el.querySelector('.dot').getBoundingClientRect()), gap = (r[4].top - r[0].top) / 4;
-      dotX = r[0].left - hr.left + r[0].width / 2; topAt = r[0].top - hr.top + r[0].height / 2 - gap / 2; botAt = r[4].top - hr.top + r[4].height / 2 + gap / 2;
+      ends = { dotX: r[0].left - hr.left + r[0].width / 2, top: r[0].top - hr.top + r[0].height / 2 - gap / 2, bot: r[4].top - hr.top + r[4].height / 2 + gap / 2 };
     }
-    const endX = W + 60, kk = (endX - xx.x) / (dotX - xx.x), y0 = xx.y - S * .05, y1 = xx.y + S * .05, mid = (topAt + botAt) / 2;
-    placeFan(spectrum, toW(xx.x, y0), toW(endX, y0 + (topAt - y0) * kk), toW(xx.x, y1), toW(endX, y1 + (botAt - y1) * kk));
-    placeFan(haze, toW(xx.x, y0 - S * .06), toW(endX, xx.y + (mid - (mid - topAt) * 1.3 - xx.y) * kk), toW(xx.x, y1 + S * .06), toW(endX, xx.y + (mid + (botAt - mid) * 1.3 - xx.y) * kk));
-    [spectrum, haze].forEach(m => m.material.uniforms.fadeAt.value = narrow ? .75 : 1 / kk);
-    entryGlow.position.copy(entry).setZ(30); entryGlow.scale.set(S * .42, S * .42, 1);
-    exitGlow.position.copy(exit).setZ(30); exitGlow.scale.set(S * .48, S * .48, 1);
+  }
+
+  // Trace the light against the prism's current pose. Called every frame, so the light follows the sway.
+  const IN_ANGLE = THREE.MathUtils.degToRad(48);
+  function traceLight() {
+    const narrow = W <= 900;
+    const ent = onScreen(TRI[0].clone().lerp(TRI[1], .52)), ext = onScreen(TRI[0].clone().lerp(TRI[2], .52));
+    const A = onScreen(TRI[0]), B = onScreen(TRI[1]), C = onScreen(TRI[2]);
+    const dIn = { x: Math.cos(narrow ? .66 : IN_ANGLE), y: Math.sin(narrow ? .66 : IN_ANGLE) };
+    const origin = { x: ent.x - dIn.x * 3000, y: ent.y - dIn.y * 3000 };
+    // partial reflection off the entry face
+    let n = { x: B.y - A.y, y: -(B.x - A.x) }; const nl = Math.hypot(n.x, n.y); n = { x: n.x / nl, y: n.y / nl };
+    const cen = { x: (A.x + B.x + C.x) / 3, y: (A.y + B.y + C.y) / 3 };
+    if ((ent.x - cen.x) * n.x + (ent.y - cen.y) * n.y < 0) n = { x: -n.x, y: -n.y };
+    const dd = dIn.x * n.x + dIn.y * n.y, rf = { x: dIn.x - 2 * dd * n.x, y: dIn.y - 2 * dd * n.y };
+    const w0 = S * .018, w1 = S * .07;
+    return { ent, ext, origin, refl: { x: ent.x + rf.x * S * .6, y: ent.y + rf.y * S * .6 }, w0, w1 };
   }
 
   // ---- Interaction: springy tilt toward the cursor, jelly wobble and a sparkle burst on click ----
@@ -391,28 +461,44 @@ h1 em { font-family: var(--f-serif); font-style: italic; font-weight: 400; lette
   function render(now) {
     const dt = Math.min(.05, (now - last) / 1000); last = now;
     const t = reduce ? 10 : (now - t0) / 1000;
-    if (!reduce) { spring(ry, mouse.x * .5 + Math.sin(t * .35) * .16, dt); spring(rx, mouse.y * .3, dt); wob += dt; burstT += dt; }
-    prism.rotation.set(.12 + rx.v, -.55 + ry.v, Math.sin(t * .5) * .03);
-    prism.position.y = toW(P.x, P.y).y + (reduce ? 0 : Math.sin(t * .9) * 6);
-    const jelly = reduce ? 0 : .09 * Math.sin(wob * 16) * Math.exp(-wob * 3.5);
+    if (!reduce) { spring(ry, mouse.x * .35 + Math.sin(t * .35) * .1, dt); spring(rx, mouse.y * .2, dt); wob += dt; burstT += dt; }
+    prism.position.copy(toW(P.x, P.y)); prism.position.y += reduce ? 0 : Math.sin(t * .9) * 5;
+    prism.rotation.set(.16 + rx.v, -.68 + ry.v, Math.sin(t * .5) * .025);
+    const jelly = reduce ? 0 : .08 * Math.sin(wob * 16) * Math.exp(-wob * 3.5);
     body.scale.set(S * (1 + jelly), S * (1 - jelly), S * (1 + jelly * .5));
-    bg.material.uniforms.time.value = t; glass.material.uniforms.time.value = t; back.material.uniforms.time.value = t;
+    prism.updateMatrixWorld(true);
+    [bg, glass, back].forEach(m => m.material.uniforms.time.value = t);
 
-    const pIn = reduce ? 1 : smooth(.2, 1.1, t), pInside = reduce ? 1 : smooth(1, 1.3, t), pOut = reduce ? 1 : smooth(1.25, 2.5, t);
+    const L = traceLight(), E = toW(L.ent.x, L.ent.y), X = toW(L.ext.x, L.ext.y);
+    const pIn = reduce ? 1 : smooth(.2, 1.1, t), pInside = reduce ? 1 : smooth(1, 1.3, t), pOut = reduce ? 1 : smooth(1.25, 2.6, t);
+
+    place(beamIn, toW(L.origin.x, L.origin.y), E, S * .2);
     beamIn.material.uniforms.prog.value = pIn; beamIn.material.uniforms.time.value = t;
-    beamInside.material.uniforms.prog.value = pInside;
-    [spectrum, haze].forEach(m => { m.material.uniforms.prog.value = pOut * 1.06; m.material.uniforms.time.value = t; });
-    const flick = .94 + .06 * Math.sin(t * 2.1);
-    entryGlow.material.opacity = .75 * pIn * flick; exitGlow.material.opacity = .7 * pInside * flick;
-    innerGlow.position.copy(prism.position).setZ(20); innerGlow.scale.set(S * 1.3, S * 1.3, 1); innerGlow.material.opacity = (W <= 900 ? .12 : .22) * pInside;
+    place(reflected, E, toW(L.refl.x, L.refl.y), S * .12);
+    reflected.material.uniforms.prog.value = pInside;
+    dust.material.uniforms.p0.value.copy(toW(L.origin.x, L.origin.y)); dust.material.uniforms.p1.value.copy(E);
+    dust.material.uniforms.width.value = S * .05; dust.material.uniforms.time.value = t; dust.material.uniforms.prog.value = pIn;
 
-    sparkles.forEach(p => {
-      if (!reduce) { p.u += p.sp * dt; if (p.u > .95) { p.u = .05; p.v = .08 + Math.random() * .84; } }
-      const pos = fanPoint(spectrum, p.u, p.v); p.s.position.copy(pos).setZ(40);
-      const tw = .5 + .5 * Math.sin(t * 2.2 + p.ph), sz = 10 + 12 * tw;
-      p.s.scale.set(sz, sz, 1); p.s.material.opacity = (reduce ? .6 : tw) * .9 * smooth(.95, 1.05, pOut * 1.06 - p.u + .1) * (1 - p.u * .6);
-      p.s.material.rotation = t * .3 + p.ph;
-    });
+    // inside the glass the beam bends toward the base and starts to separate
+    placeFan(inside, toW(L.ent.x, L.ent.y - L.w0), toW(L.ext.x, L.ext.y - L.w1), toW(L.ent.x, L.ent.y + L.w0), toW(L.ext.x, L.ext.y + L.w1));
+    inside.material.uniforms.prog.value = pInside * 1.08; inside.material.uniforms.fadeAt.value = 1;
+
+    // out of the far face the colours fan smoothly onto the steps
+    const kk = ((W + 60) - L.ext.x) / (ends.dotX - L.ext.x);
+    const y0 = L.ext.y - L.w1, y1 = L.ext.y + L.w1, mid = (ends.top + ends.bot) / 2;
+    const a0 = toW(L.ext.x, y0), a1 = toW(W + 60, y0 + (ends.top - y0) * kk), b0 = toW(L.ext.x, y1), b1 = toW(W + 60, y1 + (ends.bot - y1) * kk);
+    placeFan(spectrum, a0, a1, b0, b1);
+    placeFan(haze, toW(L.ext.x, y0 - S * .05), toW(W + 60, L.ext.y + (mid - (mid - ends.top) * 1.3 - L.ext.y) * kk), toW(L.ext.x, y1 + S * .05), toW(W + 60, L.ext.y + (mid + (ends.bot - mid) * 1.3 - L.ext.y) * kk));
+    const fadeAt = ends.fadeAt || 1 / kk;
+    [spectrum, haze].forEach(m => { m.material.uniforms.prog.value = pOut * 1.06; m.material.uniforms.fadeAt.value = fadeAt; });
+    const su = sparkle.material.uniforms;
+    su.a0.value.copy(a0); su.a1.value.copy(a1); su.b0.value.copy(b0); su.b1.value.copy(b1); su.time.value = t; su.prog.value = pOut * 1.06; su.fadeAt.value = fadeAt; su.uMax.value = Math.min(1, fadeAt * 1.3);
+
+    const flick = .95 + .05 * Math.sin(t * 2.1);
+    entryGlow.position.copy(E).setZ(30); entryGlow.scale.set(S * .38, S * .38, 1); entryGlow.material.opacity = .7 * pIn * flick;
+    exitGlow.position.copy(X).setZ(30); exitGlow.scale.set(S * .42, S * .42, 1); exitGlow.material.opacity = .6 * pInside * flick;
+    innerGlow.position.copy(prism.position).setZ(20); innerGlow.scale.set(S * 1.2, S * 1.2, 1); innerGlow.material.opacity = (W <= 900 ? .1 : .18) * pInside;
+
     burst.forEach(b => {
       const k = burstT; if (k > 1.2 || reduce) { b.s.material.opacity = 0; return; }
       const d = b.sp * (1 - Math.exp(-k * 4));
@@ -420,7 +506,7 @@ h1 em { font-family: var(--f-serif); font-style: italic; font-weight: 400; lette
       const sz = 22 * (1 - k / 1.2); b.s.scale.set(sz, sz, 1); b.s.material.opacity = 1 - k / 1.2; b.s.material.rotation = k * 4;
     });
 
-    const reach = pOut * 1.06, fadeAt = spectrum.material.uniforms.fadeAt.value;
+    const reach = pOut * 1.06;
     stepEls.forEach((el, i) => { if (reach > fadeAt * (.8 + i * .05)) el.classList.add('lit'); });
     if (reach > fadeAt) resultEl.classList.add('lit');
     if (t > 3.6) hero.classList.remove('arming');
