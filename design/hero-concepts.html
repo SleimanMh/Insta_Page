@@ -1,0 +1,592 @@
+<title>Innovative Hero Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&family=Caveat:wght@500&display=swap">
+<style>
+/* Layout: one review page, three switchable hero concepts (#layers, #sketch, #landscape). Shared nav, copy rhythm and tokens.
+   Comfort first: soft slate instead of black, low-saturation accents, no glow, slow motion. Dark by default, light variant included. */
+@property --gap { syntax: "<length>"; inherits: true; initial-value: 44px; }
+:root {
+  color-scheme: dark;
+  --bg: #0F141A;
+  --bg-2: #131A21;
+  --surface: #18212A;
+  --surface-2: #1E2833;
+  --line: rgba(220, 235, 245, .09);
+  --line-2: rgba(220, 235, 245, .16);
+  --text: #E7ECF0;
+  --dim: #A3AFBA;
+  --mute: #6F7C88;
+  --accent: #7DD3C0;     /* seafoam */
+  --accent-2: #8DB6F2;   /* sky */
+  --warm: #E9C58F;       /* sand */
+  --rose: #E7A3AE;       /* soft rose, used sparingly */
+  --ink: #0D2722;        /* text on accent */
+  --shadow: 0 30px 60px -30px rgba(0, 0, 0, .55);
+  --f: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --pad-l: max(clamp(20px, 4.5vw, 64px), env(safe-area-inset-left, 0px));
+  --pad-r: max(clamp(20px, 4.5vw, 64px), env(safe-area-inset-right, 0px));
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #F3F5F4; --bg-2: #ECF0EF; --surface: #FFFFFF; --surface-2: #F6F8F8;
+    --line: rgba(15, 30, 40, .09); --line-2: rgba(15, 30, 40, .16);
+    --text: #15212B; --dim: #4F5E6A; --mute: #84929C;
+    --accent: #1F8F7A; --accent-2: #3E73C8; --warm: #B07A2C; --rose: #C0606F; --ink: #FFFFFF;
+    --shadow: 0 30px 60px -30px rgba(20, 40, 50, .25);
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #F3F5F4; --bg-2: #ECF0EF; --surface: #FFFFFF; --surface-2: #F6F8F8;
+  --line: rgba(15, 30, 40, .09); --line-2: rgba(15, 30, 40, .16);
+  --text: #15212B; --dim: #4F5E6A; --mute: #84929C;
+  --accent: #1F8F7A; --accent-2: #3E73C8; --warm: #B07A2C; --rose: #C0606F; --ink: #FFFFFF;
+  --shadow: 0 30px 60px -30px rgba(20, 40, 50, .25);
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--f); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 50; background: var(--bg); }
+h1, h2, p, ol, ul { margin: 0; }
+ol, ul { padding: 0; list-style: none; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 8px; }
+
+/* ---------- Review bar ---------- */
+.review { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 10px var(--pad-r) 10px var(--pad-l); background: var(--bg-2); border-bottom: 1px solid var(--line); font-size: 13px; }
+.review .tag { font: 500 10.5px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
+.seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); }
+.seg a, .seg button { cursor: pointer; border: 0; background: transparent; padding: 6px 12px; border-radius: 999px; font-size: 12.5px; color: var(--dim); transition: background .2s, color .2s; white-space: nowrap; }
+.seg [aria-current="true"], .seg [aria-pressed="true"] { background: var(--text); color: var(--bg); }
+
+/* ---------- Shared hero frame ---------- */
+.hero { position: relative; isolation: isolate; overflow: hidden; background: radial-gradient(70% 60% at 75% 40%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%), var(--bg); display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; min-height: min(880px, max(720px, 100svh)); }
+.hero[hidden] { display: none !important; }
+.nav { position: relative; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px var(--pad-r) 0 var(--pad-l); }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 18px; letter-spacing: -.03em; }
+.mark { width: 28px; height: 28px; border-radius: 8px; background: var(--text); position: relative; flex: none; }
+.mark::before { content: ""; position: absolute; left: 12px; top: 11px; width: 4px; height: 11px; border-radius: 2px; background: var(--bg); }
+.mark::after { content: ""; position: absolute; left: 11px; top: 4.5px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.links { display: flex; gap: 4px; }
+.links a { font-size: 14px; color: var(--dim); padding: 8px 14px; border-radius: 999px; transition: color .2s, background .2s; }
+.links a:hover { color: var(--text); background: var(--surface); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; font: 500 15px/1 var(--f); padding: 15px 22px; border-radius: 12px; border: 0; cursor: pointer; white-space: nowrap; transition: transform .25s cubic-bezier(.2,.8,.2,1), background .25s, box-shadow .25s; }
+.btn svg { transition: transform .25s cubic-bezier(.2,.8,.2,1); }
+.btn:hover svg { transform: translateX(3px); }
+.btn-primary { background: var(--accent); color: var(--ink); }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 12px 30px -14px var(--accent); }
+.btn-ghost { background: transparent; color: var(--text); box-shadow: inset 0 0 0 1px var(--line-2); }
+.btn-ghost:hover { background: var(--surface); }
+.btn-sm { padding: 11px 16px; font-size: 14px; border-radius: 10px; }
+
+.body { position: relative; z-index: 3; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(24px, 4vw, 64px); align-items: center; padding: clamp(36px, 6vh, 72px) var(--pad-r) clamp(32px, 5vh, 56px) var(--pad-l); }
+.copy { display: grid; gap: 24px; max-width: 560px; }
+.kicker { justify-self: start; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dim); padding: 6px 12px 6px 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+.kicker i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+h1 { font-weight: 600; font-size: clamp(40px, 5.2vw, 72px); line-height: 1.02; letter-spacing: -.04em; text-wrap: balance; }
+h1 .quiet { color: var(--mute); }
+.lede { font-size: clamp(16px, 1.2vw, 18px); line-height: 1.65; color: var(--dim); max-width: 48ch; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+.stats { display: flex; flex-wrap: wrap; gap: 14px 32px; padding-top: 6px; }
+.stats b { display: block; font-weight: 600; font-size: 22px; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.stats span { font-size: 13px; color: var(--mute); }
+.trust { position: relative; z-index: 3; display: flex; align-items: center; gap: 36px; padding: 22px var(--pad-r) 26px var(--pad-l); border-top: 1px solid var(--line); }
+.trust > span { font-size: 13px; color: var(--mute); white-space: nowrap; }
+.logos { display: flex; gap: clamp(24px, 4vw, 52px); flex: 1; min-width: 0; overflow: hidden; mask-image: linear-gradient(90deg, #000 85%, transparent); -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); }
+.logos span { font-weight: 600; font-size: 16px; letter-spacing: -.02em; color: var(--mute); opacity: .8; white-space: nowrap; }
+.rise { animation: rise .8s cubic-bezier(.2,.8,.2,1) both; }
+.d2 { animation-delay: .08s; } .d3 { animation-delay: .16s; } .d4 { animation-delay: .24s; } .d5 { animation-delay: .32s; }
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+/* ================= A · LAYERS ================= */
+.layers-vis { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(170px, .5fr); gap: 16px; align-items: center; }
+.scene { height: 480px; perspective: 1900px; display: grid; place-items: center; }
+.stack { --gap: 44px; position: relative; width: 380px; height: 264px; transform-style: preserve-3d; transform: rotateX(57deg) rotateZ(-38deg) translateZ(-60px); animation: breathe 9s ease-in-out infinite; transition: transform .8s cubic-bezier(.2,.8,.2,1); }
+@keyframes breathe { 0%, 100% { --gap: 40px; } 50% { --gap: 58px; } }
+.layer { position: absolute; inset: 0; border-radius: 18px; border: 1px solid var(--line-2); background: color-mix(in srgb, var(--surface) 92%, transparent); box-shadow: 0 0 0 1px rgba(0,0,0,.02), 0 40px 50px -30px rgba(0,0,0,.45); transform: translateZ(calc(var(--i) * var(--gap) + var(--lift, 0px))); transition: transform .6s cubic-bezier(.2,.8,.2,1), border-color .4s, background .4s; padding: 16px; overflow: hidden; }
+.layer.hot { --lift: 18px; border-color: color-mix(in srgb, var(--c) 70%, transparent); background: color-mix(in srgb, var(--surface) 84%, var(--c) 16%); }
+.layer .ltag { position: absolute; right: 12px; bottom: 10px; font: 500 10px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--c); }
+/* layer 4: cloud */
+.l-cloud { --i: 0; --c: var(--accent-2); display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-content: center; }
+.l-cloud div { height: 54px; border-radius: 10px; border: 1px dashed var(--line-2); display: grid; align-content: center; justify-items: start; gap: 6px; padding: 0 10px; font: 500 9.5px/1 var(--f-mono); color: var(--dim); }
+.l-cloud div i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+/* layer 3: data */
+.l-data { --i: 1; --c: var(--warm); display: grid; gap: 7px; align-content: center; }
+.l-data div { display: grid; grid-template-columns: 1.4fr 1fr .7fr; gap: 8px; }
+.l-data span { height: 12px; border-radius: 4px; background: color-mix(in srgb, var(--warm) 22%, var(--surface-2)); }
+.l-data div:first-child span { background: color-mix(in srgb, var(--warm) 55%, var(--surface-2)); height: 9px; }
+/* layer 2: api */
+.l-api { --i: 2; --c: var(--rose); font: 500 11px/1.9 var(--f-mono); color: var(--dim); }
+.l-api b { font-weight: 500; color: var(--rose); margin-right: 8px; }
+.l-api em { font-style: normal; color: var(--accent); float: right; }
+/* layer 1: interface */
+.l-ui { --i: 3; --c: var(--accent); display: grid; grid-template-columns: 54px 1fr; gap: 12px; }
+.l-ui .side { border-radius: 10px; background: var(--surface-2); display: grid; gap: 8px; align-content: start; padding: 10px 8px; }
+.l-ui .side i { height: 7px; border-radius: 3px; background: var(--line-2); }
+.l-ui .side i:first-child { background: var(--accent); width: 70%; }
+.l-ui .main { display: grid; grid-template-rows: auto 1fr; gap: 10px; }
+.l-ui .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.l-ui .cards div { border-radius: 9px; background: var(--surface-2); padding: 8px; font-weight: 600; font-size: 14px; letter-spacing: -.02em; }
+.l-ui .cards small { display: block; font-weight: 400; font-size: 8.5px; color: var(--mute); letter-spacing: 0; }
+.l-ui .chart { border-radius: 9px; background: var(--surface-2); position: relative; overflow: hidden; }
+.l-ui .chart svg { position: absolute; inset: auto 0 0 0; width: 100%; height: 80%; }
+.legend { display: grid; gap: 4px; }
+.legend button { text-align: left; cursor: pointer; display: grid; grid-template-columns: 10px minmax(0, 1fr); gap: 12px; align-items: start; border: 0; background: transparent; padding: 12px 12px 12px 6px; border-radius: 12px; transition: background .25s; }
+.legend button:hover, .legend button.hot { background: var(--surface); }
+.legend i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); margin-top: 4px; }
+.legend b { display: block; font-weight: 600; font-size: 14.5px; letter-spacing: -.01em; }
+.legend span { display: block; font-size: 12.5px; color: var(--mute); line-height: 1.45; margin-top: 2px; }
+
+/* ================= B · SKETCH TO SHIP ================= */
+.ship-vis { display: grid; gap: 22px; justify-items: center; perspective: 2000px; }
+.window { width: min(100%, 600px); aspect-ratio: 600 / 410; border-radius: 16px; background: var(--surface); border: 1px solid var(--line-2); box-shadow: var(--shadow); overflow: hidden; display: grid; grid-template-rows: auto 1fr; transform: rotateY(var(--ry, -7deg)) rotateX(var(--rx, 3deg)); transition: transform .9s cubic-bezier(.2,.8,.2,1); }
+.wbar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.wbar .dots { display: flex; gap: 6px; } .wbar .dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--line-2); }
+.wbar .url { font: 400 11.5px/1 var(--f-mono); color: var(--mute); background: var(--bg-2); padding: 5px 12px; border-radius: 6px; }
+.wstage { position: relative; }
+.st { position: absolute; inset: 0; padding: 22px; opacity: 0; transform: scale(.985); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.8,.2,1), filter .8s; filter: blur(4px); pointer-events: none; }
+.st.on { opacity: 1; transform: none; filter: none; pointer-events: auto; }
+/* brief */
+.st-brief { display: grid; align-content: center; padding: 34px 44px; gap: 14px; }
+.st-brief .from { font: 500 11px/1 var(--f-mono); color: var(--mute); letter-spacing: .06em; text-transform: uppercase; }
+.st-brief p { font-family: "Caveat", cursive; font-size: clamp(22px, 2.6vw, 30px); line-height: 1.35; color: var(--text); min-height: 4.2em; }
+.st-brief .caret { display: inline-block; width: 2px; height: 1em; background: var(--accent); vertical-align: -0.12em; margin-left: 2px; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+/* app layout shared by wire / design / live */
+.app { position: absolute; inset: 0; padding: 18px; display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 14px; }
+.app .nav2 { border-radius: 10px; padding: 12px 10px; display: grid; gap: 10px; align-content: start; }
+.app .nav2 i { height: 9px; border-radius: 4px; display: block; }
+.app .content { display: grid; grid-template-rows: auto auto 1fr; gap: 12px; min-width: 0; }
+.app .head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.app .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.app .tile { border-radius: 10px; padding: 10px 12px; min-height: 64px; min-width: 0; }
+.app .rows { display: grid; gap: 8px; align-content: start; }
+.app .row { border-radius: 10px; height: 38px; display: flex; align-items: center; gap: 10px; padding: 0 12px; font-size: 12.5px; min-width: 0; }
+/* wire */
+.st-wire .nav2, .st-wire .tile, .st-wire .row { border: 1.5px dashed var(--line-2); }
+.st-wire .nav2 i, .st-wire .w { background: var(--line); }
+.st-wire .w { display: block; height: 10px; border-radius: 4px; }
+.st-wire .note { position: absolute; font-family: "Caveat", cursive; font-size: 18px; color: var(--warm); }
+/* design + live */
+.st-design .nav2, .st-live .nav2 { background: var(--surface-2); }
+.st-design .nav2 i, .st-live .nav2 i { background: var(--line-2); }
+.st-design .nav2 i:first-child, .st-live .nav2 i:first-child { background: var(--accent); }
+.app h3 { margin: 0; font-weight: 600; font-size: 17px; letter-spacing: -.02em; }
+.app .pill { font-size: 11.5px; padding: 6px 10px; border-radius: 999px; background: var(--accent); color: var(--ink); font-weight: 500; white-space: nowrap; }
+.st-design .tile, .st-live .tile { background: var(--surface-2); }
+.app .tile b { display: block; font-weight: 600; font-size: 20px; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.app .tile small { font-size: 11px; color: var(--mute); }
+.st-design .row, .st-live .row { background: var(--surface-2); }
+.app .row i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.app .row span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .row em { font-style: normal; font-size: 11px; color: var(--mute); }
+.live-dot { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--accent); font-weight: 500; }
+.live-dot::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 0 var(--accent); animation: pulse 2.4s ease-out infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); } 80%, 100% { box-shadow: 0 0 0 7px transparent; } }
+.toast { position: absolute; right: 18px; bottom: 18px; display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-radius: 12px; background: var(--text); color: var(--bg); font-size: 12.5px; font-weight: 500; box-shadow: var(--shadow); transform: translateY(16px); opacity: 0; transition: all .6s .5s cubic-bezier(.2,.8,.2,1); }
+.st-live.on .toast { transform: none; opacity: 1; }
+.toast i { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); display: grid; place-items: center; color: var(--ink); font-style: normal; font-size: 11px; }
+/* scrubber */
+.scrub { width: min(100%, 600px); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.scrub button { cursor: pointer; text-align: left; border: 0; background: transparent; padding: 0; display: grid; gap: 8px; }
+.scrub .bar { height: 3px; border-radius: 2px; background: var(--line-2); overflow: hidden; }
+.scrub .bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+.scrub .done .bar i { width: 100%; }
+.scrub b { font-weight: 500; font-size: 13.5px; color: var(--mute); transition: color .3s; }
+.scrub small { font: 400 11px/1 var(--f-mono); color: var(--mute); }
+.scrub .cur b, .scrub .done b { color: var(--text); }
+
+/* ================= C · LANDSCAPE ================= */
+#landscape .body { grid-template-columns: minmax(0, 1fr); align-items: start; }
+#land { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; display: block; }
+.landfade { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(90deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 70%, transparent) 34%, transparent 60%); }
+.pin { position: absolute; left: 0; top: 0; z-index: 3; display: grid; justify-items: center; gap: 0; transform: translate(-50%, -100%); will-change: transform; pointer-events: none; }
+.pin .card { pointer-events: auto; display: grid; gap: 2px; padding: 9px 12px; border-radius: 12px; background: color-mix(in srgb, var(--surface) 88%, transparent); border: 1px solid var(--line-2); box-shadow: var(--shadow); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); white-space: nowrap; }
+.pin .card b { font-weight: 600; font-size: 13px; letter-spacing: -.01em; display: flex; align-items: center; gap: 7px; }
+.pin .card b i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.pin .card small { font: 400 10.5px/1.2 var(--f-mono); color: var(--mute); }
+.pin .stem { width: 1px; height: 46px; background: linear-gradient(var(--line-2), var(--c)); }
+.pin .foot { width: 7px; height: 7px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 22%, transparent); margin-top: -3px; }
+
+/* ---------- Concept notes ---------- */
+.notes { max-width: 1200px; margin: 0 auto; padding: 56px var(--pad-r) 72px var(--pad-l); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 32px 64px; }
+.notes h2 { font-weight: 600; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; line-height: 1.1; text-wrap: balance; }
+.notes .label { font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--mute); display: block; margin-bottom: 12px; }
+.notes ul { display: grid; gap: 14px; }
+.notes li { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line); font-size: 14.5px; color: var(--dim); line-height: 1.55; }
+.notes li b { color: var(--text); font-weight: 500; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) { .links { display: none; } }
+@media (max-width: 920px) {
+  .hero { min-height: 0; }
+  .body { grid-template-columns: minmax(0, 1fr); padding-block: 40px 32px; }
+  .layers-vis { grid-template-columns: minmax(0, 1fr); }
+  .scene { height: 380px; }
+  .stack { width: 280px; height: 196px; }
+  .legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .trust { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .logos { width: 100%; }
+  .landfade { background: linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 70%, transparent) 45%, transparent 70%); }
+  #landscape .body { padding-bottom: 320px; }
+  .notes { grid-template-columns: minmax(0, 1fr); }
+  .notes li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+}
+@media (max-width: 560px) {
+  .scene { height: 320px; }
+  .stack { width: 230px; height: 162px; }
+  .layer { padding: 10px; }
+  .l-api { font-size: 9px; }
+  .app { grid-template-columns: minmax(0, 1fr); padding: 12px; }
+  .app .nav2 { display: none; }
+  .app .tile { min-height: 50px; padding: 8px; }
+  .app .tile b { font-size: 15px; }
+  .app .row:nth-child(n+3) { display: none; }
+  .st-brief { padding: 20px 22px; }
+  .scrub small { display: none; }
+  .ctas .btn { flex: 1 1 auto; }
+  .nav .btn-sm { padding: 10px 13px; font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise, .stack, .live-dot::before, .st-brief .caret { animation: none; }
+  .st, .layer, .window, .toast { transition: none; }
+}
+</style>
+
+<div class="review" role="region" aria-label="Review controls">
+  <span class="tag">Review only · Concept</span>
+  <nav class="seg" aria-label="Concepts">
+    <a href="#layers" data-view="layers">A · Layers</a>
+    <a href="#sketch" data-view="sketch">B · Sketch to ship</a>
+    <a href="#landscape" data-view="landscape">C · Landscape</a>
+  </nav>
+  <span class="tag">Theme</span>
+  <div class="seg"><button type="button" data-theme-set="dark">Dark</button><button type="button" data-theme-set="light">Light</button><button type="button" data-theme-set="system">System</button></div>
+</div>
+
+<!-- ================= A · LAYERS ================= -->
+<section class="hero" id="layers" aria-label="Concept A, Layers">
+  <header class="nav">
+    <a class="brand" href="#layers"><span class="mark" aria-hidden="true"></span>innovative</a>
+    <nav class="links" aria-label="Main"><a href="#layers">Services</a><a href="#layers">Work</a><a href="#layers">Process</a><a href="#layers">About</a><a href="#layers">Contact</a></nav>
+    <a class="btn btn-primary btn-sm" href="#layers">Get a Quote</a>
+  </header>
+  <div class="body">
+    <div class="copy">
+      <span class="kicker rise"><i></i>Design · Development · Cloud · Care</span>
+      <h1 class="rise d2">Every layer of your product, <span class="quiet">built by one team.</span></h1>
+      <p class="lede rise d3">Interface, APIs, data and cloud. Innovative designs, develops, deploys and maintains the whole stack, so nothing falls between vendors and nobody has to guess who owns a problem.</p>
+      <div class="ctas rise d4">
+        <a class="btn btn-primary" href="#layers">Get a Quote <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="btn btn-ghost" href="#layers">Explore Our Work</a>
+      </div>
+      <div class="stats rise d5"><div><b>120+</b><span>products shipped</span></div><div><b>4 layers</b><span>one accountable team</span></div><div><b>99.98%</b><span>uptime on what we run</span></div></div>
+    </div>
+    <div class="layers-vis">
+      <div class="scene" aria-hidden="true">
+        <div class="stack" id="stack">
+          <div class="layer l-cloud" data-l="cloud"><div><i></i>eu-central</div><div><i></i>us-east</div><div><i></i>ap-south</div><div><i></i>CDN edge</div><div><i></i>backups</div><div><i></i>monitoring</div><span class="ltag">Cloud</span></div>
+          <div class="layer l-data" data-l="data"><div><span></span><span></span><span></span></div><div><span></span><span></span><span></span></div><div><span></span><span></span><span></span></div><div><span></span><span></span><span></span></div><div><span></span><span></span><span></span></div><div><span></span><span></span><span></span></div><span class="ltag">Data</span></div>
+          <div class="layer l-api" data-l="api"><div><b>GET</b>/bookings<em>200 · 38ms</em></div><div><b>POST</b>/payments<em>201 · 112ms</em></div><div><b>GET</b>/members/:id<em>200 · 21ms</em></div><div><b>POST</b>/ai/suggest<em>200 · 640ms</em></div><div><b>PUT</b>/classes/:id<em>200 · 44ms</em></div><span class="ltag">APIs</span></div>
+          <div class="layer l-ui" data-l="ui">
+            <div class="side"><i></i><i></i><i></i><i></i></div>
+            <div class="main">
+              <div class="cards"><div>2,481<small>bookings</small></div><div>94%<small>attendance</small></div><div>€48k<small>revenue</small></div></div>
+              <div class="chart"><svg viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M0 50 L25 44 L50 46 L75 34 L100 36 L125 24 L150 26 L175 14 L200 10 L200 60 L0 60Z" fill="var(--accent)" opacity=".18"/><path d="M0 50 L25 44 L50 46 L75 34 L100 36 L125 24 L150 26 L175 14 L200 10" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg></div>
+            </div>
+            <span class="ltag">Interface</span>
+          </div>
+        </div>
+      </div>
+      <div class="legend" id="legend">
+        <button type="button" data-l="ui" style="--c: var(--accent)"><i></i><div><b>Interface</b><span>Web and mobile apps, UI/UX design</span></div></button>
+        <button type="button" data-l="api" style="--c: var(--rose)"><i></i><div><b>APIs &amp; logic</b><span>Backends, integrations, AI features</span></div></button>
+        <button type="button" data-l="data" style="--c: var(--warm)"><i></i><div><b>Data</b><span>Database design, migrations, analytics</span></div></button>
+        <button type="button" data-l="cloud" style="--c: var(--accent-2)"><i></i><div><b>Cloud &amp; care</b><span>Hosting, DevOps, monitoring, support</span></div></button>
+      </div>
+    </div>
+  </div>
+  <div class="trust"><span>Trusted by product teams at</span><div class="logos"><span>Northwind</span><span>Halcyon Health</span><span>Paysera Labs</span><span>Atlas Freight</span><span>Maison Verre</span><span>Kinetiq</span><span>Orbital</span></div></div>
+</section>
+
+<!-- ================= B · SKETCH TO SHIP ================= -->
+<section class="hero" id="sketch" aria-label="Concept B, Sketch to ship" hidden>
+  <header class="nav">
+    <a class="brand" href="#sketch"><span class="mark" aria-hidden="true"></span>innovative</a>
+    <nav class="links" aria-label="Main"><a href="#sketch">Services</a><a href="#sketch">Work</a><a href="#sketch">Process</a><a href="#sketch">About</a><a href="#sketch">Contact</a></nav>
+    <a class="btn btn-primary btn-sm" href="#sketch">Get a Quote</a>
+  </header>
+  <div class="body">
+    <div class="copy">
+      <span class="kicker rise"><i></i>Booking new projects for Q1 2027</span>
+      <h1 class="rise d2">From a rough brief <span class="quiet">to a live product.</span></h1>
+      <p class="lede rise d3">Watch an idea turn into software. We take you from the first conversation through wireframes, design and development to a launch, and then we keep it running.</p>
+      <div class="ctas rise d4">
+        <a class="btn btn-primary" href="#sketch">Get a Quote <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="btn btn-ghost" href="#sketch">Explore Our Work</a>
+      </div>
+      <div class="stats rise d5"><div><b>11 weeks</b><span>median brief to launch</span></div><div><b>120+</b><span>products shipped</span></div><div><b>4.9/5</b><span>client rating</span></div></div>
+    </div>
+    <div class="ship-vis" id="ship">
+      <div class="window">
+        <div class="wbar"><span class="dots"><i></i><i></i><i></i></span><span class="url">studio-booking.app</span></div>
+        <div class="wstage">
+          <div class="st st-brief on" data-s="0">
+            <span class="from">Brief · from Halcyon Studios</span>
+            <p><span id="typed"></span><span class="caret"></span></p>
+          </div>
+          <div class="st st-wire" data-s="1">
+            <div class="app">
+              <div class="nav2"><i></i><i></i><i></i><i></i></div>
+              <div class="content">
+                <div class="head"><span class="w" style="width: 40%"></span><span class="w" style="width: 18%"></span></div>
+                <div class="tiles"><div class="tile"><span class="w" style="width: 60%"></span></div><div class="tile"><span class="w" style="width: 50%"></span></div><div class="tile"><span class="w" style="width: 70%"></span></div></div>
+                <div class="rows"><div class="row"><span class="w" style="width: 70%"></span></div><div class="row"><span class="w" style="width: 55%"></span></div><div class="row"><span class="w" style="width: 64%"></span></div></div>
+              </div>
+            </div>
+            <span class="note" style="right: 24px; top: 60px">key numbers up top</span>
+            <span class="note" style="left: 150px; bottom: 22px">one-tap booking ↑</span>
+          </div>
+          <div class="st st-design" data-s="2">
+            <div class="app">
+              <div class="nav2"><i></i><i></i><i></i><i></i></div>
+              <div class="content">
+                <div class="head"><h3>Today's classes</h3><span class="pill">Book a class</span></div>
+                <div class="tiles"><div class="tile"><b>18</b><small>classes today</small></div><div class="tile"><b>212</b><small>members booked</small></div><div class="tile"><b>6</b><small>spots left</small></div></div>
+                <div class="rows">
+                  <div class="row"><i style="background: var(--accent)"></i><span>Reformer Pilates · Studio A</span><em>07:30</em></div>
+                  <div class="row"><i style="background: var(--warm)"></i><span>Strength Basics · Studio C</span><em>12:00</em></div>
+                  <div class="row"><i style="background: var(--accent-2)"></i><span>Yin Yoga · Studio B</span><em>18:45</em></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="st st-live" data-s="3">
+            <div class="app">
+              <div class="nav2"><i></i><i></i><i></i><i></i></div>
+              <div class="content">
+                <div class="head"><h3>Today's classes</h3><span class="live-dot">Live</span></div>
+                <div class="tiles"><div class="tile"><b>18</b><small>classes today</small></div><div class="tile"><b id="liveCount">212</b><small>members booked</small></div><div class="tile"><b id="liveLeft">6</b><small>spots left</small></div></div>
+                <div class="rows">
+                  <div class="row"><i style="background: var(--accent)"></i><span>Reformer Pilates · Studio A</span><em>Full</em></div>
+                  <div class="row"><i style="background: var(--warm)"></i><span>Strength Basics · Studio C</span><em>12:00</em></div>
+                  <div class="row"><i style="background: var(--accent-2)"></i><span>Yin Yoga · Studio B</span><em>18:45</em></div>
+                </div>
+              </div>
+            </div>
+            <div class="toast"><i>✓</i>Deployed v1.0 · all checks passed</div>
+          </div>
+        </div>
+      </div>
+      <div class="scrub" id="scrub">
+        <button type="button" data-s="0" class="cur"><span class="bar"><i></i></span><b>Brief</b><small>Week 1</small></button>
+        <button type="button" data-s="1"><span class="bar"><i></i></span><b>Wireframe</b><small>Week 2</small></button>
+        <button type="button" data-s="2"><span class="bar"><i></i></span><b>Design</b><small>Weeks 3–4</small></button>
+        <button type="button" data-s="3"><span class="bar"><i></i></span><b>Live</b><small>Week 11</small></button>
+      </div>
+    </div>
+  </div>
+  <div class="trust"><span>Trusted by product teams at</span><div class="logos"><span>Northwind</span><span>Halcyon Health</span><span>Paysera Labs</span><span>Atlas Freight</span><span>Maison Verre</span><span>Kinetiq</span><span>Orbital</span></div></div>
+</section>
+
+<!-- ================= C · LANDSCAPE ================= -->
+<section class="hero" id="landscape" aria-label="Concept C, Landscape" hidden>
+  <canvas id="land" aria-hidden="true"></canvas>
+  <div class="landfade"></div>
+  <header class="nav">
+    <a class="brand" href="#landscape"><span class="mark" aria-hidden="true"></span>innovative</a>
+    <nav class="links" aria-label="Main"><a href="#landscape">Services</a><a href="#landscape">Work</a><a href="#landscape">Process</a><a href="#landscape">About</a><a href="#landscape">Contact</a></nav>
+    <a class="btn btn-primary btn-sm" href="#landscape">Get a Quote</a>
+  </header>
+  <div class="body">
+    <div class="copy">
+      <span class="kicker rise"><i></i>Software studio since 2017</span>
+      <h1 class="rise d2">Steady software <span class="quiet">for ambitious ideas.</span></h1>
+      <p class="lede rise d3">Web platforms, mobile apps, AI features and the cloud they run on. Designed with care, built to scale, and maintained long after launch day.</p>
+      <div class="ctas rise d4">
+        <a class="btn btn-primary" href="#landscape">Get a Quote <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="btn btn-ghost" href="#landscape">Explore Our Work</a>
+      </div>
+      <div class="stats rise d5"><div><b>120+</b><span>products shipped</span></div><div><b>14</b><span>industries</span></div><div><b>99.98%</b><span>uptime on what we run</span></div></div>
+    </div>
+  </div>
+  <div class="pin" data-gx=".47" data-gz=".36" style="--c: var(--accent)"><div class="card"><b><i></i>Web platforms</b><small>React · Next.js · Node</small></div><span class="stem"></span><span class="foot"></span></div>
+  <div class="pin" data-gx=".6" data-gz=".6" style="--c: var(--warm)"><div class="card"><b><i></i>Mobile apps</b><small>iOS · Android · Flutter</small></div><span class="stem"></span><span class="foot"></span></div>
+  <div class="pin" data-gx=".56" data-gz=".14" style="--c: var(--rose)"><div class="card"><b><i></i>AI features</b><small>LLMs · RAG · automation</small></div><span class="stem"></span><span class="foot"></span></div>
+  <div class="pin" data-gx=".36" data-gz=".72" style="--c: var(--accent-2)"><div class="card"><b><i></i>Cloud &amp; care</b><small>AWS · CI/CD · 24/7 ops</small></div><span class="stem"></span><span class="foot"></span></div>
+  <div class="trust"><span>Trusted by product teams at</span><div class="logos"><span>Northwind</span><span>Halcyon Health</span><span>Paysera Labs</span><span>Atlas Freight</span><span>Maison Verre</span><span>Kinetiq</span><span>Orbital</span></div></div>
+</section>
+
+<section class="notes" aria-label="About this concept">
+  <div><span class="label">Why this concept</span><h2 id="noteTitle">Layers</h2></div>
+  <ul id="noteList"></ul>
+</section>
+
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const NOTES = {
+    layers: { title: 'A · Layers: the full stack, made visible', items: [
+      ['The idea', 'Your product drawn as an exploded stack: interface, APIs, data and cloud. It shows at a glance that <b>Innovative builds every layer</b>, not only the screens.'],
+      ['Easy on the eye', 'Matte panels, no glow, one slow breathing motion. Hover a layer in the list and it lifts out of the stack.'],
+      ['Carries into', 'Services page organised by layer, and the quote builder where you pick layers and see each one priced.'],
+    ]},
+    sketch: { title: 'B · Sketch to ship: watch an idea become software', items: [
+      ['The idea', 'One app window plays the whole journey: a handwritten brief, a wireframe, the design, then the live product with a deploy notice. <b>The hero is a short demo of how you work.</b>'],
+      ['Easy on the eye', 'Calm crossfades every few seconds, a slight 3D tilt that follows the cursor, and clickable stages so visitors control the pace.'],
+      ['Carries into', 'Case studies told in the same four stages, and a process section that reuses the timeline.'],
+    ]},
+    landscape: { title: 'C · Landscape: steady ground for ambitious ideas', items: [
+      ['The idea', 'A slow, softly lit terrain of points with your services pinned on it like places on a map. <b>It feels technical and calm</b>, with no screens to read.'],
+      ['Easy on the eye', 'Very slow motion, low contrast, and a fade that keeps the copy area clean. The most atmospheric of the three.'],
+      ['Carries into', 'Section backgrounds, a map-style portfolio where projects are pins, and a quiet loading state.'],
+    ]},
+  };
+
+  /* ---------- Views ---------- */
+  const views = ['layers', 'sketch', 'landscape'];
+  function show() {
+    const v = views.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'layers';
+    views.forEach(id => document.getElementById(id).hidden = id !== v);
+    document.querySelectorAll('[data-view]').forEach(a => a.setAttribute('aria-current', String(a.dataset.view === v)));
+    const n = NOTES[v];
+    document.getElementById('noteTitle').textContent = n.title;
+    document.getElementById('noteList').innerHTML = n.items.map(([k, t]) => `<li><b>${k}</b><span>${t}</span></li>`).join('');
+    if (v === 'sketch') ship.start(); else ship.stop();
+    if (v === 'landscape') land.start(); else land.stop();
+  }
+
+  /* ---------- Theme ---------- */
+  function setTheme(t) {
+    if (t === 'system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t);
+    document.querySelectorAll('[data-theme-set]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themeSet === t)));
+    try { localStorage.setItem('hero-theme', t); } catch (e) {}
+    land.recolor();
+  }
+
+  /* ---------- A: layers ---------- */
+  const stack = document.getElementById('stack');
+  document.querySelectorAll('#legend button').forEach(b => {
+    const on = v => { stack.querySelectorAll('.layer').forEach(l => l.classList.toggle('hot', v && l.dataset.l === b.dataset.l)); b.classList.toggle('hot', v); };
+    b.addEventListener('mouseenter', () => on(true)); b.addEventListener('mouseleave', () => on(false));
+    b.addEventListener('focus', () => on(true)); b.addEventListener('blur', () => on(false));
+  });
+  document.getElementById('layers').addEventListener('pointermove', e => {
+    if (reduce) return;
+    const r = e.currentTarget.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+    stack.style.transform = `rotateX(${57 - y * 6}deg) rotateZ(${-38 + x * 8}deg) translateZ(-60px)`;
+  });
+
+  /* ---------- B: sketch to ship ---------- */
+  const ship = (() => {
+    const brief = 'We run 12 studios. Members should book classes, pay, and get reminders. Staff need to see who’s coming. Can we launch before summer?';
+    const typed = document.getElementById('typed'), stages = [...document.querySelectorAll('#ship .st')], steps = [...document.querySelectorAll('#scrub button')];
+    const win = document.querySelector('#ship .window');
+    const DUR = [6200, 4200, 4600, 6000];
+    let cur = 0, t0 = 0, raf = 0, on = false, typeTimer = 0, liveTimer = 0;
+    function go(i) {
+      cur = i; t0 = performance.now();
+      stages.forEach((s, k) => s.classList.toggle('on', k === i));
+      steps.forEach((b, k) => { b.classList.toggle('cur', k === i); b.classList.toggle('done', k < i); b.querySelector('.bar i').style.width = k < i ? '100%' : '0'; });
+      clearInterval(typeTimer); clearInterval(liveTimer);
+      if (i === 0) {
+        let n = reduce ? brief.length : 0; typed.textContent = brief.slice(0, n);
+        if (!reduce) typeTimer = setInterval(() => { n += 1; typed.textContent = brief.slice(0, n); if (n >= brief.length) clearInterval(typeTimer); }, 32);
+      }
+      if (i === 3) {
+        let c = 212, l = 6; const cEl = document.getElementById('liveCount'), lEl = document.getElementById('liveLeft');
+        cEl.textContent = c; lEl.textContent = l;
+        if (!reduce) liveTimer = setInterval(() => { if (l > 1) { c += 1; l -= 1; cEl.textContent = c; lEl.textContent = l; } }, 1100);
+      }
+    }
+    function tick(now) {
+      if (!on) return;
+      const p = Math.min(1, (now - t0) / DUR[cur]);
+      steps[cur].querySelector('.bar i').style.width = (p * 100).toFixed(1) + '%';
+      if (p >= 1) go((cur + 1) % 4);
+      raf = requestAnimationFrame(tick);
+    }
+    steps.forEach((b, k) => b.addEventListener('click', () => go(k)));
+    document.getElementById('sketch').addEventListener('pointermove', e => {
+      if (reduce) return;
+      const r = e.currentTarget.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+      win.style.setProperty('--ry', `${-7 + x * 8}deg`); win.style.setProperty('--rx', `${3 - y * 5}deg`);
+    });
+    return {
+      start() { if (on) return; on = true; go(reduce ? 3 : 0); if (!reduce) raf = requestAnimationFrame(tick); },
+      stop() { on = false; cancelAnimationFrame(raf); clearInterval(typeTimer); clearInterval(liveTimer); },
+    };
+  })();
+
+  /* ---------- C: landscape ---------- */
+  const land = (() => {
+    const hero = document.getElementById('landscape'), cv = document.getElementById('land'), ctx = cv.getContext('2d');
+    const pins = [...hero.querySelectorAll('.pin')];
+    let W = 0, H = 0, dpr = 1, raf = 0, on = false, colors = null, t0 = performance.now();
+    const NX = 96, NZ = 44;
+    function recolor() {
+      const cs = getComputedStyle(document.documentElement);
+      const hex = v => { const c = cs.getPropertyValue(v).trim(); const d = document.createElement('div'); d.style.color = c; document.body.appendChild(d); const m = getComputedStyle(d).color.match(/\d+(\.\d+)?/g).map(Number); d.remove(); return m; };
+      colors = { a: hex('--accent'), b: hex('--accent-2'), w: hex('--warm'), light: cs.getPropertyValue('color-scheme').trim() === 'light' };
+    }
+    function size() {
+      const r = hero.getBoundingClientRect(); W = r.width; H = r.height; dpr = Math.min(2, devicePixelRatio || 1);
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    }
+    const height = (x, z, t) => Math.sin(x * 3.1 + t * .18) * .5 + Math.sin(z * 4.3 - t * .13 + x * 1.7) * .35 + Math.sin((x + z) * 7.0 + t * .1) * .12 + Math.cos(x * 1.3 - z * 2.2) * .4;
+    // project grid coords (gx, gz in 0..1) to screen
+    function project(gx, gz, t) {
+      const narrow = W < 920;
+      const horizon = narrow ? H - 340 : H * .34, camH = .3;
+      const K = (H - horizon) * .86 / camH;
+      const z = .9 + gz * 5, f = K / z;
+      const hgt = height(gx * 2, gz * 2, t) * .15;
+      const cx = narrow ? W * .5 : W * .66;
+      return { x: cx + (gx - .5) * 3.6 * f, y: horizon + (camH - hgt) * f * .9, depth: gz, h: hgt, f };
+    }
+    function draw(now) {
+      const t = reduce ? 20 : (now - t0) / 1000;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+      if (!colors) recolor();
+      const { a, b, w } = colors;
+      for (let iz = NZ - 1; iz >= 0; iz--) {
+        const gz = iz / (NZ - 1);
+        for (let ix = 0; ix < NX; ix++) {
+          const gx = ix / (NX - 1), p = project(gx, gz, t);
+          if (p.x < -10 || p.x > W + 10 || p.y < -10 || p.y > H + 10) continue;
+          const hn = Math.min(1, Math.max(0, (p.h + .15) / .3));
+          const c = hn > .5 ? a.map((v, i) => v + (w[i] - v) * (hn - .5) * 1.2) : b.map((v, i) => v + (a[i] - v) * hn * 2);
+          const fog = 1 - gz * .85;
+          const r = (.5 + p.f / 1100) * (.8 + hn * .5);
+          ctx.fillStyle = `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${(.18 + hn * .5) * fog})`;
+          ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(.4, r), 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      pins.forEach(pin => {
+        const p = project(+pin.dataset.gx, +pin.dataset.gz, t);
+        pin.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px) translate(-50%, calc(-100% + 3px))`;
+        pin.style.opacity = p.x < 40 || p.x > W - 40 ? 0 : 1;
+      });
+      if (on && !reduce) raf = requestAnimationFrame(draw);
+    }
+    new ResizeObserver(() => { size(); if (on) draw(performance.now()); }).observe(hero);
+    return {
+      start() { if (on) return; on = true; size(); recolor(); raf = requestAnimationFrame(draw); },
+      stop() { on = false; cancelAnimationFrame(raf); },
+      recolor() { colors = null; if (on && reduce) draw(performance.now()); },
+    };
+  })();
+
+  document.querySelectorAll('[data-theme-set]').forEach(b => b.addEventListener('click', () => setTheme(b.dataset.themeSet)));
+  matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => land.recolor());
+  let theme = 'dark'; try { theme = localStorage.getItem('hero-theme') || theme; } catch (e) {}
+  setTheme(theme);
+  addEventListener('hashchange', show);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { ship.stop(); land.stop(); } else show(); });
+  show();
+})();
+</script>
