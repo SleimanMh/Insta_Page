@@ -29,16 +29,34 @@ function logo(g: Ctx, x: number, y: number) {
   g.strokeStyle = INK; g.lineWidth = 2; g.beginPath(); g.moveTo(x + 11, y); g.lineTo(x + 22, y + 19); g.lineTo(x, y + 19); g.closePath(); g.stroke();
   text(g, 'innovative', x + 32, y + 17, 22, INK, 400);
 }
-function mountains(g: Ctx, x: number, y: number, w: number, h: number) {
+function mountains(g: Ctx, x: number, y: number, w: number, h: number, seed = 1) {
   g.save(); rr(g, x, y, w, h, 18); g.clip();
-  const sky = g.createLinearGradient(0, y, 0, y + h); sky.addColorStop(0, '#3A3836'); sky.addColorStop(1, '#141414'); g.fillStyle = sky; g.fillRect(x, y, w, h);
-  const ridge = (base: number, amp: number, col: string, seed: number) => {
+  // pale overcast sky, darker toward the top
+  const sky = g.createLinearGradient(0, y, 0, y + h); sky.addColorStop(0, '#8F8D8A'); sky.addColorStop(.55, '#C9C6C0'); sky.addColorStop(1, '#5A5855');
+  g.fillStyle = sky; g.fillRect(x, y, w, h);
+  let r = seed * 9301 + 49297;
+  const rand = () => { r = (r * 9301 + 49297) % 233280; return r / 233280; };
+  // a jagged ridge from midpoint displacement: rough like rock, not a wave
+  const ridge = (base: number, rough: number, peakAt: number, peak: number, top: string, bottom: string) => {
+    const n = 64, pts = new Array(n + 1).fill(0);
+    pts[0] = 0; pts[n] = 0;
+    for (let step = n; step > 1; step /= 2) for (let i = step / 2; i < n; i += step) pts[i] = (pts[i - step / 2] + pts[i + step / 2]) / 2 + (rand() - .5) * rough * step / n;
     g.beginPath(); g.moveTo(x, y + h);
-    for (let i = 0; i <= 24; i++) { const px = x + (w * i) / 24; const py = y + base - Math.abs(Math.sin(i * 0.9 + seed)) * amp - Math.sin(i * 2.3 + seed) * amp * .25; g.lineTo(px, py); }
-    g.lineTo(x + w, y + h); g.closePath(); g.fillStyle = col; g.fill();
+    for (let i = 0; i <= n; i++) {
+      const u = i / n, mass = Math.exp(-Math.pow((u - peakAt) / .22, 2)) * peak;
+      g.lineTo(x + u * w, y + base - mass * h - pts[i] * h);
+    }
+    g.lineTo(x + w, y + h); g.closePath();
+    const fill = g.createLinearGradient(0, y + base - peak * h, 0, y + h); fill.addColorStop(0, top); fill.addColorStop(1, bottom);
+    g.fillStyle = fill; g.fill();
   };
-  ridge(h * .55, h * .32, '#6E6A64', 1); ridge(h * .72, h * .26, '#3F3C39', 3); ridge(h * .9, h * .16, '#1C1B1A', 5);
-  const shine = g.createLinearGradient(x, y, x + w, y + h); shine.addColorStop(0, 'rgba(255,240,215,.18)'); shine.addColorStop(.5, 'rgba(255,240,215,0)'); g.fillStyle = shine; g.fillRect(x, y, w, h);
+  ridge(h * .62, 1.1, .78, .3, '#77746F', '#4A4845');     // far range, softened by haze
+  ridge(h * .8, 1.6, .38, .62, '#2B2A28', '#121211');      // the dark peak
+  ridge(h * .98, 1.2, .1, .22, '#1A1918', '#0B0B0B');      // foreground rock
+  // mist pooled in the valley
+  const mist = g.createLinearGradient(0, y + h * .55, 0, y + h * .85); mist.addColorStop(0, 'rgba(220,216,208,0)'); mist.addColorStop(.6, 'rgba(220,216,208,.35)'); mist.addColorStop(1, 'rgba(220,216,208,0)');
+  g.fillStyle = mist; g.fillRect(x, y + h * .5, w, h * .4);
+  const shine = g.createLinearGradient(x, y, x + w, y + h); shine.addColorStop(0, 'rgba(255,240,215,.12)'); shine.addColorStop(.5, 'rgba(255,240,215,0)'); g.fillStyle = shine; g.fillRect(x, y, w, h);
   g.restore();
 }
 function polishedUI(g: Ctx, headline: string[], live = false) {

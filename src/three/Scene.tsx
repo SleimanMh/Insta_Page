@@ -7,7 +7,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { story } from '../story/controller';
 import { clamp, smooth } from '../story/progress';
-import { FOV, breakState, cameraPose, panelTransit, paths, planePose, slabPoses } from './choreography';
+import { FOV, activeBlock, beamAt, breakState, cameraPose, panelTransit, paths, planePose, slabPoses } from './choreography';
 import { APEX_Y, BASE_Y, BEAM_Y, PYR_ALT, SLABS, SLAB_DEPTH, TRI, pyramidGeometry, slabGeometry } from './geometry';
 import { TO_LINEAR, backdropMaterial, crystalMaterial, floorMaterial, floorReflectionMaterial, productMaterial, pyramidMaterial, shardMaterial } from './materials';
 import { Ribbon } from './ribbon';
@@ -144,6 +144,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
   const v = useMemo(() => ({
     a: new THREE.Vector3(), b: new THREE.Vector3(), c: new THREE.Vector3(), d: new THREE.Vector3(),
     start: new THREE.Vector3(), mid: new THREE.Vector3(), end: new THREE.Vector3(), cs: new THREE.Vector3(), ce: new THREE.Vector3(),
+    e2: new THREE.Vector3(), bp: [0, 0, 0] as [number, number, number],
     m: new THREE.Matrix4(), s: new THREE.Matrix4(), q: new THREE.Quaternion(), e: new THREE.Euler(), up: new THREE.Vector3(0, 1, 0),
     launch: Array.from({ length: 32 }, () => new THREE.Vector3()), ring: Array.from({ length: 97 }, () => new THREE.Vector3()),
   }), []);
@@ -198,11 +199,10 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       const u = (sl.glass.material as THREE.ShaderMaterial).uniforms, ub = (sl.back.material as THREE.ShaderMaterial).uniforms;
       u.hl.value += (p.hl - u.hl.value) * (reduce ? 1 : 1 - Math.exp(-dt * 10));
       if (Math.abs(p.hl - u.hl.value) > .002) busy = true;
-      u.reveal.value = ub.reveal.value = reveal; u.beamY.value = ub.beamY.value = BEAM_Y; ub.hl.value = u.hl.value;
+      u.reveal.value = ub.reveal.value = reveal; ub.hl.value = u.hl.value;
       u.fade.value = ub.fade.value = p.fade;
-      u.radiant.value = ub.radiant.value = u.hl.value * .3 * s.process;   // a soft glow inside the active block
       // the stages already behind keep a faint sketch of their work etched into the glass
-      u.etch.value = ub.etch.value = smooth(.3, 1, s.stageF - i) * s.process;
+      u.etch.value = ub.etch.value = p.etch * s.process;
     });
 
     // the pyramid: charges with light, trembles as it cracks, swells a touch as it bursts, re-forms at the end
@@ -255,15 +255,20 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     // the pyramid's split light on the floor in front of it
     fu.caustic.value = whole;
     fu.cGreen.value.set(pose.sculptX - .32, .5); fu.cAmber.value.set(pose.sculptX + .3, .56);
+    // a warm pool of light on the floor under the active block
+    const act = world.slabs[activeBlock(s.stage)].g.getWorldPosition(v.a);
+    fu.glowAt.value.set(act.x, act.z); fu.glow.value = s.process * (1 - s.tr * 1.5);
 
     // the beam enters from the left, crosses every layer and fades after the last
     let minZ = Infinity, maxZ = -Infinity;
     for (const p of poses) { minZ = Math.min(minZ, p.pos[2]); maxZ = Math.max(maxZ, p.pos[2]); }
     const first = minZ - SLAB_DEPTH, last = maxZ + SLAB_DEPTH / 2;
     const toWorld = (x: number, y: number, z: number, out: THREE.Vector3) => out.set(x, y, z).applyMatrix4(root.matrixWorld);
+    const eo = smooth(.3, 1, s.open);
+    const onBeam = (u: number, out: THREE.Vector3) => { beamAt(u, eo, v.bp); return toWorld(v.bp[0], v.bp[1], v.bp[2], out); };
     const lead = 1.0 + 2.4 * smooth(.2, .8, s.open);   // beside the hero copy, not across it
-    const start = toWorld(0, BEAM_Y, first - lead, v.start), mid = toWorld(0, BEAM_Y, last, v.mid);
-    const end = toWorld(0, BEAM_Y, last + 2.6 - 1.9 * s.process, v.end);
+    const start = onBeam(first - lead, v.start), mid = onBeam(last, v.mid);
+    const end = onBeam(last + 2.6 - 1.9 * s.process, v.end);
     world.glowIn.update([start, mid], cam, .006, .016); world.glowIn.uniforms.prog.value = reveal;
     world.glowOut.update([mid, end], cam, .016, .01); world.glowOut.uniforms.prog.value = smooth(.6, 1, reveal);
     const cs = v.cs.copy(start).lerp(mid, .3), ce = v.ce.copy(mid).lerp(end, .25);
@@ -278,10 +283,13 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     const gs = world.glints.geometry.attributes.aSize as THREE.BufferAttribute;
     const ga = world.glints.geometry.attributes.aAlpha as THREE.BufferAttribute;
     poses.forEach((p, i) => {
-      toWorld(0, BEAM_Y, p.pos[2] - SLAB_DEPTH / 2, v.d); gp.setXYZ(i, v.d.x, v.d.y, v.d.z);
+      onBeam(p.pos[2], v.d); gp.setXYZ(i, v.d.x, v.d.y, v.d.z);
       gs.setX(i, (.4 + p.hl * .4) * size.height * .06); ga.setX(i, (.22 + p.hl * .4) * reveal * p.fade);
+      // where the beam crosses this block, in the block's own frame, so the glass lights along it
+      const sl = world.slabs[i], by = sl.g.worldToLocal(v.e2.copy(v.d)).y;
+      (sl.glass.material as THREE.ShaderMaterial).uniforms.beamY.value = (sl.back.material as THREE.ShaderMaterial).uniforms.beamY.value = by;
     });
-    toWorld(0, BEAM_Y, first + SLAB_DEPTH * .3, v.d); gp.setXYZ(SLABS, v.d.x, v.d.y, v.d.z);
+    onBeam(first + SLAB_DEPTH * .3, v.d); gp.setXYZ(SLABS, v.d.x, v.d.y, v.d.z);
     gs.setX(SLABS, size.height * .14); ga.setX(SLABS, .5 * reveal);
 
     // breaking: when the prism shatters open the flare sits at its heart and the glass flies out all
@@ -339,7 +347,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       const show = !stacked && s.process > .6 && s.tr < .2;
       const label = show ? story.stageEls[s.stage]?.querySelector('.stage-label') : null;
       if (label) {
-        world.slabs[s.stage].g.localToWorld(v.d.set(0, APEX_Y + .03, 0)).project(cam);
+        world.slabs[activeBlock(s.stage)].g.localToWorld(v.d.set(0, APEX_Y + .03, 0)).project(cam);
         const ax = (v.d.x * .5 + .5) * size.width, ay = (-v.d.y * .5 + .5) * size.height;
         const lc = labelCache.current, now = performance.now();
         if (lc.stage !== s.stage || now - lc.at > 400) {

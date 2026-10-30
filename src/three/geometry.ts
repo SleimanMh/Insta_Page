@@ -1,23 +1,21 @@
 import * as THREE from 'three';
 
-// Two forms of the same glass. Closed, it is one crystal pyramid. When it breaks it becomes six
+// Two forms of the same glass. Closed, it is one crystal pyramid. When it breaks it becomes eight
 // thick triangular blocks (equilateral, side 1, centroid at the origin, depth along local z),
 // each standing at its own angle so no two read alike.
-export const SLABS = 6;
+export const SLABS = 8;
 export const APEX_Y = 1 / Math.sqrt(3);          // 0.577
 export const BASE_Y = -APEX_Y / 2;               // -0.289
-export const SLAB_DEPTH = 0.15;
-export const GAP = 0.55;                          // spacing once separated
+export const SLAB_DEPTH = 0.065;
 export const BEAM_Y = -0.05;                      // the beam runs just below the centroid
 
 /** Where the blocks gather, inside the pyramid, before they fly out and after they return. */
 export const closedZ = (i: number) => (i - (SLABS - 1) / 2) * .07;
-export const openZ = (i: number) => (i - (SLABS - 1) / 2) * GAP;
 
 /** The block's triangle: apex, bottom left, bottom right. */
 export const TRI = [new THREE.Vector2(0, APEX_Y), new THREE.Vector2(-.5, BASE_Y), new THREE.Vector2(.5, BASE_Y)];
 
-const CORNER = .06, BEVEL = .034, ARC = 4, CURVE = 10;
+const CORNER = .045, BEVEL = .02, ARC = 4, CURVE = 10;
 const RING = 3 * (CURVE + 1);                     // points around the outline
 const RINGS = 2 * (ARC + 1);                      // front bevel, sides, back bevel
 

@@ -130,7 +130,7 @@ export function crystalMaterial(back: boolean, tri: THREE.Vector2[], seed: numbe
 
         float d = -sdTri(vLP.xy);                                       // distance in from the edge
         float shimmer = .5 + .5 * sin(dot(V, vec3(3.0, 1.2, 2.0)) * 3.0 + vLP.x * 4.0);
-        float inner1 = exp(-pow((d - .05) / .008, 2.0));
+        float inner1 = exp(-pow((d - .035) / .006, 2.0));
         float inner2 = exp(-pow((d - .13) / .014, 2.0));
         float fringe = smoothstep(.014, .022, d) * smoothstep(.04, .03, d);
         vec3 rainbow = hue(fract((d - .014) / .026 + dot(V, N) * .8)) * fringe;
@@ -139,23 +139,34 @@ export function crystalMaterial(back: boolean, tri: THREE.Vector2[], seed: numbe
         float beamWide = exp(-pow((vLP.y - beamY) / .13, 2.0)) * reveal;
 
         vec3 champ = mix(vec3(.96, .93, .88), vec3(1.0, .78, .5), hl);
-        vec3 body = mix(vec3(.17, .17, .19), vec3(.07, .07, .08), smoothstep(-.3, .5, vLP.y + vLP.x * .3));
-        // a broad soft reflection sweeping diagonally across each face, shifting with the viewing angle
+        // Solid clear glass, seen as it photographs: the faces are smoky and see-through, lit by a soft haze
+        // that drifts across them with the viewing angle; near the edges the thickness shows as a brighter
+        // refracted band with a thin internal reflection; the polished chamfers catch the studio lights;
+        // the narrow sides stay dark with sharp streaks.
+        vec3 thru = studio(refract(-V, N, .66));
+        vec2 hdir = vec2(cos(seed * 1.7 + .6), sin(seed * 1.7 + .6));
+        float haze = pow(smoothstep(-.45, .55, dot(vLP.xy, hdir) + dot(V, vec3(.5, .2, .4)) * .6), 2.2);
+        float edgeBand = smoothstep(.07, .0, d) * smoothstep(-.01, .015, d);
         float sweep = smoothstep(.0, .35, .35 - abs(vLP.x * .8 - vLP.y + dot(V, vec3(.9, .3, .6)) * .5 - .1)) * face;
-        vec3 col = body * .55
-          + refl * (F * 1.35 + bevel * .6)
-          + champ * bevel * (.36 + hl * 1.2)
-          + face * (vec3(.95) * inner1 * .5 * shimmer + vec3(.9, .88, 1.0) * inner2 * .3 * (1.0 - shimmer) + rainbow * .45)
-          + vec3(.82) * rim * (.22 + F)
+        // the faces are dense enough to veil what stands behind them, as thick glass does
+        vec3 faceCol = vec3(.07, .07, .075) + thru * .14 + vec3(.66, .66, .68) * haze * .24 + vec3(.8, .79, .8) * edgeBand * .14
+          + vec3(.95) * inner1 * .22 * (.6 + .4 * shimmer) + vec3(.9, .9, .95) * inner2 * .05 + rainbow * .06 + vec3(.92) * sweep * .2;
+        float faceA = .5 + haze * .2 + edgeBand * .12 + inner1 * .15 + sweep * .1 + F * .35;
+        vec3 rimCol = vec3(.06, .06, .065) + refl * (F * .9 + .3);
+        float rimA = .55 + F * .3;
+        vec3 bevCol = refl * .75 + vec3(.2, .2, .2) + champ * hl * .9;
+        float bevA = .78;
+        float sideW = max(rim, 0.0), faceW = face * (1.0 - bevel);
+        vec3 col = faceCol * faceW + rimCol * sideW * (1.0 - face) + bevCol * bevel
+          + refl * F * .6 * (1.0 - bevel)
           + vec3(1.0, .97, .93) * (beamCore * .9 + beamWide * .12) * face
-          + vec3(.92, .91, .96) * sweep * .18
-          + champ * hl * .05;
-        float a = .15 + sweep * .1 + F * .5 + bevel * .55 + rim * .3 + face * (inner1 * .35 + fringe * .2 + beamCore * .7 + beamWide * .08) + hl * .04;
+          + champ * hl * (.04 + bevel * .45 + sideW * .3);
+        float a = faceA * faceW + rimA * sideW * (1.0 - face) + bevA * bevel + face * (beamCore * .7 + beamWide * .08) + hl * (.03 + sideW * .2);
 
         if (etch > .001) {
           float k = sketch(vLP.xy * vec2(sign(vLP.z), 1.0)) * face * etch;
-          col += vec3(.86, .85, .88) * k * .55;
-          a += k * .35;
+          col += vec3(.86, .85, .88) * k * .22;
+          a += k * .14;
         }
         if (radiant > .001) {
           vec4 r = rays(vLP.xy - glowC, seed);
@@ -305,7 +316,7 @@ export function floorReflectionMaterial() {
         vec3 N = normalize(vWN), V = normalize(cameraPosition - vWP);
         float F = pow(1.0 - clamp(abs(dot(N, V)), 0.0, 1.0), 2.0);
         float fade = exp(-max(0.0, floorY - vWP.y) * 3.2) * reveal;
-        vec3 c = (vec3(.85, .84, .9) * (.05 + F * .25) + mix(vec3(.9, .88, .95), vec3(1.0, .8, .55), hl) * bevel * (.35 + hl * .5)) * fade * .55;
+        vec3 c = (vec3(.85, .84, .9) * (.05 + F * .25) + mix(vec3(.9, .88, .95), vec3(1.0, .8, .55), hl) * bevel * (.35 + hl * .5)) * fade * .3;
         gl_FragColor = vec4(toLin(c), 1.0);
       }`,
     transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, side: THREE.DoubleSide,
@@ -318,22 +329,26 @@ export function floorMaterial() {
     uniforms: {
       center: { value: new THREE.Vector2() }, reveal: { value: 0 },
       caustic: { value: 0 }, cGreen: { value: new THREE.Vector2() }, cAmber: { value: new THREE.Vector2() },
+      glow: { value: 0 }, glowAt: { value: new THREE.Vector2() },
     },
     vertexShader: 'varying vec3 vWP; void main(){ vec4 wp = modelMatrix * vec4(position, 1.0); vWP = wp.xyz; gl_Position = projectionMatrix * viewMatrix * wp; }',
     fragmentShader: /* glsl */`
       ${TO_LINEAR}
       uniform vec2 center; uniform float reveal; varying vec3 vWP;
-      uniform float caustic; uniform vec2 cGreen; uniform vec2 cAmber;
+      uniform float caustic; uniform vec2 cGreen; uniform vec2 cAmber; uniform float glow; uniform vec2 glowAt;
       // a soft streak of coloured light thrown forward across the floor
       float streak(vec2 p, vec2 at, vec2 size){ vec2 q = (p - at) / size; return exp(-dot(q, q)) * smoothstep(-1.6, -.2, q.y); }
       void main(){
         vec2 d = vWP.xz - center;
-        float pool = exp(-dot(d * vec2(.55, 1.0), d * vec2(.55, 1.0)) / 2.4);
-        vec3 far = vec3(.043, .043, .048), near = vec3(.07, .068, .074);
+        float pool = exp(-dot(d * vec2(.4, .8), d * vec2(.4, .8)) / 2.4);
+        vec3 far = vec3(.05, .05, .055), near = vec3(.1, .098, .1);
         vec3 c = mix(far, near, pool) + vec3(.12, .11, .1) * pool * pool * .35 * reveal;
         // the pyramid's split light, landing on the floor in front of it
         c += (vec3(.1, .75, .45) * streak(vWP.xz, cGreen, vec2(.2, .55)) + vec3(1.0, .5, .12) * streak(vWP.xz, cAmber, vec2(.24, .6))
             + vec3(.85, .3, .65) * streak(vWP.xz, (cGreen + cAmber) * .5 + vec2(0.0, .5), vec2(.12, .3)) * .5) * caustic * reveal * .9;
+        // warm light pooled under the active block, stretched toward the viewer
+        vec2 gq = (vWP.xz - glowAt) / vec2(.5, .32);
+        c += vec3(1.0, .78, .5) * exp(-dot(gq, gq)) * glow * .22 * reveal;
         gl_FragColor = vec4(toLin(c), 1.0);
       }`,
   });
@@ -349,7 +364,9 @@ export function backdropMaterial() {
       uniform vec2 focus; varying vec2 vUv;
       void main(){
         vec2 d = (vUv - focus) * vec2(1.8, 1.0);
-        vec3 c = mix(vec3(.094, .092, .1), vec3(.04, .04, .045), smoothstep(0.0, .55, length(d)));
+        vec3 c = mix(vec3(.19, .188, .19), vec3(.06, .06, .065), smoothstep(0.0, .7, length(d)));
+        // the backdrop curves into the floor without a seam, like a studio cyclorama
+        c = mix(vec3(.05, .05, .055), c, smoothstep(.0, .3, vUv.y));
         gl_FragColor = vec4(toLin(c), 1.0);
       }`,
     depthWrite: false,

@@ -1,5 +1,5 @@
 import { StoryState, clamp, easeInOut, lerp, smooth } from '../story/progress';
-import { APEX_Y, BASE_Y, GAP, SLABS, closedZ, openZ } from './geometry';
+import { SLABS, closedZ } from './geometry';
 
 // Camera and sculpture poses as pure functions of the story state. No timers live here:
 // scroll, clicks and resizing all arrive as the same state, so they cannot compete.
@@ -38,30 +38,51 @@ export function cameraPose(s: StoryState, aspect: number, stacked: boolean): Pos
   };
 }
 
-// ---- the blocks: each one has its own resting angle, its own route and its own timing ----
-// Resting pose once separated: every block turns and leans its own way (the first rocks onto a corner),
-// so six identical pieces of glass read as six different shapes.
-// The faces turn steeply away from the row, so the blocks overlap like fanned cards and are seen at a
-// raking angle: wide up close on the left, narrow toward the middle, as in a photograph of real glass.
-// (the further along the row, the more a block turns back toward the viewer, so the far ones stay readable)
-const REST_ROT: V3[] = [[.06, -1.1, .3], [-.04, -1.14, .06], [.03, -1.2, -.02], [-.02, -1.3, .04], [.04, -1.4, -.05], [-.03, -1.5, -.08]];
-export const REST_SCALE = 1.22;
-// lift each block so its lowest corner stands on the floor line
-const REST_POS: V3[] = REST_ROT.map(([, , rz], i) => {
-  const low = Math.min(...[[0, APEX_Y], [-.5, BASE_Y], [.5, BASE_Y]].map(([x, y]) => x * Math.sin(rz) + y * Math.cos(rz)));
-  return [[.02, -.03, .01, -.02, .03, 0][i], BASE_Y - low * REST_SCALE + .01, 0];
-});
-// While separating, each slab swings out on its own arc and enters its place from a different side.
-const ARC_OPEN: V3[] = [[-1.1, .9, .5], [.5, -1.0, .7], [1.2, 1.15, -.3], [-.7, -.85, -.6], [.9, 1.3, .55], [-1.25, .25, .9]];
-const TUMBLE_OPEN: V3[] = [[.7, -1.3, .45], [-.9, .8, -.6], [.5, 1.2, -.8], [-.6, -1.1, .7], [1.0, .6, .5], [-.4, -.9, -1.0]];
-// Coming back together they take different routes again.
-const ARC_CLOSE: V3[] = [[.8, -.9, -.6], [-1.0, 1.1, .3], [-.5, -1.2, .8], [1.1, .7, .5], [-.9, -.6, -.7], [.6, 1.25, -.4]];
-const TUMBLE_CLOSE: V3[] = [[-.8, 1.0, -.5], [.6, -1.2, .7], [-1.0, .7, .4], [.8, .9, -.6], [-.5, -1.1, .9], [.9, -.5, -.7]];
-// The order is shuffled too: no left-to-right sweep.
-const ORDER_OPEN = [2, 5, 0, 3, 1, 4];
-const ORDER_CLOSE = [4, 1, 3, 0, 5, 2];
+// ---- the blocks: eight thick pieces of glass that open like the pages of a book around the panel ----
+// Each block rests in a slot, counted from the active one (slot 0, gold). The blocks before the panel
+// (slots -3…-1) turn to face the beam's source; the active block and the ones after it turn the other way,
+// each smaller and further back. The slots were measured from the reference render: position in the
+// sculpture's frame, turn, in-plane roll and size. Moving to the next stage, every block steps one slot to
+// the left, so the active block turns over like a page and the next one takes its place.
+type Slot = [number, number, number, number, number, number];   // x, y, z, turn, roll, size
+const SLOTS: Slot[] = [
+  [-.335, .238, -1.618, 5.212, -.357, 1.053],   // -3
+  [-.435, .225, -1.424, 5.077, -.375, 1.019],   // -2
+  [-.632, .211, -1.271, 5.103, -.375, .998],    // -1
+  [-1.411, .198, -1.089, 2.705, .332, 1.018],   //  0, active
+  [-.905, .066, -.359, 3.014, -.042, 1.05],     //  1
+  [-.709, .012, .328, 2.921, 0, .969],          //  2
+  [-.886, -.03, .447, 2.921, -.026, .832],      //  3
+];
+const SLOT0 = 3, SIZE = 1.15;
+/** First stage's block: two blocks always stand before it. */
+export const FIRST = 2;
+export const activeBlock = (stage: number) => (stage + FIRST) % SLABS;
+// beyond the measured slots the row simply continues, fading out
+const slotAt = (j: number): Slot => {
+  if (j < 0) { const a = SLOTS[0], b = SLOTS[1]; return a.map((v, n) => v + (v - b[n]) * -j) as Slot; }
+  if (j >= SLOTS.length) { const a = SLOTS[SLOTS.length - 1], b = SLOTS[SLOTS.length - 2]; return a.map((v, n) => v + (v - b[n]) * (j - SLOTS.length + 1)) as Slot; }
+  return SLOTS[j];
+};
+function slot(k: number): Slot {
+  const j = k + SLOT0, j0 = Math.floor(j), f = j - j0, a = slotAt(j0), b = slotAt(j0 + 1);
+  return a.map((v, n) => lerp(v, b[n], f)) as Slot;
+}
+/** Wrap a slot index into the eight places the row has, -3.5 … 4.5; the wrap happens where a block is invisible. */
+const wrap = (k: number) => ((((k + 3.5) % SLABS) + SLABS) % SLABS) - 3.5;
+const slotOpacity = (k: number) => smooth(-3.5, -3.05, k) * (1 - smooth(3.05, 3.9, k));
 
-export interface SlabPose { pos: V3; rot: V3; hl: number; fade: number; scale: number }
+// While separating, each block swings out on its own arc and enters its place from a different side.
+const ARC_OPEN: V3[] = [[-1.1, .9, .5], [.5, -1.0, .7], [1.2, 1.15, -.3], [-.7, -.85, -.6], [.9, 1.3, .55], [-1.25, .25, .9], [.6, -.7, -.8], [-.4, 1.1, .4]];
+const TUMBLE_OPEN: V3[] = [[.7, -1.3, .45], [-.9, .8, -.6], [.5, 1.2, -.8], [-.6, -1.1, .7], [1.0, .6, .5], [-.4, -.9, -1.0], [.8, .4, -.6], [-.7, -.5, .9]];
+// Coming back together they take different routes again.
+const ARC_CLOSE: V3[] = [[.8, -.9, -.6], [-1.0, 1.1, .3], [-.5, -1.2, .8], [1.1, .7, .5], [-.9, -.6, -.7], [.6, 1.25, -.4], [-.7, .8, .6], [.9, -.4, -.5]];
+const TUMBLE_CLOSE: V3[] = [[-.8, 1.0, -.5], [.6, -1.2, .7], [-1.0, .7, .4], [.8, .9, -.6], [-.5, -1.1, .9], [.9, -.5, -.7], [-.6, .8, .5], [.7, -.9, -.4]];
+// The order is shuffled too: no left-to-right sweep.
+const ORDER_OPEN = [2, 5, 0, 7, 3, 1, 6, 4];
+const ORDER_CLOSE = [4, 1, 6, 3, 0, 7, 5, 2];
+
+export interface SlabPose { pos: V3; rot: V3; hl: number; fade: number; scale: number; etch: number }
 
 /**
  * The break, as a function of scroll: the pyramid first fills with light from inside (`charge`),
@@ -83,64 +104,63 @@ export function breakState(s: StoryState) {
 // the blocks stay inside the pyramid until it has cracked
 const splitOf = (s: StoryState) => clamp((s.open - .04) / .96);
 
-// While exploring, the layers part around the active stage so the product panel fits between them:
-// slabs up to the active one ease back, the ones after it ease forward, and the opening travels with the stage.
-const ROOM = .46;
-// the panel stands just before the active block (in front of the first one for the first stage)
-const gapAt = (s: StoryState) => Math.min(s.stageF - 1, SLABS - 2);
-const roomShift = (i: number, s: StoryState, exploring: number) => (smooth(-.5, .5, i - (gapAt(s) + .5)) - .5) * ROOM * exploring;
-
 /**
- * Moving to the next stage, the panel does not slide: it draws back, then breaks through the layer
- * between the two openings. `tr` is the transit (0…1), `crossSlab` the layer it breaks through,
- * `burst` drives the flying shards and `flash` the flare on the broken layer. All scroll-driven, so it reverses.
+ * Moving to the next stage, the active block turns over to the far side of the panel like a page,
+ * with a flare on it and shards thrown off. `tr` is the transit (0…1), `crossSlab` the block turning over.
+ * All scroll-driven, so it reverses.
  */
 export function panelTransit(s: StoryState) {
-  const g = gapAt(s), k = Math.min(SLABS - 2, Math.floor(g + 1e-6)), tr = g - k;
-  const moving = tr > 1e-4 && k < SLABS - 2 ? s.process : 0;
+  const k = Math.floor(s.stageF + 1e-6), tr = s.stageF - k;
+  const moving = tr > 1e-4 ? s.process : 0;
   return {
-    k, tr: moving ? tr : 0, crossSlab: k + 1,
+    tr: moving ? tr : 0, crossSlab: activeBlock(k),
     burst: moving ? smooth(.44, .98, tr) : 0,
-    flash: moving * Math.sin(Math.PI * smooth(.36, .8, tr)),
+    flash: moving * Math.sin(Math.PI * smooth(.3, .8, tr)),
   };
 }
-// anticipation and a small overshoot: pull back, punch through, settle
-const punch = (t: number) => {
-  const c = 1.1 * 1.525;
-  return t < .5 ? (Math.pow(2 * t, 2) * ((c + 1) * 2 * t - c)) / 2 : (Math.pow(2 * t - 2, 2) * ((c + 1) * (t * 2 - 2) + c) + 2) / 2;
-};
-const gapZ = (k: number) => (k - (SLABS - 1) / 2) * GAP + GAP * .5;
 
 export function slabPoses(s: StoryState, hover: number): SlabPose[] {
-  // the two route sets swap at the midpoint, where every slab is at rest, so the switch is invisible
+  // the two route sets swap at the midpoint, where every block is at rest, so the switch is invisible
   const opening = s.p < .5;
   const order = opening ? ORDER_OPEN : ORDER_CLOSE;
   const exploring = smooth(.6, 1, s.open) * (s.process > 0 ? 1 : 0);
   const transit = panelTransit(s);
   const split = splitOf(s);
+  const hovered = hover >= 0 ? activeBlock(hover) : -1;
   return Array.from({ length: SLABS }, (_, i) => {
-    const t = easeInOut(clamp(split * 1.6 - order.indexOf(i) * .12));
+    const t = easeInOut(clamp(split * 1.8 - order.indexOf(i) * .11));
     const detour = Math.sin(Math.PI * t);
     const arc = (opening ? ARC_OPEN : ARC_CLOSE)[i], tum = (opening ? TUMBLE_OPEN : TUMBLE_CLOSE)[i];
-    const active = Math.max(0, 1 - Math.abs(s.stageF - i) * 1.7) * exploring;
-    const hov = hover === i ? .5 * smooth(.3, 1, s.open) : 0;
-    const rr = REST_ROT[i], rp = REST_POS[i];
+    const k = wrap(i - FIRST - s.stageF);
+    const [x, y, z, turn, roll, size] = slot(k);
+    const active = Math.max(0, 1 - Math.abs(k) * 1.7) * exploring;
+    const hov = hovered === i ? .5 * smooth(.3, 1, s.open) : 0;
     return {
       pos: [
-        lerp(0, rp[0], t) + arc[0] * detour * .55 - active * .05,
-        lerp(.02, rp[1], t) + arc[1] * detour * .45 + active * .04,
-        lerp(closedZ(i), openZ(i), t) + arc[2] * detour * .35 + roomShift(i, s, exploring),
+        lerp(0, x, t) + arc[0] * detour * .55,
+        lerp(.02, y, t) + arc[1] * detour * .45,
+        lerp(closedZ(i), z, t) + arc[2] * detour * .35,
       ],
-      rot: [
-        lerp(0, rr[0], t) + tum[0] * detour * .35,
-        lerp(0, rr[1], t) + tum[1] * detour * .35 + active * .3,   // the active block turns onto its edge
-        lerp(0, rr[2], t) + tum[2] * detour * .3,
-      ],
+      rot: [tum[0] * detour * .35, lerp(0, turn, t) + tum[1] * detour * .35, lerp(0, roll, t) + tum[2] * detour * .3],
       hl: Math.min(1, active + hov + (i === transit.crossSlab ? transit.flash * .9 : 0)),
-      // each block grows out of the breaking pyramid, and shrinks back into it on return
-      fade: smooth(0, .2, t), scale: lerp(.4, REST_SCALE, smooth(0, .55, t)),
+      // each block grows out of the breaking pyramid and shrinks back into it on return;
+      // at the ends of the row blocks fade, so the row can wrap around unseen
+      fade: smooth(0, .2, t) * lerp(1, slotOpacity(k), smooth(.3, 1, t)), scale: lerp(.4, size * SIZE, smooth(0, .55, t)),
+      // the two blocks just before the panel carry sketches of the work already done
+      etch: smooth(-2.9, -2.3, k) * (1 - smooth(-.7, -.2, k)),
     };
   });
+}
+
+/** The beam's path in the sculpture's frame: straight along the closed prism, then angled through the open row. */
+const BEAM_A: V3 = [SLOTS[0][0], SLOTS[0][1] + .12, SLOTS[0][2]];
+const BEAM_B: V3 = [SLOTS[6][0], SLOTS[6][1] - .02, SLOTS[6][2]];
+export function beamAt(u: number, open: number, out: [number, number, number]) {
+  const dz = BEAM_B[2] - BEAM_A[2], f = (u - BEAM_A[2]) / dz;
+  out[0] = lerp(0, BEAM_A[0] + (BEAM_B[0] - BEAM_A[0]) * f, open);
+  out[1] = lerp(-.05, BEAM_A[1] + (BEAM_B[1] - BEAM_A[1]) * f, open);
+  out[2] = u;
+  return out;
 }
 
 export interface PlanePose { pos: V3; rot: V3; w: number; h: number; show: number }
@@ -150,18 +170,15 @@ export interface PlanePose { pos: V3; rot: V3; w: number; h: number; show: numbe
  * readable. Between stages it breaks through the next layer; at the end it settles inside the reunited prism.
  */
 export function planePose(s: StoryState): PlanePose {
-  const e = easeInOut(clamp(s.open));
-  const launch = Math.max(0, 1 - Math.abs(s.stageF - 4) * 1.4) * s.process;
   const T = panelTransit(s), bump = Math.sin(Math.PI * T.tr);
-  const w = .76, h = 1.14;
+  const launch = Math.max(0, 1 - Math.abs(s.stageF - 4) * 1.4) * s.process;
+  // measured from the reference: tall, turned well away, standing in the opening before the active block
   const explore = {
-    x: .06 + bump * .16 - launch * .06,
-    y: BASE_Y + h / 2 + .03 + bump * .07 + launch * .03,
-    z: (gapZ(T.k) + (gapZ(T.k + 1) - gapZ(T.k)) * punch(T.tr)) * e,
-    rot: [-bump * .12, .3 + Math.PI + bump * .38, Math.sin(Math.PI * 2 * T.tr) * .07] as V3,   // faces the viewer, tilts as it breaks through
-    w: w * (1 - bump * .05), h: h * (1 + bump * .03),
+    x: -.8 + bump * .1, y: .314 + bump * .04 + launch * .03, z: -.955 + bump * .06,
+    rot: [-.016 - bump * .08, -1.245 + bump * .3, -.053 + Math.sin(Math.PI * 2 * T.tr) * .05] as V3,
+    w: .618, h: .927,
   };
-  const inside = { x: -.01, y: -.045, z: 0, rot: [0, Math.PI, 0] as V3, w: .3, h: .45 };
+  const inside = { x: -.01, y: -.045, z: 0, rot: [0, -Math.PI, 0] as V3, w: .3, h: .45 };
   const c = easeInOut(s.complete);
   return {
     pos: [lerp(explore.x, inside.x, c), lerp(explore.y, inside.y, c), lerp(explore.z, inside.z, c)],
