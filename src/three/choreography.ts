@@ -1,5 +1,5 @@
 import { StoryState, clamp, easeInOut, lerp, smooth } from '../story/progress';
-import { GAP, SLABS, closedZ, openZ } from './geometry';
+import { BASE_Y, GAP, SLABS, closedZ, openZ } from './geometry';
 
 // Camera and sculpture poses as pure functions of the story state. No timers live here:
 // scroll, clicks and resizing all arrive as the same state, so they cannot compete.
@@ -17,12 +17,12 @@ export function cameraPose(s: StoryState, aspect: number, stacked: boolean): Pos
   let closed, open;
   if (stacked) {
     closed = { frac: .5, dist: 3.5 };
-    open = { frac: .5, dist: 5.6 };
+    open = { frac: .5, dist: 6.1 };
   } else {
     // on less wide windows the open sculpture sits further left and further away, clear of the copy
     const narrowness = clamp((1.75 - aspect) / .45);
     closed = { frac: .69, dist: 3.7 };
-    open = { frac: lerp(.35, .3, narrowness), dist: lerp(5.4, 6.6, narrowness) };
+    open = { frac: lerp(.375, .32, narrowness), dist: lerp(6.0, 7.3, narrowness) };
   }
   const fit = stacked ? Math.max(1, 1.15 / aspect) : Math.max(1, 1.6 / aspect);
   const dist = lerp(closed.dist, open.dist, e) * fit;
@@ -54,6 +54,13 @@ const ORDER_CLOSE = [4, 1, 3, 0, 5, 2];
 
 export interface SlabPose { pos: V3; rot: V3; hl: number }
 
+// While exploring, the layers part around the active stage so the product panel fits between them:
+// slabs up to the active one ease back, the ones after it ease forward, and the opening travels with the stage.
+const ROOM = .46;
+// after the last layer there is nothing to stand between, so the final stage uses the opening before it
+const gapAt = (s: StoryState) => Math.min(s.stageF, SLABS - 2);
+const roomShift = (i: number, s: StoryState, exploring: number) => (smooth(-.5, .5, i - (gapAt(s) + .5)) - .5) * ROOM * exploring;
+
 export function slabPoses(s: StoryState, hover: number): SlabPose[] {
   // the two route sets swap at the midpoint, where every slab is at rest, so the switch is invisible
   const opening = s.p < .5;
@@ -68,9 +75,9 @@ export function slabPoses(s: StoryState, hover: number): SlabPose[] {
     const rr = REST_ROT[i], rp = REST_POS[i];
     return {
       pos: [
-        lerp(0, rp[0], t) + arc[0] * detour * .55 - active * .14,
+        lerp(0, rp[0], t) + arc[0] * detour * .55 - active * .05,
         lerp(0, rp[1], t) + arc[1] * detour * .45 + active * .04,
-        lerp(closedZ(i), openZ(i), t) + arc[2] * detour * .35,
+        lerp(closedZ(i), openZ(i), t) + arc[2] * detour * .35 + roomShift(i, s, exploring),
       ],
       rot: [
         lerp(0, rr[0], t) + tum[0] * detour * .35,
@@ -84,14 +91,15 @@ export function slabPoses(s: StoryState, hover: number): SlabPose[] {
 
 export interface PlanePose { pos: V3; rotY: number; w: number; h: number; show: number }
 
-/** The product plane stands between the layers, then settles inside the reunited prism. */
+/** The product plane stands on the floor in the opening after the active layer, then settles inside the reunited prism. */
 export function planePose(s: StoryState): PlanePose {
   const e = easeInOut(clamp(s.open));
   const launch = Math.max(0, 1 - Math.abs(s.stageF - 4) * 1.4) * s.process;
+  const w = .58 + launch * .03, h = .87 + launch * .04;
   const explore = {
-    x: -.06 - launch * .24, y: .07 + launch * .03,
-    z: ((s.stageF - (SLABS - 1) / 2) * GAP + GAP * .5) * e,
-    w: .5 + launch * .04, h: .76 + launch * .06, rotY: .62 + Math.PI,   // face the viewer
+    x: -.02 - launch * .12, y: BASE_Y + h / 2 + .03 + launch * .03,
+    z: ((gapAt(s) - (SLABS - 1) / 2) * GAP + GAP * .5) * e,
+    w, h, rotY: .62 + Math.PI,   // parallel to the layers, facing the viewer
   };
   const inside = { x: -.01, y: -.045, z: 0, w: .3, h: .43, rotY: Math.PI };
   const c = easeInOut(s.complete);

@@ -7,7 +7,7 @@ export const APEX_Y = 1 / Math.sqrt(3);          // 0.577
 export const BASE_Y = -APEX_Y / 2;               // -0.289
 export const SLAB_DEPTH = 0.2;
 export const SEAM = 0.012;                        // the hairline gap between closed slabs
-export const GAP = 0.6;                           // spacing once separated
+export const GAP = 0.55;                           // spacing once separated
 export const BEAM_Y = -0.05;                      // the beam runs just below the centroid
 const BEVEL = 0.026;
 

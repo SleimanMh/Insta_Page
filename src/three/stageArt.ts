@@ -15,7 +15,10 @@ function rr(g: Ctx, x: number, y: number, w: number, h: number, r: number) {
 function frame(g: Ctx, solid = true) {
   g.clearRect(0, 0, W, H);
   rr(g, 6, 6, W - 12, H - 12, 34);
-  if (solid) { const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#17171A'); bg.addColorStop(1, '#0F0F11'); g.fillStyle = bg; g.fill(); }
+  // every stage sits on a dark panel so it stays legible behind glass; outline stages use a lighter, flatter one
+  const bg = g.createLinearGradient(0, 0, 0, H);
+  if (solid) { bg.addColorStop(0, '#17171A'); bg.addColorStop(1, '#0F0F11'); } else { bg.addColorStop(0, '#1A1A1D'); bg.addColorStop(1, '#141416'); }
+  g.fillStyle = bg; g.fill();
   g.strokeStyle = 'rgba(238,231,219,.22)'; g.lineWidth = 2; g.stroke();
 }
 function text(g: Ctx, s: string, x: number, y: number, size: number, color = INK, weight = 300) {

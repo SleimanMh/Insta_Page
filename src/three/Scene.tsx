@@ -54,7 +54,6 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
 
     const art = makeStageArt(gl.capabilities.getMaxAnisotropy());
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), productMaterial());
-    plane.renderOrder = 60;
     root.add(plane);
 
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), floorMaterial());
@@ -176,6 +175,14 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     pu.texA.value = world.art[a]; pu.texB.value = world.art[b]; pu.mixv.value = m;
 
     root.updateMatrixWorld(true);
+
+    // draw far to near so the glass in front of the product panel tints it and the panel reads as standing between layers
+    const order: { d: number; set: (o: number) => void }[] = world.slabs.map(sl => ({
+      d: sl.g.getWorldPosition(v.a).distanceToSquared(cam.position),
+      set: (o: number) => { sl.back.renderOrder = o; sl.glass.renderOrder = o + 1; },
+    }));
+    order.push({ d: world.plane.getWorldPosition(v.a).distanceToSquared(cam.position), set: o => { world.plane.renderOrder = o; } });
+    order.sort((x, y) => y.d - x.d).forEach((it, k) => it.set(10 + k * 3));
 
     // floor, backdrop and the slabs' reflections in the floor
     const fy = pose.sculptY + BASE_Y - FLOOR_OFFSET;
