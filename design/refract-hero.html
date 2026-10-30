@@ -204,12 +204,12 @@ h1 em { font-family: var(--f-serif); font-style: italic; font-weight: 400; lette
   const VERT = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }';
   // The brand spectrum, in real dispersion order: least bent (warm) to most bent (violet).
   const SPEC_GLSL = `vec3 spec(float s){
-      vec3 c1 = vec3(1.0,.66,.62), c2 = vec3(1.0,.87,.56), c3 = vec3(.58,.93,.75), c4 = vec3(.58,.78,1.0), c5 = vec3(.78,.67,1.0);
+      vec3 c1 = vec3(1.0,.62,.6), c2 = vec3(1.0,.86,.5), c3 = vec3(.55,.93,.72), c4 = vec3(.52,.74,1.0), c5 = vec3(.76,.62,1.0);
       s = clamp(s, 0.0, 1.0) * 4.0;
       if (s < 1.0) return mix(c1, c2, smoothstep(0.0, 1.0, s)); if (s < 2.0) return mix(c2, c3, smoothstep(1.0, 2.0, s));
       if (s < 3.0) return mix(c3, c4, smoothstep(2.0, 3.0, s)); return mix(c4, c5, smoothstep(3.0, 4.0, s)); }`;
 
-  // ---- Backdrop: soft pastel glows on twilight ----
+  // ---- Backdrop ----
   const bg = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({
     uniforms: { time: { value: 0 }, aspect: { value: 1 }, focus: { value: new THREE.Vector2(.55, .5) } },
     vertexShader: VERT,
@@ -217,86 +217,143 @@ h1 em { font-family: var(--f-serif); font-style: italic; font-weight: 400; lette
       vec3 blob(vec2 p, vec2 c, float r, vec3 col){ vec2 d = p - c; if (aspect > 1.0) d.x *= aspect; else d.y /= aspect; return col * exp(-dot(d,d)/(r*r)); }
       float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
       void main(){
-        vec2 p = vUv; vec3 col = vec3(.067,.075,.165);
-        col += blob(p, focus + vec2(.02*sin(time*.21), .03*cos(time*.17)), .22, vec3(.30,.22,.55)) * .9;
-        col += blob(p, focus + vec2(-.16 + .03*sin(time*.13), .2), .2, vec3(.42,.22,.30)) * .55;
-        col += blob(p, focus + vec2(.26, -.16 + .03*sin(time*.19)), .26, vec3(.12,.34,.33)) * .6;
-        col += blob(p, focus + vec2(.34 + .02*cos(time*.11), .24), .22, vec3(.16,.24,.45)) * .5;
+        vec2 p = vUv; vec3 col = vec3(.055,.06,.14);
+        col += blob(p, focus + vec2(.02*sin(time*.21), .06 + .03*cos(time*.17)), .2, vec3(.26,.2,.5)) * .8;
+        col += blob(p, focus + vec2(-.18 + .03*sin(time*.13), .22), .2, vec3(.36,.2,.3)) * .45;
+        col += blob(p, focus + vec2(.28, -.12 + .03*sin(time*.19)), .26, vec3(.1,.28,.3)) * .5;
+        col += blob(p, focus + vec2(.34 + .02*cos(time*.11), .26), .22, vec3(.14,.2,.42)) * .45;
         col += (hash(p * 1000.0 + time) - .5) / 255.0 * 2.0;
         gl_FragColor = vec4(col, 1.0); }`,
     depthWrite: false,
   }));
-  bg.renderOrder = -1; scene.add(bg);
+  bg.renderOrder = -2; scene.add(bg);
 
-  // ---- A real triangular prism: triangle ends, three flat rectangular sides, softly rounded edges ----
-  function prismGeometry() {
-    const R = 1 / Math.sqrt(3), r = .045;
-    const pts = [0, 1, 2].map(k => { const a = Math.PI / 2 + k * 2 * Math.PI / 3; return new THREE.Vector2(Math.cos(a) * R, Math.sin(a) * R); }); // apex, bottom-left, bottom-right
-    const shape = new THREE.Shape();
-    pts.forEach((p, i) => {
-      const prev = pts[(i + 2) % 3], next = pts[(i + 1) % 3];
-      const a = p.clone().add(prev.clone().sub(p).setLength(r)), b = p.clone().add(next.clone().sub(p).setLength(r));
-      i === 0 ? shape.moveTo(a.x, a.y) : shape.lineTo(a.x, a.y);
-      shape.quadraticCurveTo(p.x, p.y, b.x, b.y);
-    });
-    shape.closePath();
-    const g = new THREE.ExtrudeGeometry(shape, { depth: 1.3, bevelEnabled: true, bevelThickness: .035, bevelSize: .03, bevelSegments: 5, curveSegments: 10 });
-    g.computeBoundingBox(); const c = g.boundingBox.getCenter(new THREE.Vector3()); g.translate(-c.x, -c.y, -c.z); g.computeVertexNormals();
-    return { g, pts: pts.map(p => new THREE.Vector3(p.x - c.x, p.y - c.y, 0)) };
-  }
-  // Candy glass: flat faces shade differently so the prism reads as a solid; rims and highlights stay glossy.
-  const candy = side => new THREE.ShaderMaterial({
-    uniforms: { time: { value: 0 }, k: { value: side === THREE.BackSide ? .5 : 1 } },
-    vertexShader: `varying vec3 vN; varying vec3 vV; varying vec3 vP;
-      void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); vP = position; gl_Position = projectionMatrix * mv; }`,
-    fragmentShader: `uniform float time; uniform float k; varying vec3 vN; varying vec3 vV; varying vec3 vP;
+  // ---- Crystal pyramid: square base, four triangular faces, one corner toward the viewer ----
+  const PH = 1.55;                                         // height; base corners sit on a circle of radius 1
+  const pyrGeo = new THREE.ConeGeometry(1, PH, 4, 1).toNonIndexed(); pyrGeo.computeVertexNormals();
+  const APEX = new THREE.Vector3(0, PH / 2, 0);
+  const CORNER = [0, 1, 2, 3].map(k => new THREE.Vector3(Math.sin(k * Math.PI / 2), -PH / 2, Math.cos(k * Math.PI / 2))); // front, right, back, left
+  const crystal = (side, k, mirror) => new THREE.ShaderMaterial({
+    uniforms: { time: { value: 0 }, k: { value: k }, mirror: { value: mirror ? 1 : 0 } },
+    vertexShader: `varying vec3 vWN; varying vec3 vWP; varying vec3 vP; varying vec3 vLN;
+      void main(){ vec4 wp = modelMatrix * vec4(position, 1.0); vWP = wp.xyz; vWN = normalize(mat3(modelMatrix) * normal); vP = position; vLN = normal; gl_Position = projectionMatrix * viewMatrix * wp; }`,
+    fragmentShader: `uniform float time; uniform float k; uniform float mirror; varying vec3 vWN; varying vec3 vWP; varying vec3 vP; varying vec3 vLN;
+      ${SPEC_GLSL}
+      // a studio for the glass to reflect: a top softbox, a cool strip to the right, a key light and a lilac fill
+      vec3 env(vec3 r){
+        float top = smoothstep(.5, .95, r.y);
+        float strip = exp(-pow((r.y - .1) * 6.0, 2.0)) * smoothstep(.1, .8, r.x);
+        float key = pow(max(dot(r, normalize(vec3(-.6, .55, .55))), 0.0), 40.0);
+        float fill = pow(max(dot(r, normalize(vec3(.75, .15, .5))), 0.0), 10.0);
+        return vec3(.92, .96, 1.0) * top * .8 + vec3(.6, .76, 1.0) * strip * .55 + vec3(1.0) * key * 2.2 + vec3(.78, .66, 1.0) * fill * .45;
+      }
       void main(){
-        vec3 N = normalize(vN); if (!gl_FrontFacing) N = -N; vec3 V = normalize(vV);
-        float fres = pow(1.0 - clamp(abs(dot(N, V)), 0.0, 1.0), 2.2);
-        vec3 lilac = vec3(.80,.72,1.0), sky = vec3(.64,.82,1.0), peach = vec3(1.0,.74,.70), mint = vec3(.62,.94,.78);
-        vec3 tint = mix(mix(lilac, sky, smoothstep(-.4, .5, vP.y)), peach, smoothstep(.0, .5, -vP.x) * .35);
-        vec3 irid = mix(mix(peach, mint, .5 + .5 * sin(fres * 7.0 + time * .4)), sky, .5 + .5 * sin(fres * 5.0 - time * .3 + 1.7));
-        vec3 L1 = normalize(vec3(-.45, .75, .6)), L2 = normalize(vec3(.7, -.3, .55));
-        float dif = .35 + .65 * max(dot(N, L1), 0.0);
-        float s1 = pow(max(dot(N, normalize(L1 + V)), 0.0), 90.0), s1b = pow(max(dot(N, normalize(L1 + V)), 0.0), 10.0);
-        float s2 = pow(max(dot(N, normalize(L2 + V)), 0.0), 50.0);
-        vec3 col = tint * (.25 + .45 * dif) + irid * fres * .8 + vec3(1.0) * (s1 * 1.2 + s1b * .1) + mint * s2 * .45;
-        float a = (.1 + dif * .1 + fres * .6 + s1 * .9 + s1b * .08 + s2 * .3) * k;
-        gl_FragColor = vec4(col, clamp(a, 0.0, 1.0)); }`,
-    transparent: true, depthWrite: false, side,
+        vec3 N = normalize(vWN); if (!gl_FrontFacing) N = -N;
+        vec3 V = normalize(cameraPosition - vWP);
+        float c = clamp(abs(dot(N, V)), 0.0, 1.0);
+        float F = .05 + .95 * pow(1.0 - c, 4.0);
+        vec3 refl = env(reflect(-V, N));
+        // rainbow bands where dispersed light crosses a facet
+        float h = fract(sin(dot(floor(vLN * 8.0 + .5), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+        vec3 dir = normalize(vec3(cos(h * 6.28), .9, sin(h * 6.28)));
+        float s = dot(vP, dir) - (h - .5) * .7 - .12 * sin(time * .25 + h * 6.0);
+        float band = exp(-pow(s / .085, 2.0)) * step(.35, h);
+        vec3 rainbow = spec(clamp(s / .17 + .5, 0.0, 1.0)) * band;
+        vec3 col = vec3(.55, .62, 1.0) * .05 + refl * (.25 + F * 1.3) + rainbow * .75;
+        float fade = 1.0;
+        if (mirror > .5) fade = (1.0 - smoothstep(-.78, .2, vP.y)) * .5;
+        gl_FragColor = vec4(col * k * fade, 1.0);
+      }`,
+    transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, side,
   });
-  const prism = new THREE.Group(); scene.add(prism);
-  const body = new THREE.Group(); prism.add(body);
-  const { g: geo, pts: TRI } = prismGeometry();
-  const back = new THREE.Mesh(geo, candy(THREE.BackSide)); back.renderOrder = 1; body.add(back);
-  const glass = new THREE.Mesh(geo, candy(THREE.FrontSide)); glass.renderOrder = 5; body.add(glass);
+
+  const world = new THREE.Group(); scene.add(world);          // tilted toward the viewer, holds floor and pyramid
+  const holder = new THREE.Group(); world.add(holder);        // turns the pyramid
+  const body = new THREE.Group(); holder.add(body);           // scale and jelly
+  const back = new THREE.Mesh(pyrGeo, crystal(THREE.BackSide, .55)); back.renderOrder = 1; body.add(back);
+  const glass = new THREE.Mesh(pyrGeo, crystal(THREE.FrontSide, 1)); glass.renderOrder = 5; body.add(glass);
+  // reflection in the floor: the same crystal mirrored below the base
+  const mirrorHolder = new THREE.Group(); world.add(mirrorHolder);
+  const mirrorBody = new THREE.Group(); mirrorHolder.add(mirrorBody);
+  const mirrorMesh = new THREE.Mesh(pyrGeo, crystal(THREE.DoubleSide, 1, true)); mirrorMesh.renderOrder = 0; mirrorBody.add(mirrorMesh);
+
+  // specks inside the glass that catch the light
+  const specks = (() => {
+    const n = 90, pos = [];
+    while (pos.length < n * 3) {
+      const x = (Math.random() * 2 - 1) * .8, z = (Math.random() * 2 - 1) * .8, y = (Math.random() - .5) * PH;
+      const lim = (PH / 2 - y) / PH;                       // cross-section shrinks toward the apex
+      if (Math.abs(x) + Math.abs(z) < lim * .92) pos.push(x, y, z);
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    const ph = Array.from({ length: n }, () => Math.random() * 6.28); g.setAttribute('aPh', new THREE.Float32BufferAttribute(ph, 1));
+    const m = new THREE.Points(g, new THREE.ShaderMaterial({
+      uniforms: { time: { value: 0 }, pr: { value: 1 } },
+      vertexShader: `uniform float time; uniform float pr; attribute float aPh; varying float vA;
+        void main(){ float tw = .5 + .5 * sin(time * 1.3 + aPh * 5.0); vA = tw * tw; gl_PointSize = (1.2 + 2.4 * tw) * pr; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      fragmentShader: `varying float vA; void main(){ float d = length(gl_PointCoord - .5); gl_FragColor = vec4(.9, .95, 1.0, pow(smoothstep(.5, 0.0, d), 2.0) * vA * .85); }`,
+      transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+    }));
+    m.renderOrder = 4; m.frustumCulled = false; body.add(m); return m;
+  })();
+
+  // glossy floor with light pooling around the base
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({
+    uniforms: { time: { value: 0 }, glow: { value: 0 } }, vertexShader: VERT,
+    fragmentShader: `uniform float time; uniform float glow; varying vec2 vUv;
+      ${SPEC_GLSL}
+      void main(){
+        vec2 p = (vUv - .5) * vec2(2.0, 2.0);
+        float r = length(p * vec2(.8, 1.3));
+        vec3 col = vec3(.085, .09, .19) + vec3(.05, .06, .12) * (1.0 - smoothstep(.0, .6, r));
+        float a = .9 * (1.0 - smoothstep(.25, 1.0, r));
+        // rainbow caustic thrown to the right, a cool pool to the left
+        vec2 q = p - vec2(.42, .02); float ang = atan(q.y, q.x);
+        float fanMask = smoothstep(.45, .1, abs(ang + .1)) * smoothstep(.0, .12, length(q)) * (1.0 - smoothstep(.2, .75, length(q)));
+        vec3 caustic = spec(clamp((ang + .4) / .8, 0.0, 1.0)) * fanMask * .55;
+        float pool = exp(-dot(p - vec2(-.35, .05), p - vec2(-.35, .05)) * 9.0) * .3;
+        float sheen = exp(-pow((p.y - .3) * 6.0, 2.0)) * (1.0 - smoothstep(.0, .9, abs(p.x))) * .25;
+        col += (caustic + vec3(.6, .72, 1.0) * pool + vec3(.8, .85, 1.0) * sheen) * glow;
+        gl_FragColor = vec4(col, a + (length(caustic) + pool) * glow * .6);
+      }`,
+    transparent: true, depthWrite: false, depthTest: false,
+  }));
+  floor.rotation.x = -Math.PI / 2; floor.renderOrder = -1; world.add(floor);
 
   // ---- Light ----
   function texture(w, h, paint) { const c = document.createElement('canvas'); c.width = w; c.height = h; paint(c.getContext('2d'), w, h); return new THREE.CanvasTexture(c); }
   const GLOW = texture(128, 128, g => { const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.25, 'rgba(255,255,255,.4)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); });
+  // lens starburst: a hot core with long thin spikes
+  const FLARE = texture(256, 256, g => {
+    const c = 128, gr = g.createRadialGradient(c, c, 0, c, c, 40); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.3, 'rgba(255,255,255,.5)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
+    [[0, 128, 2.2], [Math.PI / 2, 128, 2.2], [Math.PI / 4, 70, 1.2], [-Math.PI / 4, 70, 1.2]].forEach(([a, len, w]) => {
+      g.save(); g.translate(c, c); g.rotate(a);
+      const lg = g.createLinearGradient(-len, 0, len, 0); lg.addColorStop(0, 'rgba(255,255,255,0)'); lg.addColorStop(.5, 'rgba(255,255,255,.95)'); lg.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = lg; g.fillRect(-len, -w, len * 2, w * 2); g.restore();
+    });
+  });
   const STAR = texture(128, 128, g => {
     const gr = g.createRadialGradient(64, 64, 0, 64, 64, 40); gr.addColorStop(0, 'rgba(255,255,255,.6)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
     g.fillStyle = '#fff'; g.beginPath(); g.moveTo(64, 8); g.quadraticCurveTo(64, 64, 120, 64); g.quadraticCurveTo(64, 64, 64, 120); g.quadraticCurveTo(64, 64, 8, 64); g.quadraticCurveTo(64, 64, 64, 8); g.fill();
   });
-  const sprite = (map, hex, op = 0) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map, color: new THREE.Color(hex), transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false })); s.renderOrder = 8; scene.add(s); return s; };
+  const sprite = (map, hex, op = 0, order = 8) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map, color: new THREE.Color(hex), transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false })); s.renderOrder = order; scene.add(s); return s; };
 
-  // A soft beam: gaussian falloff across its width, no hard laser core.
   const beamGeo = new THREE.PlaneGeometry(1, 1); beamGeo.translate(.5, 0, 0);
-  function beam(a0, a1, order, tint = [1, .97, .94]) {
+  function beam(a0, a1, order, tint = [1, .97, .94], core = .55) {
     const m = new THREE.Mesh(beamGeo, new THREE.ShaderMaterial({
-      uniforms: { a0: { value: a0 }, a1: { value: a1 }, prog: { value: 0 }, time: { value: 0 }, tint: { value: new THREE.Vector3(...tint) } }, vertexShader: VERT,
-      fragmentShader: `uniform float a0; uniform float a1; uniform float prog; uniform float time; uniform vec3 tint; varying vec2 vUv;
+      uniforms: { a0: { value: a0 }, a1: { value: a1 }, prog: { value: 0 }, time: { value: 0 }, tint: { value: new THREE.Vector3(...tint) }, core: { value: core } }, vertexShader: VERT,
+      fragmentShader: `uniform float a0; uniform float a1; uniform float prog; uniform float time; uniform vec3 tint; uniform float core; varying vec2 vUv;
         void main(){ float y = abs(vUv.y - .5) * 2.0;
-          float glow = exp(-y*y*3.0)*.22 + exp(-y*y*14.0)*.5 + exp(-y*y*60.0)*.55;
+          float glow = exp(-y*y*3.0)*.2 + exp(-y*y*14.0)*.45 + exp(-y*y*80.0)*core;
           float a = mix(a0, a1, vUv.x) * glow * smoothstep(prog, prog - .05, vUv.x) * (.96 + .04 * sin(time * 1.3 + vUv.x * 9.0));
-          gl_FragColor = vec4(mix(tint, vec3(1.0), exp(-y*y*60.0)), a); }`,
+          gl_FragColor = vec4(mix(tint, vec3(1.0), exp(-y*y*80.0) * .6), a); }`,
       transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
     }));
     m.renderOrder = order; m.frustumCulled = false; scene.add(m); return m;
   }
-  const place = (m, p0, p1, w) => { const d = p1.clone().sub(p0); m.position.copy(p0); m.rotation.set(0, 0, Math.atan2(d.y, d.x)); m.scale.set(d.length(), w, 1); };
+  const place = (m, p0, p1, w) => { const d = p1.clone().sub(p0); m.position.copy(p0); m.rotation.set(0, 0, Math.atan2(d.y, d.x)); m.scale.set(Math.max(.001, d.length()), w, 1); };
 
-  // A dispersion fan: colour runs smoothly across its width (v), brightness fades along it (u).
   function fan(strength, soft, whiteK, order) {
     const SEG = 48, g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array((SEG + 1) * 6), 3));
@@ -322,16 +379,11 @@ h1 em { font-family: var(--f-serif); font-style: italic; font-weight: 400; lette
     for (let i = 0; i <= SEG; i++) { const u = i / SEG, t = a0.clone().lerp(a1, u), b = b0.clone().lerp(b1, u); p.setXYZ(i * 2, t.x, t.y, 0); p.setXYZ(i * 2 + 1, b.x, b.y, 0); }
     p.needsUpdate = true;
   }
-
-  // Glitter sprinkled through the spectrum: each grain drifts outward and twinkles in its band's colour.
   function glitter(count) {
-    const g = new THREE.BufferGeometry(), U = [], Vv = [], PH = [], SZ = [], SP = [];
-    for (let i = 0; i < count; i++) {
-      U.push(Math.random()); Vv.push(.06 + Math.random() * .88); PH.push(Math.random() * 6.28);
-      SZ.push(Math.random() < .14 ? 9 + Math.random() * 7 : 2 + Math.random() * 3.5); SP.push(.018 + Math.random() * .03);
-    }
+    const g = new THREE.BufferGeometry(), U = [], Vv = [], PHs = [], SZ = [], SP = [];
+    for (let i = 0; i < count; i++) { U.push(Math.random()); Vv.push(.06 + Math.random() * .88); PHs.push(Math.random() * 6.28); SZ.push(Math.random() < .14 ? 9 + Math.random() * 7 : 2 + Math.random() * 3.5); SP.push(.018 + Math.random() * .03); }
     g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(count * 3), 3));
-    [['aU', U], ['aV', Vv], ['aPh', PH], ['aSz', SZ], ['aSp', SP]].forEach(([n, a]) => g.setAttribute(n, new THREE.Float32BufferAttribute(a, 1)));
+    [['aU', U], ['aV', Vv], ['aPh', PHs], ['aSz', SZ], ['aSp', SP]].forEach(([n, a]) => g.setAttribute(n, new THREE.Float32BufferAttribute(a, 1)));
     const m = new THREE.Points(g, new THREE.ShaderMaterial({
       uniforms: { a0: { value: new THREE.Vector3() }, a1: { value: new THREE.Vector3() }, b0: { value: new THREE.Vector3() }, b1: { value: new THREE.Vector3() }, time: { value: 0 }, prog: { value: 0 }, fadeAt: { value: .6 }, pr: { value: 1 }, uMax: { value: 1 } },
       vertexShader: `uniform vec3 a0; uniform vec3 a1; uniform vec3 b0; uniform vec3 b1; uniform float time; uniform float prog; uniform float fadeAt; uniform float pr; uniform float uMax;
@@ -345,76 +397,74 @@ h1 em { font-family: var(--f-serif); font-style: italic; font-weight: 400; lette
           float tw = .5 + .5 * sin(time * (1.6 + aSp * 50.0) + aPh * 3.0);
           vC = mix(spec((.9 - v) / .8), vec3(1.0), .35);
           vA = tw * smoothstep(.02, .08, u) * (1.0 - smoothstep(fadeAt * .85, min(1.0, fadeAt * 1.25), u)) * step(u, prog);
-          vBig = aSz;
-          gl_PointSize = aSz * (.55 + .6 * tw) * pr;
+          vBig = aSz; gl_PointSize = aSz * (.55 + .6 * tw) * pr;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0); }`,
       fragmentShader: `varying vec3 vC; varying float vA; varying float vBig;
-        void main(){
-          vec2 c = gl_PointCoord - .5; float d = length(c);
+        void main(){ vec2 c = gl_PointCoord - .5; float d = length(c);
           float dot_ = pow(smoothstep(.5, 0.0, d), 2.5);
           float star = max(smoothstep(.07, 0.0, abs(c.x)) * smoothstep(.5, .0, abs(c.y)), smoothstep(.07, 0.0, abs(c.y)) * smoothstep(.5, .0, abs(c.x)));
-          float a = (dot_ + star * step(6.0, vBig) * .8) * vA;
-          gl_FragColor = vec4(vC, a); }`,
+          gl_FragColor = vec4(vC, (dot_ + star * step(6.0, vBig) * .8) * vA); }`,
       transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
     }));
     m.frustumCulled = false; m.renderOrder = 7; scene.add(m); return m;
   }
-  // Dust in the incoming beam: only visible where the light catches it.
   function motes(count) {
-    const g = new THREE.BufferGeometry(), T = [], O = [], PH = [];
-    for (let i = 0; i < count; i++) { T.push(Math.random()); O.push((Math.random() - .5) * 2); PH.push(Math.random() * 6.28); }
+    const g = new THREE.BufferGeometry(), T = [], O = [], PHs = [];
+    for (let i = 0; i < count; i++) { T.push(Math.random()); O.push((Math.random() - .5) * 2); PHs.push(Math.random() * 6.28); }
     g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(count * 3), 3));
-    g.setAttribute('aT', new THREE.Float32BufferAttribute(T, 1)); g.setAttribute('aO', new THREE.Float32BufferAttribute(O, 1)); g.setAttribute('aPh', new THREE.Float32BufferAttribute(PH, 1));
+    g.setAttribute('aT', new THREE.Float32BufferAttribute(T, 1)); g.setAttribute('aO', new THREE.Float32BufferAttribute(O, 1)); g.setAttribute('aPh', new THREE.Float32BufferAttribute(PHs, 1));
     const m = new THREE.Points(g, new THREE.ShaderMaterial({
       uniforms: { p0: { value: new THREE.Vector3() }, p1: { value: new THREE.Vector3() }, width: { value: 20 }, time: { value: 0 }, prog: { value: 0 }, pr: { value: 1 } },
       vertexShader: `uniform vec3 p0; uniform vec3 p1; uniform float width; uniform float time; uniform float prog; uniform float pr;
         attribute float aT; attribute float aO; attribute float aPh; varying float vA;
-        void main(){
-          float t = fract(aT + time * .012);
-          vec3 d = normalize(p1 - p0); vec3 n = vec3(-d.y, d.x, 0.0);
+        void main(){ float t = fract(aT + time * .012); vec3 d = normalize(p1 - p0); vec3 n = vec3(-d.y, d.x, 0.0);
           vec3 pos = mix(p0, p1, .35 + t * .65) + n * (aO * width + sin(time * .5 + aPh) * 3.0);
           float tw = .5 + .5 * sin(time * 1.7 + aPh * 4.0);
           vA = exp(-aO * aO * 2.5) * tw * smoothstep(.0, .2, t) * step(.35 + t * .65, prog);
-          gl_PointSize = (1.5 + 2.0 * tw) * pr;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0); }`,
+          gl_PointSize = (1.5 + 2.0 * tw) * pr; gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0); }`,
       fragmentShader: `varying float vA; void main(){ float d = length(gl_PointCoord - .5); gl_FragColor = vec4(1.0, .98, .95, pow(smoothstep(.5, 0.0, d), 2.0) * vA * .9); }`,
       transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
     }));
     m.frustumCulled = false; m.renderOrder = 7; scene.add(m); return m;
   }
 
-  const beamIn = beam(.3, .95, 3), reflected = beam(.22, 0, 3, [.92, .9, 1]);
-  const inside = fan(.85, .25, .7, 2);           // light inside the glass, already starting to split
+  const beamIn = beam(.3, .95, 3), reflected = beam(.22, 0, 3, [.85, .88, 1]);
+  const insideFan = fan(.8, .3, .65, 2);
+  const innerA = beam(.35, .05, 2, [.75, .65, 1], .3), innerB = beam(.3, .05, 2, [.6, .95, .78], .3);   // light bouncing inside the glass
   const spectrum = fan(1.15, .2, .22, 3), haze = fan(.26, .5, .15, 2);
   const sparkle = glitter(220), dust = motes(70);
-  const entryGlow = sprite(GLOW, '#FFFFFF'), exitGlow = sprite(GLOW, '#FFF2F7'), innerGlow = sprite(GLOW, '#C9B3FF');
+  // bright glass edges: 4 slanted, 4 around the base
+  const EDGES = [[APEX, CORNER[0]], [APEX, CORNER[1]], [APEX, CORNER[2]], [APEX, CORNER[3]], [CORNER[0], CORNER[1]], [CORNER[1], CORNER[2]], [CORNER[2], CORNER[3]], [CORNER[3], CORNER[0]]];
+  const edgeBeams = EDGES.map(() => beam(1, 1, 6, [.85, .9, 1], .9));
+  const flares = [sprite(FLARE, '#FFFFFF', 0, 9), sprite(FLARE, '#FFF4FA', 0, 9), sprite(FLARE, '#E8F0FF', 0, 9), sprite(FLARE, '#FFFFFF', 0, 9)];
+  const innerGlow = sprite(GLOW, '#B9A6FF', 0, 3);
   const PASTEL = ['#FFB3A7', '#FFE29A', '#9EF0C8', '#9CCBFF', '#C9B3FF'];
   const burst = Array.from({ length: 14 }, (_, i) => ({ s: sprite(STAR, PASTEL[i % 5]), dir: new THREE.Vector2(Math.cos(i / 14 * 6.28), Math.sin(i / 14 * 6.28)), sp: 120 + Math.random() * 90 }));
 
   // ---- Layout ----
   let W = 1, H = 1, P = { x: 0, y: 0 }, S = 200, dist = 1, ends = null;
   const toW = (x, y) => new THREE.Vector3(x - W / 2, H / 2 - y, 0);
-  const toPx = v => ({ x: v.x + W / 2, y: H / 2 - v.y });
-  const tmp = new THREE.Vector3();
-  // project a point on the prism to the z = 0 drawing plane, in CSS pixels
+  const tmp = new THREE.Vector3(), tmpV = new THREE.Vector3();
   const onScreen = local => { tmp.copy(local).applyMatrix4(glass.matrixWorld).project(camera); return { x: (tmp.x * .5 + .5) * W, y: (-tmp.y * .5 + .5) * H }; };
+  const depthOf = local => { tmpV.copy(local).applyMatrix4(glass.matrixWorld).applyMatrix4(camera.matrixWorldInverse); return tmpV.z; };
 
   function layout() {
     const hr = hero.getBoundingClientRect(), sr = stage.getBoundingClientRect();
     W = hr.width; H = hr.height;
     const pr = Math.min(2, devicePixelRatio || 1);
     renderer.setPixelRatio(pr); renderer.setSize(W, H, false);
-    sparkle.material.uniforms.pr.value = pr; dust.material.uniforms.pr.value = pr;
+    [sparkle, dust, specks].forEach(m => m.material.uniforms.pr.value = pr);
     camera.aspect = W / H; dist = (H / 2) / Math.tan(THREE.MathUtils.degToRad(15));
     camera.position.set(0, 0, dist); camera.near = dist * .2; camera.far = dist * 4; camera.updateProjectionMatrix();
+    camera.updateMatrixWorld();
     const k = (dist + 400) / dist; bg.position.set(0, 0, -400); bg.scale.set(W * k * 1.05, H * k * 1.05, 1);
     bg.material.uniforms.aspect.value = W / H;
     const narrow = W <= 900;
-    S = Math.min(sr.width * (narrow ? .5 : .5), sr.height * .52, 280);
-    P = { x: sr.left - hr.left + sr.width * (narrow ? .42 : .5), y: sr.top - hr.top + sr.height * .44 };
+    S = Math.min(sr.width * (narrow ? .34 : .4), sr.height * .34, 220);   // base radius in px
+    P = { x: sr.left - hr.left + sr.width * (narrow ? .42 : .48), y: sr.top - hr.top + sr.height * .42 };
     bg.material.uniforms.focus.value.set(P.x / W, 1 - P.y / H);
-    body.scale.setScalar(S);
-    // where the spectrum lands: one band per step
+    floor.position.set(0, -PH / 2 * S - 1, 0); floor.scale.set(S * 5, S * 4, 1);
+    mirrorHolder.position.y = -PH * S - 2; mirrorHolder.scale.y = -1;
     if (narrow) ends = { dotX: W, top: P.y - 110, bot: P.y + 150, fadeAt: .75 };
     else {
       const r = stepEls.map(el => el.querySelector('.dot').getBoundingClientRect()), gap = (r[4].top - r[0].top) / 4;
@@ -422,24 +472,13 @@ h1 em { font-family: var(--f-serif); font-style: italic; font-weight: 400; lette
     }
   }
 
-  // Trace the light against the prism's current pose. Called every frame, so the light follows the sway.
-  const IN_ANGLE = THREE.MathUtils.degToRad(48);
-  function traceLight() {
-    const narrow = W <= 900;
-    const ent = onScreen(TRI[0].clone().lerp(TRI[1], .52)), ext = onScreen(TRI[0].clone().lerp(TRI[2], .52));
-    const A = onScreen(TRI[0]), B = onScreen(TRI[1]), C = onScreen(TRI[2]);
-    const dIn = { x: Math.cos(narrow ? .66 : IN_ANGLE), y: Math.sin(narrow ? .66 : IN_ANGLE) };
-    const origin = { x: ent.x - dIn.x * 3000, y: ent.y - dIn.y * 3000 };
-    // partial reflection off the entry face
-    let n = { x: B.y - A.y, y: -(B.x - A.x) }; const nl = Math.hypot(n.x, n.y); n = { x: n.x / nl, y: n.y / nl };
-    const cen = { x: (A.x + B.x + C.x) / 3, y: (A.y + B.y + C.y) / 3 };
-    if ((ent.x - cen.x) * n.x + (ent.y - cen.y) * n.y < 0) n = { x: -n.x, y: -n.y };
-    const dd = dIn.x * n.x + dIn.y * n.y, rf = { x: dIn.x - 2 * dd * n.x, y: dIn.y - 2 * dd * n.y };
-    const w0 = S * .018, w1 = S * .07;
-    return { ent, ext, origin, refl: { x: ent.x + rf.x * S * .6, y: ent.y + rf.y * S * .6 }, w0, w1 };
-  }
+  // Points on the two front faces where light enters and leaves (barycentric: apex, front corner, side corner)
+  const bary = (a, b, c, wa, wb, wc) => new THREE.Vector3().addScaledVector(a, wa).addScaledVector(b, wb).addScaledVector(c, wc);
+  const ENTRY = bary(APEX, CORNER[0], CORNER[3], .34, .2, .46), EXIT = bary(APEX, CORNER[0], CORNER[1], .34, .2, .46);
+  const BOUNCE_A = bary(APEX, CORNER[2], CORNER[1], .2, .5, .3), BOUNCE_B = bary(APEX, CORNER[3], CORNER[2], .05, .3, .65);
+  const IN_ANGLE = THREE.MathUtils.degToRad(58);
 
-  // ---- Interaction: springy tilt toward the cursor, jelly wobble and a sparkle burst on click ----
+  // ---- Interaction ----
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   let mouse = { x: 0, y: 0 }, rx = { v: 0, vel: 0 }, ry = { v: 0, vel: 0 }, wob = 10, burstT = 10;
   const spring = (s, target, dt) => { s.vel += ((target - s.v) * 40 - s.vel * 9) * dt; s.v += s.vel * dt; };
@@ -461,48 +500,70 @@ h1 em { font-family: var(--f-serif); font-style: italic; font-weight: 400; lette
   function render(now) {
     const dt = Math.min(.05, (now - last) / 1000); last = now;
     const t = reduce ? 10 : (now - t0) / 1000;
-    if (!reduce) { spring(ry, mouse.x * .35 + Math.sin(t * .35) * .1, dt); spring(rx, mouse.y * .2, dt); wob += dt; burstT += dt; }
-    prism.position.copy(toW(P.x, P.y)); prism.position.y += reduce ? 0 : Math.sin(t * .9) * 5;
-    prism.rotation.set(.16 + rx.v, -.68 + ry.v, Math.sin(t * .5) * .025);
-    const jelly = reduce ? 0 : .08 * Math.sin(wob * 16) * Math.exp(-wob * 3.5);
-    body.scale.set(S * (1 + jelly), S * (1 - jelly), S * (1 + jelly * .5));
-    prism.updateMatrixWorld(true);
-    [bg, glass, back].forEach(m => m.material.uniforms.time.value = t);
+    if (!reduce) { spring(ry, mouse.x * .5 + Math.sin(t * .3) * .22, dt); spring(rx, mouse.y * .12, dt); wob += dt; burstT += dt; }
+    world.position.copy(toW(P.x, P.y)); world.position.y += reduce ? 0 : Math.sin(t * .8) * 3;
+    world.rotation.set(.12 + rx.v, 0, 0);
+    holder.rotation.y = -.08 + ry.v; mirrorHolder.rotation.y = holder.rotation.y;
+    const jelly = reduce ? 0 : .07 * Math.sin(wob * 16) * Math.exp(-wob * 3.5);
+    body.scale.set(S * (1 + jelly), S * (1 - jelly), S * (1 + jelly)); mirrorBody.scale.copy(body.scale);
+    world.updateMatrixWorld(true);
+    [bg, glass, back, mirrorMesh, floor, specks].forEach(m => m.material.uniforms.time && (m.material.uniforms.time.value = t));
 
-    const L = traceLight(), E = toW(L.ent.x, L.ent.y), X = toW(L.ext.x, L.ext.y);
-    const pIn = reduce ? 1 : smooth(.2, 1.1, t), pInside = reduce ? 1 : smooth(1, 1.3, t), pOut = reduce ? 1 : smooth(1.25, 2.6, t);
+    const pIn = reduce ? 1 : smooth(.2, 1.1, t), pInside = reduce ? 1 : smooth(1, 1.35, t), pOut = reduce ? 1 : smooth(1.25, 2.6, t);
+    const ent = onScreen(ENTRY), ext = onScreen(EXIT), E = toW(ent.x, ent.y), X = toW(ext.x, ext.y);
+    const narrow = W <= 900, ang = narrow ? .75 : IN_ANGLE, dIn = { x: Math.cos(ang), y: Math.sin(ang) };
+    const O = toW(ent.x - dIn.x * 3000, ent.y - dIn.y * 3000);
+    place(beamIn, O, E, S * .32); beamIn.material.uniforms.prog.value = pIn; beamIn.material.uniforms.time.value = t;
+    // partial reflection off the entry face: mirror the incoming direction about that face's screen normal
+    const A = onScreen(APEX), L = onScreen(CORNER[3]), F = onScreen(CORNER[0]);
+    let n = { x: (A.y + F.y) / 2 - L.y, y: -((A.x + F.x) / 2 - L.x) }; const nl = Math.hypot(n.x, n.y) || 1; n = { x: n.x / nl, y: n.y / nl };
+    if (n.x > 0) n = { x: -n.x, y: -n.y };
+    const dd = dIn.x * n.x + dIn.y * n.y, rf = { x: dIn.x - 2 * dd * n.x, y: dIn.y - 2 * dd * n.y };
+    place(reflected, E, toW(ent.x + rf.x * S * 1.1, ent.y + rf.y * S * 1.1), S * .18); reflected.material.uniforms.prog.value = pInside;
+    dust.material.uniforms.p0.value.copy(O); dust.material.uniforms.p1.value.copy(E);
+    dust.material.uniforms.width.value = S * .08; dust.material.uniforms.time.value = t; dust.material.uniforms.prog.value = pIn;
 
-    place(beamIn, toW(L.origin.x, L.origin.y), E, S * .2);
-    beamIn.material.uniforms.prog.value = pIn; beamIn.material.uniforms.time.value = t;
-    place(reflected, E, toW(L.refl.x, L.refl.y), S * .12);
-    reflected.material.uniforms.prog.value = pInside;
-    dust.material.uniforms.p0.value.copy(toW(L.origin.x, L.origin.y)); dust.material.uniforms.p1.value.copy(E);
-    dust.material.uniforms.width.value = S * .05; dust.material.uniforms.time.value = t; dust.material.uniforms.prog.value = pIn;
+    // inside the crystal: the beam crosses and starts to split; some light bounces off the back faces
+    const w0 = S * .03, w1 = S * .1;
+    placeFan(insideFan, toW(ent.x, ent.y - w0), toW(ext.x, ext.y - w1), toW(ent.x, ent.y + w0), toW(ext.x, ext.y + w1));
+    insideFan.material.uniforms.prog.value = pInside * 1.08; insideFan.material.uniforms.fadeAt.value = 1;
+    const bA = onScreen(BOUNCE_A), bB = onScreen(BOUNCE_B);
+    place(innerA, E, toW(bA.x, bA.y), S * .16); innerA.material.uniforms.prog.value = pInside;
+    place(innerB, X, toW(bB.x, bB.y), S * .14); innerB.material.uniforms.prog.value = pInside;
 
-    // inside the glass the beam bends toward the base and starts to separate
-    placeFan(inside, toW(L.ent.x, L.ent.y - L.w0), toW(L.ext.x, L.ext.y - L.w1), toW(L.ent.x, L.ent.y + L.w0), toW(L.ext.x, L.ext.y + L.w1));
-    inside.material.uniforms.prog.value = pInside * 1.08; inside.material.uniforms.fadeAt.value = 1;
+    // the crystal's edges catch the light; front edges bright, back edges seen through the glass
+    EDGES.forEach(([p, q], i) => {
+      const a = onScreen(p), b = onScreen(q), z = (depthOf(p) + depthOf(q)) / 2 - depthOf(new THREE.Vector3());
+      const m = edgeBeams[i]; place(m, toW(a.x, a.y), toW(b.x, b.y), Math.max(5, S * .06));
+      const front = smooth(-S * .3, S * .4, z);
+      const glint = .5 + .5 * Math.sin(t * .9 + i * 1.7);
+      m.material.uniforms.a0.value = (.18 + .55 * front) * (.75 + .25 * glint); m.material.uniforms.a1.value = (.12 + .5 * front) * (.75 + .25 * (1 - glint));
+      m.material.uniforms.prog.value = 1.05;
+    });
 
-    // out of the far face the colours fan smoothly onto the steps
-    const kk = ((W + 60) - L.ext.x) / (ends.dotX - L.ext.x);
-    const y0 = L.ext.y - L.w1, y1 = L.ext.y + L.w1, mid = (ends.top + ends.bot) / 2;
-    const a0 = toW(L.ext.x, y0), a1 = toW(W + 60, y0 + (ends.top - y0) * kk), b0 = toW(L.ext.x, y1), b1 = toW(W + 60, y1 + (ends.bot - y1) * kk);
+    // out of the far face: one smooth band of colour onto the steps
+    const kk = ((W + 60) - ext.x) / (ends.dotX - ext.x);
+    const y0 = ext.y - w1, y1 = ext.y + w1, mid = (ends.top + ends.bot) / 2;
+    const a0 = toW(ext.x, y0), a1 = toW(W + 60, y0 + (ends.top - y0) * kk), b0 = toW(ext.x, y1), b1 = toW(W + 60, y1 + (ends.bot - y1) * kk);
     placeFan(spectrum, a0, a1, b0, b1);
-    placeFan(haze, toW(L.ext.x, y0 - S * .05), toW(W + 60, L.ext.y + (mid - (mid - ends.top) * 1.3 - L.ext.y) * kk), toW(L.ext.x, y1 + S * .05), toW(W + 60, L.ext.y + (mid + (ends.bot - mid) * 1.3 - L.ext.y) * kk));
+    placeFan(haze, toW(ext.x, y0 - S * .08), toW(W + 60, ext.y + (mid - (mid - ends.top) * 1.3 - ext.y) * kk), toW(ext.x, y1 + S * .08), toW(W + 60, ext.y + (mid + (ends.bot - mid) * 1.3 - ext.y) * kk));
     const fadeAt = ends.fadeAt || 1 / kk;
     [spectrum, haze].forEach(m => { m.material.uniforms.prog.value = pOut * 1.06; m.material.uniforms.fadeAt.value = fadeAt; });
     const su = sparkle.material.uniforms;
     su.a0.value.copy(a0); su.a1.value.copy(a1); su.b0.value.copy(b0); su.b1.value.copy(b1); su.time.value = t; su.prog.value = pOut * 1.06; su.fadeAt.value = fadeAt; su.uMax.value = Math.min(1, fadeAt * 1.3);
+    floor.material.uniforms.glow.value = pOut;
 
-    const flick = .95 + .05 * Math.sin(t * 2.1);
-    entryGlow.position.copy(E).setZ(30); entryGlow.scale.set(S * .38, S * .38, 1); entryGlow.material.opacity = .7 * pIn * flick;
-    exitGlow.position.copy(X).setZ(30); exitGlow.scale.set(S * .42, S * .42, 1); exitGlow.material.opacity = .6 * pInside * flick;
-    innerGlow.position.copy(prism.position).setZ(20); innerGlow.scale.set(S * 1.2, S * 1.2, 1); innerGlow.material.opacity = (W <= 900 ? .1 : .18) * pInside;
+    // starbursts where the light is hottest
+    const tw = i => .8 + .2 * Math.sin(t * 2.3 + i * 2.1);
+    const fl = [[E, S * 1.1, .95 * pIn], [X, S * 1.0, .85 * pInside], [toW(F.x, F.y), S * .7, .55 * pOut], [toW(A.x, A.y), S * .5, .4 * pOut]];
+    fl.forEach(([p, size, op], i) => { flares[i].position.copy(p).setZ(80); const s = size * tw(i); flares[i].scale.set(s, s, 1); flares[i].material.opacity = op * tw(i); flares[i].material.rotation = i === 2 ? .2 : 0; });
+    const c = onScreen(new THREE.Vector3(0, -.1, 0));
+    innerGlow.position.copy(toW(c.x, c.y)).setZ(20); innerGlow.scale.set(S * 2.4, S * 2.4, 1); innerGlow.material.opacity = .2 * pInside;
 
     burst.forEach(b => {
       const k = burstT; if (k > 1.2 || reduce) { b.s.material.opacity = 0; return; }
       const d = b.sp * (1 - Math.exp(-k * 4));
-      b.s.position.set(prism.position.x + b.dir.x * d, prism.position.y + b.dir.y * d, 60);
+      b.s.position.set(world.position.x + b.dir.x * d, world.position.y + b.dir.y * d, 60);
       const sz = 22 * (1 - k / 1.2); b.s.scale.set(sz, sz, 1); b.s.material.opacity = 1 - k / 1.2; b.s.material.rotation = k * 4;
     });
 

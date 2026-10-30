@@ -46,3 +46,9 @@ Feedback: back to the prism, but smooth, cute and innovative; name confirmed as 
 - The prism is now a true triangular prism (triangle ends, flat rectangular sides) with softly rounded edges; you see the end and its sides at a three-quarter angle.
 - The light is traced against the prism's pose every frame: soft beam into the left face (with dust catching the light), a faint reflection off that face, the beam bending and starting to split inside the glass, then leaving the far face.
 - The outgoing spectrum is one smooth gradient (no streaks) in real dispersion order, sprinkled with drifting, twinkling glitter in each band's colour.
+
+### v8 — Crystal pyramid (from reference photos)
+- The prism is a clear crystal pyramid: square base, four triangular faces, one corner toward the viewer, sharp glowing edges (back edges visible through the glass).
+- Glass shading reflects a small studio (softbox, strip light, key light) with a Fresnel falloff; rainbow bands cross the facets where dispersed light hits them.
+- Inside: the beam crosses and starts to split, faint light bounces off the back faces, and specks in the glass twinkle. Lens starbursts mark the entry, exit and the brightest corners.
+- It stands on a glossy floor with its mirrored reflection, a rainbow caustic and a cool light pool around the base.
