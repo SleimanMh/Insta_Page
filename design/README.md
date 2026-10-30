@@ -23,3 +23,7 @@ Chosen direction: **B · Prism**, with the reference's violet-black palette.
 - three.js 0.149 (jsDelivr): a glass prism turning about once every 54 s. Each side reflects a stage: the idea (sketch), the plan (blueprint), the product (live dashboard).
 - One beam in, five rays out to the steps Discover, Design, Build, Launch, Care, with pulses travelling along each ray.
 - Name exploration from the prism idea: Refract (recommended), Prismwork, Spectra, Fanout, plus Innovative for comparison. A review-only bar switches the name live. Domains and trademarks not checked.
+
+### v4 — Equal-sided solid and broad spectrum
+- The prism is now a regular tetrahedron: four identical triangular sides, turning so each faces the viewer in turn (idea, plan, build, product). A square pyramid with equilateral sides is available from the review bar.
+- The output light is one continuous spectrum fan (amber to aqua) sized so each step sits in its own colour band. Thin rays and travelling dots removed.
