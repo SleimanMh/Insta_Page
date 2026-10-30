@@ -61,11 +61,33 @@ const ROOM = .46;
 const gapAt = (s: StoryState) => Math.min(s.stageF, SLABS - 2);
 const roomShift = (i: number, s: StoryState, exploring: number) => (smooth(-.5, .5, i - (gapAt(s) + .5)) - .5) * ROOM * exploring;
 
+/**
+ * Moving to the next stage, the panel does not slide: it draws back, then breaks through the layer
+ * between the two openings. `tr` is the transit (0…1), `crossSlab` the layer it breaks through,
+ * `burst` drives the flying shards and `flash` the flare on the broken layer. All scroll-driven, so it reverses.
+ */
+export function panelTransit(s: StoryState) {
+  const g = gapAt(s), k = Math.min(SLABS - 2, Math.floor(g + 1e-6)), tr = g - k;
+  const moving = tr > 1e-4 && k < SLABS - 2 ? s.process : 0;
+  return {
+    k, tr: moving ? tr : 0, crossSlab: k + 1,
+    burst: moving ? smooth(.44, .98, tr) : 0,
+    flash: moving * Math.sin(Math.PI * smooth(.36, .8, tr)),
+  };
+}
+// anticipation and a small overshoot: pull back, punch through, settle
+const punch = (t: number) => {
+  const c = 1.1 * 1.525;
+  return t < .5 ? (Math.pow(2 * t, 2) * ((c + 1) * 2 * t - c)) / 2 : (Math.pow(2 * t - 2, 2) * ((c + 1) * (t * 2 - 2) + c) + 2) / 2;
+};
+const gapZ = (k: number) => (k - (SLABS - 1) / 2) * GAP + GAP * .5;
+
 export function slabPoses(s: StoryState, hover: number): SlabPose[] {
   // the two route sets swap at the midpoint, where every slab is at rest, so the switch is invisible
   const opening = s.p < .5;
   const order = opening ? ORDER_OPEN : ORDER_CLOSE;
   const exploring = smooth(.6, 1, s.open) * (s.process > 0 ? 1 : 0);
+  const transit = panelTransit(s);
   return Array.from({ length: SLABS }, (_, i) => {
     const t = easeInOut(clamp(s.open * 1.6 - order.indexOf(i) * .12));
     const detour = Math.sin(Math.PI * t);
@@ -84,28 +106,34 @@ export function slabPoses(s: StoryState, hover: number): SlabPose[] {
         lerp(0, rr[1], t) + tum[1] * detour * .35 + active * .12,
         lerp(0, rr[2], t) + tum[2] * detour * .3,
       ],
-      hl: Math.min(1, active + hov),
+      hl: Math.min(1, active + hov + (i === transit.crossSlab ? transit.flash * .9 : 0)),
     };
   });
 }
 
-export interface PlanePose { pos: V3; rotY: number; w: number; h: number; show: number }
+export interface PlanePose { pos: V3; rot: V3; w: number; h: number; show: number }
 
-/** The product plane stands on the floor in the opening after the active layer, then settles inside the reunited prism. */
+/**
+ * The product panel stands large in the opening after the active layer, drawn over the glass so it stays
+ * readable. Between stages it breaks through the next layer; at the end it settles inside the reunited prism.
+ */
 export function planePose(s: StoryState): PlanePose {
   const e = easeInOut(clamp(s.open));
   const launch = Math.max(0, 1 - Math.abs(s.stageF - 4) * 1.4) * s.process;
-  const w = .58 + launch * .03, h = .87 + launch * .04;
+  const T = panelTransit(s), bump = Math.sin(Math.PI * T.tr);
+  const w = .76, h = 1.14;
   const explore = {
-    x: -.02 - launch * .12, y: BASE_Y + h / 2 + .03 + launch * .03,
-    z: ((gapAt(s) - (SLABS - 1) / 2) * GAP + GAP * .5) * e,
-    w, h, rotY: .62 + Math.PI,   // parallel to the layers, facing the viewer
+    x: .06 + bump * .16 - launch * .06,
+    y: BASE_Y + h / 2 + .03 + bump * .07 + launch * .03,
+    z: (gapZ(T.k) + (gapZ(T.k + 1) - gapZ(T.k)) * punch(T.tr)) * e,
+    rot: [-bump * .12, .62 + Math.PI + bump * .38, Math.sin(Math.PI * 2 * T.tr) * .07] as V3,   // faces the viewer, tilts as it breaks through
+    w: w * (1 - bump * .05), h: h * (1 + bump * .03),
   };
-  const inside = { x: -.01, y: -.045, z: 0, w: .3, h: .43, rotY: Math.PI };
+  const inside = { x: -.01, y: -.045, z: 0, rot: [0, Math.PI, 0] as V3, w: .3, h: .45 };
   const c = easeInOut(s.complete);
   return {
     pos: [lerp(explore.x, inside.x, c), lerp(explore.y, inside.y, c), lerp(explore.z, inside.z, c)],
-    rotY: lerp(explore.rotY, inside.rotY, c),
+    rot: [lerp(explore.rot[0], inside.rot[0], c), lerp(explore.rot[1], inside.rot[1], c), lerp(explore.rot[2], inside.rot[2], c)],
     w: lerp(explore.w, inside.w, c), h: lerp(explore.h, inside.h, c),
     show: Math.max(smooth(.55, .95, s.open) * (1 - c), c),
   };

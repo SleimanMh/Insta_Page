@@ -7,13 +7,25 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { story } from '../story/controller';
 import { clamp, smooth } from '../story/progress';
-import { FOV, cameraPose, paths, planePose, slabPoses } from './choreography';
+import { FOV, cameraPose, panelTransit, paths, planePose, slabPoses } from './choreography';
 import { APEX_Y, BASE_Y, BEAM_Y, SLABS, SLAB_DEPTH, slabGeometry } from './geometry';
-import { TO_LINEAR, backdropMaterial, crystalMaterial, floorMaterial, floorReflectionMaterial, productMaterial } from './materials';
+import { TO_LINEAR, backdropMaterial, crystalMaterial, floorMaterial, floorReflectionMaterial, productMaterial, shardMaterial } from './materials';
 import { Ribbon } from './ribbon';
 import { artFor, makeStageArt } from './stageArt';
 
 const FLOOR_OFFSET = .024;   // the bevel reaches slightly below the triangle's base
+const SHARDS = 30;
+// fixed pseudo-random shard set, so the break looks the same every time and plays backwards cleanly
+const SHARD_SET = Array.from({ length: SHARDS }, (_, i) => {
+  const r = (n: number) => { const x = Math.sin(i * 127.1 + n * 311.7) * 43758.5453; return x - Math.floor(x); };
+  const a = r(1) * Math.PI * 2, up = r(2) * 1.2 - .35;
+  return {
+    dir: new THREE.Vector3(Math.cos(a) * .9, up, Math.sin(a) * .9 + .55).normalize(),
+    dist: .22 + r(3) * .5, size: .35 + r(4) * .9,
+    spin: new THREE.Vector3(r(5) - .5, r(6) - .5, r(7) - .5).multiplyScalar(14),
+    offset: new THREE.Vector3((r(8) - .5) * .3, (r(9) - .5) * .5, 0),
+  };
+});
 
 const glintMaterial = () => new THREE.ShaderMaterial({
   uniforms: { scale: { value: 1 } },
@@ -54,7 +66,14 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
 
     const art = makeStageArt(gl.capabilities.getMaxAnisotropy());
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), productMaterial());
+    plane.renderOrder = 100;   // over the glass, so every part of the panel stays readable
     root.add(plane);
+    // shards: small irregular triangles of glass
+    const shardGeo = new THREE.BufferGeometry();
+    shardGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, .05, 0, -.032, -.022, .004, .041, -.03, -.003], 3));
+    shardGeo.computeVertexNormals();
+    const shards = new THREE.InstancedMesh(shardGeo, shardMaterial(), SHARDS);
+    shards.frustumCulled = false; shards.renderOrder = 120; shards.visible = false;
 
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), floorMaterial());
     floor.rotation.x = -Math.PI / 2; floor.renderOrder = -1;
@@ -67,12 +86,13 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     const launch = new Ribbon(32, '#D6B88A', .9, .1, .5);
     const ring = new Ribbon(97, '#E2C495', .55, .55, .45);
     const glints = new THREE.Points(new THREE.BufferGeometry(), glintMaterial());
-    glints.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array((SLABS + 1) * 3), 3));
-    glints.geometry.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array(SLABS + 1), 1));
-    glints.geometry.setAttribute('aAlpha', new THREE.BufferAttribute(new Float32Array(SLABS + 1), 1));
+    // one glint per layer, one where the beam enters, one for the flash when the panel breaks through
+    glints.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array((SLABS + 2) * 3), 3));
+    glints.geometry.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array(SLABS + 2), 1));
+    glints.geometry.setAttribute('aAlpha', new THREE.BufferAttribute(new Float32Array(SLABS + 2), 1));
     glints.frustumCulled = false; glints.renderOrder = 210;
 
-    return { root, geo, slabs, art, plane, floor, backdrop, core, glowIn, glowOut, launch, ring, glints };
+    return { root, geo, slabs, art, plane, shards, floor, backdrop, core, glowIn, glowOut, launch, ring, glints };
   }, [gl, lowCost]);
 
   // ---------------------------------------------------------------- post: restrained bloom, then tone mapping
@@ -101,7 +121,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       world.geo.dispose();
       world.slabs.forEach(s => [s.back, s.glass, s.mirror].forEach(m => (m.material as THREE.Material).dispose()));
       Object.values(world.art).forEach(t => t.dispose());
-      [world.plane, world.floor, world.backdrop, world.core, world.glints].forEach(m => { m.geometry.dispose(); (m.material as THREE.Material).dispose(); });
+      [world.plane, world.shards, world.floor, world.backdrop, world.core, world.glints].forEach(m => { m.geometry.dispose(); (m.material as THREE.Material).dispose(); });
       [world.glowIn, world.glowOut, world.launch, world.ring].forEach(r => r.dispose());
       post.composer.dispose(); post.bloom.dispose();
     };
@@ -110,7 +130,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
   const v = useMemo(() => ({
     a: new THREE.Vector3(), b: new THREE.Vector3(), c: new THREE.Vector3(), d: new THREE.Vector3(),
     start: new THREE.Vector3(), mid: new THREE.Vector3(), end: new THREE.Vector3(), cs: new THREE.Vector3(), ce: new THREE.Vector3(),
-    m: new THREE.Matrix4(), s: new THREE.Matrix4(), q: new THREE.Quaternion(), up: new THREE.Vector3(0, 1, 0),
+    m: new THREE.Matrix4(), s: new THREE.Matrix4(), q: new THREE.Quaternion(), e: new THREE.Euler(), up: new THREE.Vector3(0, 1, 0),
     launch: Array.from({ length: 32 }, () => new THREE.Vector3()), ring: Array.from({ length: 97 }, () => new THREE.Vector3()),
   }), []);
   useEffect(() => { labelCache.current.stage = -1; }, [size]);
@@ -167,7 +187,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     // product plane
     const pp = planePose(s);
     world.plane.position.set(...pp.pos);
-    world.plane.rotation.set(0, pp.rotY, 0);
+    world.plane.rotation.set(...pp.rot);
     world.plane.scale.set(pp.w * Math.max(.001, pp.show), pp.h * Math.max(.001, pp.show), 1);
     world.plane.visible = pp.show > .02;
     const pu = (world.plane.material as THREE.ShaderMaterial).uniforms;
@@ -176,12 +196,11 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
 
     root.updateMatrixWorld(true);
 
-    // draw far to near so the glass in front of the product panel tints it and the panel reads as standing between layers
+    // draw the glass far to near (the panel is drawn last, over it)
     const order: { d: number; set: (o: number) => void }[] = world.slabs.map(sl => ({
       d: sl.g.getWorldPosition(v.a).distanceToSquared(cam.position),
       set: (o: number) => { sl.back.renderOrder = o; sl.glass.renderOrder = o + 1; },
     }));
-    order.push({ d: world.plane.getWorldPosition(v.a).distanceToSquared(cam.position), set: o => { world.plane.renderOrder = o; } });
     order.sort((x, y) => y.d - x.d).forEach((it, k) => it.set(10 + k * 3));
 
     // floor, backdrop and the slabs' reflections in the floor
@@ -226,6 +245,25 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     });
     toWorld(0, BEAM_Y, first + SLAB_DEPTH * .3, v.d); gp.setXYZ(SLABS, v.d.x, v.d.y, v.d.z);
     gs.setX(SLABS, size.height * .14); ga.setX(SLABS, .5 * reveal);
+
+    // breaking through: a flare on the broken layer and shards thrown toward the viewer
+    const transit = panelTransit(s);
+    const hit = toWorld(pp.pos[0] - .06, pp.pos[1] - pp.h * .05, poses[transit.crossSlab].pos[2], v.c);
+    gp.setXYZ(SLABS + 1, hit.x, hit.y, hit.z);
+    gs.setX(SLABS + 1, size.height * .32 * transit.flash); ga.setX(SLABS + 1, transit.flash * .9);
+    const burst = transit.burst;
+    world.shards.visible = burst > .001 && burst < .999;
+    if (world.shards.visible) {
+      (world.shards.material as THREE.ShaderMaterial).uniforms.opacity.value = Math.pow(1 - burst, 1.3) * smooth(0, .06, burst);
+      SHARD_SET.forEach((sh, i) => {
+        v.a.copy(sh.dir).applyQuaternion(root.quaternion).multiplyScalar(sh.dist * burst);
+        v.b.copy(hit).add(v.a).add(v.d.copy(sh.offset).multiplyScalar(1 - burst * .5)); v.b.y -= burst * burst * .32;
+        v.q.setFromEuler(v.e.set(sh.spin.x * burst, sh.spin.y * burst, sh.spin.z * burst));
+        v.m.compose(v.b, v.q, v.d.setScalar(sh.size * (1 - burst * .4)));
+        world.shards.setMatrixAt(i, v.m);
+      });
+      world.shards.instanceMatrix.needsUpdate = true;
+    }
     (world.glints.material as THREE.ShaderMaterial).uniforms.scale.value = gl.getPixelRatio();
     gp.needsUpdate = gs.needsUpdate = ga.needsUpdate = true;
 
@@ -289,6 +327,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       <primitive object={world.launch.mesh} />
       <primitive object={world.ring.mesh} />
       <primitive object={world.glints} />
+      <primitive object={world.shards} />
     </>
   );
 }

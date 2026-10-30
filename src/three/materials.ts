@@ -90,6 +90,30 @@ export function crystalMaterial(back: boolean) {
   });
 }
 
+/** Glass shards thrown off when the panel breaks through a layer: bright edges, fading out. */
+export function shardMaterial() {
+  return new THREE.ShaderMaterial({
+    uniforms: { opacity: { value: 0 } },
+    vertexShader: /* glsl */`
+      varying vec3 vN; varying vec3 vV;
+      void main(){
+        vec4 wp = modelMatrix * instanceMatrix * vec4(position, 1.0);
+        vN = normalize(mat3(modelMatrix * instanceMatrix) * normal); vV = normalize(cameraPosition - wp.xyz);
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }`,
+    fragmentShader: /* glsl */`
+      ${TO_LINEAR}
+      uniform float opacity; varying vec3 vN; varying vec3 vV;
+      void main(){
+        float facing = abs(dot(normalize(vN), normalize(vV)));
+        float glint = pow(facing, 12.0);
+        vec3 c = mix(vec3(.75, .76, .82), vec3(1.0, .93, .8), glint);
+        gl_FragColor = vec4(toLin(c) * (1.0 + glint * 2.0), (.35 + .65 * (1.0 - facing) + glint) * opacity);
+      }`,
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, side: THREE.DoubleSide,
+  });
+}
+
 /** A cheap stand-in for each slab's reflection in the glossy floor; fades with distance below it. */
 export function floorReflectionMaterial() {
   return new THREE.ShaderMaterial({
