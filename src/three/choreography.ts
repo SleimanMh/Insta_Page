@@ -52,7 +52,25 @@ const TUMBLE_CLOSE: V3[] = [[-.8, 1.0, -.5], [.6, -1.2, .7], [-1.0, .7, .4], [.8
 const ORDER_OPEN = [2, 5, 0, 3, 1, 4];
 const ORDER_CLOSE = [4, 1, 3, 0, 5, 2];
 
-export interface SlabPose { pos: V3; rot: V3; hl: number }
+export interface SlabPose { pos: V3; rot: V3; hl: number; morph: number }
+
+/**
+ * The break, as a function of scroll: the closed prism first fills with light from inside (`charge`),
+ * fracture lines spread across the glass (`crack`), then it bursts apart (`burst` drives the shards,
+ * `flash` the flare at its heart). On the way back the pieces fuse with a softer glow (`fuse`).
+ */
+export function breakState(s: StoryState) {
+  const p = s.p, opening = p < .5;
+  return {
+    charge: opening ? smooth(.012, .062, p) * (1 - smooth(.085, .13, p)) : 0,
+    crack: opening ? smooth(.035, .074, p) * (1 - smooth(.078, .1, p)) : 0,
+    burst: opening ? smooth(.072, .16, p) : 0,
+    flash: opening ? Math.sin(Math.PI * smooth(.066, .11, p)) : 0,
+    fuse: opening ? 0 : Math.sin(Math.PI * smooth(.915, .985, p)),
+  };
+}
+// the pieces stay locked together until the glass has cracked
+const splitOf = (s: StoryState) => clamp((s.open - .04) / .96);
 
 // While exploring, the layers part around the active stage so the product panel fits between them:
 // slabs up to the active one ease back, the ones after it ease forward, and the opening travels with the stage.
@@ -88,8 +106,12 @@ export function slabPoses(s: StoryState, hover: number): SlabPose[] {
   const order = opening ? ORDER_OPEN : ORDER_CLOSE;
   const exploring = smooth(.6, 1, s.open) * (s.process > 0 ? 1 : 0);
   const transit = panelTransit(s);
+  const split = splitOf(s), br = breakState(s);
+  // under strain the layers tremble and the seams open a hair, just before they let go
+  const strain = br.crack * (1 - smooth(.0, .05, split));
   return Array.from({ length: SLABS }, (_, i) => {
-    const t = easeInOut(clamp(s.open * 1.6 - order.indexOf(i) * .12));
+    const t = easeInOut(clamp(split * 1.6 - order.indexOf(i) * .12));
+    const shake = strain * .006;
     const detour = Math.sin(Math.PI * t);
     const arc = (opening ? ARC_OPEN : ARC_CLOSE)[i], tum = (opening ? TUMBLE_OPEN : TUMBLE_CLOSE)[i];
     const active = Math.max(0, 1 - Math.abs(s.stageF - i) * 1.7) * exploring;
@@ -97,16 +119,18 @@ export function slabPoses(s: StoryState, hover: number): SlabPose[] {
     const rr = REST_ROT[i], rp = REST_POS[i];
     return {
       pos: [
-        lerp(0, rp[0], t) + arc[0] * detour * .55 - active * .05,
-        lerp(0, rp[1], t) + arc[1] * detour * .45 + active * .04,
-        lerp(closedZ(i), openZ(i), t) + arc[2] * detour * .35 + roomShift(i, s, exploring),
+        lerp(0, rp[0], t) + arc[0] * detour * .55 - active * .05 + Math.sin(s.p * 2900 + i * 1.7) * shake,
+        lerp(0, rp[1], t) + arc[1] * detour * .45 + active * .04 + Math.sin(s.p * 3700 + i * 2.3) * shake * .6,
+        lerp(closedZ(i), openZ(i), t) + arc[2] * detour * .35 + roomShift(i, s, exploring) + (i - (SLABS - 1) / 2) * .014 * strain,
       ],
       rot: [
         lerp(0, rr[0], t) + tum[0] * detour * .35,
         lerp(0, rr[1], t) + tum[1] * detour * .35 + active * .12,
-        lerp(0, rr[2], t) + tum[2] * detour * .3,
+        lerp(0, rr[2], t) + tum[2] * detour * .3 + Math.sin(s.p * 3100 + i) * shake * 1.5,
       ],
       hl: Math.min(1, active + hov + (i === transit.crossSlab ? transit.flash * .9 : 0)),
+      // each layer grows into its own crystal while it travels, and back into the shared shape on return
+      morph: smooth(.08, .7, t),
     };
   });
 }

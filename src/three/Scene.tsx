@@ -7,20 +7,22 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { story } from '../story/controller';
 import { clamp, smooth } from '../story/progress';
-import { FOV, cameraPose, panelTransit, paths, planePose, slabPoses } from './choreography';
-import { APEX_Y, BASE_Y, BEAM_Y, SLABS, SLAB_DEPTH, slabGeometry } from './geometry';
+import { FOV, breakState, cameraPose, panelTransit, paths, planePose, slabPoses } from './choreography';
+import { BASE_Y, BEAM_Y, MorphSlab, PIECES, SLABS, SLAB_DEPTH, closedZ } from './geometry';
 import { TO_LINEAR, backdropMaterial, crystalMaterial, floorMaterial, floorReflectionMaterial, productMaterial, shardMaterial } from './materials';
 import { Ribbon } from './ribbon';
 import { artFor, makeStageArt } from './stageArt';
 
-const FLOOR_OFFSET = .024;   // the bevel reaches slightly below the triangle's base
-const SHARDS = 30;
+const FLOOR_OFFSET = .004;   // the slabs stand exactly on the triangle's base
+const SHARDS = 36;
 // fixed pseudo-random shard set, so the break looks the same every time and plays backwards cleanly
 const SHARD_SET = Array.from({ length: SHARDS }, (_, i) => {
   const r = (n: number) => { const x = Math.sin(i * 127.1 + n * 311.7) * 43758.5453; return x - Math.floor(x); };
   const a = r(1) * Math.PI * 2, up = r(2) * 1.2 - .35;
   return {
     dir: new THREE.Vector3(Math.cos(a) * .9, up, Math.sin(a) * .9 + .55).normalize(),
+    // when the whole prism breaks, the glass flies out in every direction
+    out: new THREE.Vector3(Math.cos(a), up * .8 + .15, Math.sin(a)).normalize(),
     dist: .22 + r(3) * .5, size: .35 + r(4) * .9,
     spin: new THREE.Vector3(r(5) - .5, r(6) - .5, r(7) - .5).multiplyScalar(14),
     offset: new THREE.Vector3((r(8) - .5) * .3, (r(9) - .5) * .5, 0),
@@ -52,16 +54,16 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     gl.toneMappingExposure = 1.05;
 
     const root = new THREE.Group();
-    const geo = slabGeometry();
-    const slabs = Array.from({ length: SLABS }, () => {
+    const slabs = Array.from({ length: SLABS }, (_, i) => {
+      const shape = new MorphSlab(PIECES[i]), geo = shape.geometry;
       const g = new THREE.Group();
-      const back = new THREE.Mesh(geo, crystalMaterial(true));
-      const glass = new THREE.Mesh(geo, crystalMaterial(false));
+      const back = new THREE.Mesh(geo, crystalMaterial(true, shape.tri, i * 1.37 + .4, closedZ(i)));
+      const glass = new THREE.Mesh(geo, crystalMaterial(false, shape.tri, i * 1.37 + .4, closedZ(i)));
       back.renderOrder = 10; glass.renderOrder = 11;
       g.add(back, glass); root.add(g);
       const mirror = new THREE.Mesh(geo, floorReflectionMaterial());
       mirror.matrixAutoUpdate = false; mirror.matrixWorldAutoUpdate = false; mirror.renderOrder = 5; mirror.frustumCulled = false;
-      return { g, back, glass, mirror };
+      return { g, shape, back, glass, mirror };
     });
 
     const art = makeStageArt(gl.capabilities.getMaxAnisotropy());
@@ -92,7 +94,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     glints.geometry.setAttribute('aAlpha', new THREE.BufferAttribute(new Float32Array(SLABS + 2), 1));
     glints.frustumCulled = false; glints.renderOrder = 210;
 
-    return { root, geo, slabs, art, plane, shards, floor, backdrop, core, glowIn, glowOut, launch, ring, glints };
+    return { root, slabs, art, plane, shards, floor, backdrop, core, glowIn, glowOut, launch, ring, glints };
   }, [gl, lowCost]);
 
   // ---------------------------------------------------------------- post: restrained bloom, then tone mapping
@@ -118,7 +120,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     invalidate();
     return () => {
       story.invalidate = null;
-      world.geo.dispose();
+      world.slabs.forEach(s => s.shape.dispose());
       world.slabs.forEach(s => [s.back, s.glass, s.mirror].forEach(m => (m.material as THREE.Material).dispose()));
       Object.values(world.art).forEach(t => t.dispose());
       [world.plane, world.shards, world.floor, world.backdrop, world.core, world.glints].forEach(m => { m.geometry.dispose(); (m.material as THREE.Material).dispose(); });
@@ -174,14 +176,22 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
 
     // the six layers
     const poses = slabPoses(s, story.hover);
+    const br = breakState(s);
+    const inner = Math.max(br.charge, br.fuse * .55);
     poses.forEach((p, i) => {
       const sl = world.slabs[i];
       sl.g.position.set(...p.pos);
       sl.g.rotation.set(...p.rot);
+      sl.shape.set(p.morph);
       const u = (sl.glass.material as THREE.ShaderMaterial).uniforms, ub = (sl.back.material as THREE.ShaderMaterial).uniforms;
       u.hl.value += (p.hl - u.hl.value) * (reduce ? 1 : 1 - Math.exp(-dt * 10));
       if (Math.abs(p.hl - u.hl.value) > .002) busy = true;
       u.reveal.value = ub.reveal.value = reveal; u.beamY.value = ub.beamY.value = BEAM_Y; ub.hl.value = u.hl.value;
+      // the light inside: the whole prism while it charges and fuses, a soft glow in the active crystal
+      const [ta, tb, tc] = sl.shape.tri;
+      u.glowC.value.set((ta.x + tb.x + tc.x) / 3, BASE_Y + (ta.y - BASE_Y) * .3); ub.glowC.value.copy(u.glowC.value);
+      u.radiant.value = ub.radiant.value = Math.max(inner, u.hl.value * .3 * s.process);
+      u.crack.value = ub.crack.value = br.crack;
     });
 
     // product plane
@@ -246,20 +256,26 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     toWorld(0, BEAM_Y, first + SLAB_DEPTH * .3, v.d); gp.setXYZ(SLABS, v.d.x, v.d.y, v.d.z);
     gs.setX(SLABS, size.height * .14); ga.setX(SLABS, .5 * reveal);
 
-    // breaking through: a flare on the broken layer and shards thrown toward the viewer
+    // breaking: when the prism shatters open the flare sits at its heart and the glass flies out all
+    // around; when the panel breaks through a layer the flare sits on that layer and shards fly toward the viewer
     const transit = panelTransit(s);
-    const hit = toWorld(pp.pos[0] - .06, pp.pos[1] - pp.h * .05, poses[transit.crossSlab].pos[2], v.c);
+    const shatter = br.burst > .001 && br.burst < .999;
+    const hit = shatter || br.flash > .001 || br.fuse > .001
+      ? toWorld(0, BEAM_Y + .04, 0, v.c)
+      : toWorld(pp.pos[0] - .06, pp.pos[1] - pp.h * .05, poses[transit.crossSlab].pos[2], v.c);
+    const flare = Math.max(transit.flash * .32, br.flash * .55, br.fuse * .3);
     gp.setXYZ(SLABS + 1, hit.x, hit.y, hit.z);
-    gs.setX(SLABS + 1, size.height * .32 * transit.flash); ga.setX(SLABS + 1, transit.flash * .9);
-    const burst = transit.burst;
+    gs.setX(SLABS + 1, size.height * flare); ga.setX(SLABS + 1, Math.min(1, flare * 2.8));
+    const burst = shatter ? br.burst : transit.burst;
     world.shards.visible = burst > .001 && burst < .999;
     if (world.shards.visible) {
       (world.shards.material as THREE.ShaderMaterial).uniforms.opacity.value = Math.pow(1 - burst, 1.3) * smooth(0, .06, burst);
+      const reach = shatter ? 2.4 : 1, grow = shatter ? 1.7 : 1;
       SHARD_SET.forEach((sh, i) => {
-        v.a.copy(sh.dir).applyQuaternion(root.quaternion).multiplyScalar(sh.dist * burst);
-        v.b.copy(hit).add(v.a).add(v.d.copy(sh.offset).multiplyScalar(1 - burst * .5)); v.b.y -= burst * burst * .32;
+        v.a.copy(shatter ? sh.out : sh.dir).applyQuaternion(root.quaternion).multiplyScalar(sh.dist * reach * burst);
+        v.b.copy(hit).add(v.a).add(v.d.copy(sh.offset).multiplyScalar(1 - burst * .5)); v.b.y -= burst * burst * .32 * reach;
         v.q.setFromEuler(v.e.set(sh.spin.x * burst, sh.spin.y * burst, sh.spin.z * burst));
-        v.m.compose(v.b, v.q, v.d.setScalar(sh.size * (1 - burst * .4)));
+        v.m.compose(v.b, v.q, v.d.setScalar(sh.size * grow * (1 - burst * .4)));
         world.shards.setMatrixAt(i, v.m);
       });
       world.shards.instanceMatrix.needsUpdate = true;
@@ -295,7 +311,8 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       const show = !stacked && s.process > .6 && s.tr < .2;
       const label = show ? story.stageEls[s.stage]?.querySelector('.stage-label') : null;
       if (label) {
-        world.slabs[s.stage].g.localToWorld(v.d.set(0, APEX_Y + .03, 0)).project(cam);
+        const apex = world.slabs[s.stage].shape.tri[0];
+        world.slabs[s.stage].g.localToWorld(v.d.set(apex.x, apex.y + .03, 0)).project(cam);
         const ax = (v.d.x * .5 + .5) * size.width, ay = (-v.d.y * .5 + .5) * size.height;
         const lc = labelCache.current, now = performance.now();
         if (lc.stage !== s.stage || now - lc.at > 400) {

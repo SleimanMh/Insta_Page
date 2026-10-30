@@ -17,24 +17,59 @@ const slabVertex = /* glsl */`
  * (soft top light, two tall strip lights, a warm key), bright bevels, internal reflection lines
  * that follow the triangle's edges, thin rainbow fringes at the edges, and light scattered where
  * the beam passes through. Champagne edges mark the active stage.
+ * `radiant` lights the crystal from inside with spectral rays fanning out from a golden core;
+ * `crack` draws the fracture lines that run across the glass just before the prism breaks.
  */
-export function crystalMaterial(back: boolean) {
+export function crystalMaterial(back: boolean, tri: THREE.Vector2[], seed: number, zOff: number) {
   return new THREE.ShaderMaterial({
-    uniforms: { hl: { value: 0 }, reveal: { value: 0 }, beamY: { value: 0 }, side: { value: back ? .5 : 1 } },
+    uniforms: {
+      hl: { value: 0 }, reveal: { value: 0 }, beamY: { value: 0 }, side: { value: back ? .5 : 1 },
+      triA: { value: tri[0] }, triB: { value: tri[1] }, triC: { value: tri[2] },
+      radiant: { value: 0 }, glowC: { value: new THREE.Vector2() }, crack: { value: 0 }, seed: { value: seed }, zOff: { value: zOff },
+    },
     vertexShader: slabVertex,
     fragmentShader: /* glsl */`
       ${TO_LINEAR}
       uniform float hl; uniform float reveal; uniform float beamY; uniform float side;
+      uniform vec2 triA; uniform vec2 triB; uniform vec2 triC;
+      uniform float radiant; uniform vec2 glowC; uniform float crack; uniform float seed; uniform float zOff;
       varying vec3 vWN; varying vec3 vWP; varying vec3 vLN; varying vec3 vLP;
 
       vec3 hue(float h){ return clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0); }
-      // signed distance to the slab's triangle (side 1, centroid at origin); negative inside
+      // signed distance to the slab's current triangle; negative inside
       float sdTri(vec2 p){
-        const float k = 1.7320508; const float r = .5;
-        p.x = abs(p.x) - r; p.y = p.y + r / k;
-        if (p.x + k * p.y > 0.0) p = vec2(p.x - k * p.y, -k * p.x - p.y) / 2.0;
-        p.x -= clamp(p.x, -2.0 * r, 0.0);
-        return -length(p) * sign(p.y);
+        vec2 e0 = triB - triA, e1 = triC - triB, e2 = triA - triC;
+        vec2 v0 = p - triA, v1 = p - triB, v2 = p - triC;
+        vec2 q0 = v0 - e0 * clamp(dot(v0, e0) / dot(e0, e0), 0.0, 1.0);
+        vec2 q1 = v1 - e1 * clamp(dot(v1, e1) / dot(e1, e1), 0.0, 1.0);
+        vec2 q2 = v2 - e2 * clamp(dot(v2, e2) / dot(e2, e2), 0.0, 1.0);
+        float s = sign(e0.x * e2.y - e0.y * e2.x);
+        vec2 d = min(min(vec2(dot(q0, q0), s * (v0.x * e0.y - v0.y * e0.x)),
+                         vec2(dot(q1, q1), s * (v1.x * e1.y - v1.y * e1.x))),
+                         vec2(dot(q2, q2), s * (v2.x * e2.y - v2.y * e2.x)));
+        return -sqrt(d.x) * sign(d.y);
+      }
+      float rnd(float n){ return fract(sin(n) * 43758.5453); }
+      // straight, kinked fracture lines radiating from an impact point; they grow with amt
+      float fracture(vec2 p, float amt){
+        float sd = floor(seed * 3.0);
+        float acc = exp(-dot(p, p) / .0006) * 1.5;
+        for (int k = 0; k < 8; k++){
+          float fk = float(k);
+          float a = fk * .785 + (rnd(fk * 12.99 + sd) - .5) * .6;
+          vec2 dir = vec2(cos(a), sin(a));
+          float along = dot(p, dir);
+          float len = (.22 + .5 * rnd(fk * 7.31 + 3.0 + sd)) * amt;
+          float off = dot(p, vec2(-dir.y, dir.x)) + (abs(fract(along * 6.0 + rnd(fk + sd) ) - .5) - .25) * .03;
+          float w = .004 * (1.0 - clamp(along / max(len, 1e-3), 0.0, 1.0) * .75);
+          acc += smoothstep(w, 0.0, abs(off)) * step(0.0, along) * smoothstep(len, len - .06, along);
+          // a short branch from part way along each line
+          vec2 bdir = vec2(cos(a + .7), sin(a + .7));
+          vec2 bp = p - dir * len * .45;
+          float bal = dot(bp, bdir), boff = dot(bp, vec2(-bdir.y, bdir.x)) + (abs(fract(bal * 9.0 + fk * .3) - .5) - .25) * .016;
+          acc += smoothstep(.003, 0.0, abs(boff)) * step(0.0, bal) * smoothstep(len * .35, len * .3, bal) * .8;
+        }
+        return acc;
       }
       vec3 studio(vec3 r){
         float az = atan(r.x, r.z);
@@ -84,6 +119,28 @@ export function crystalMaterial(back: boolean) {
           + vec3(.92, .91, .96) * sweep * .18
           + champ * hl * .05;
         float a = .15 + sweep * .1 + F * .5 + bevel * .5 + rim * .3 + face * (inner1 * .35 + fringe * .2 + beamCore * .7 + beamWide * .08) + hl * .04;
+
+        // light from inside: spectral rays fanning out from a golden core, strongest on the triangle faces
+        if (radiant > .001) {
+          vec2 q = vLP.xy - glowC;
+          float r = length(q), ang = atan(q.y, q.x);
+          float within = mix(.7, smoothstep(.0, .035, d), face);   // the sides show the light passing through
+          float rays = pow(.5 + .5 * sin(ang * 9.0 + seed * 6.3 + sin(ang * 4.0 + seed * 2.0) * 1.4), 7.0)
+                     + .55 * pow(.5 + .5 * sin(ang * 21.0 - seed * 3.1), 16.0);
+          vec3 spec = mix(hue(fract(ang * .17 + seed * .23 + r * .5)), vec3(1.0), .12);
+          float core = exp(-r * r / .0025), halo = exp(-r * r / .04);
+          float amt = radiant * within * (.4 + .6 * face);
+          col += (spec * rays * exp(-r * 2.2) * 2.0 + vec3(1.0, .82, .55) * (core * 1.6 + halo * .22)) * amt
+               + vec3(1.0, .86, .62) * bevel * radiant * .7;
+          a += (rays * exp(-r * 2.2) * .55 + core * .7 + halo * .12) * amt + bevel * radiant * .25;
+        }
+        // fracture lines: on the end faces in the triangle's plane, on the sides along the whole prism
+        if (crack > .001) {
+          vec2 cp = mix(vec2(vLP.z + zOff, vLP.y) - vec2(.08, .02), vLP.xy - vec2(.04, -.03), face);
+          float f = fracture(cp, crack) * smoothstep(.0, .2, crack);
+          col += vec3(1.0, .97, .92) * f * 2.2;
+          a += f * .9;
+        }
         gl_FragColor = vec4(toLin(col), clamp(a, 0.0, .96) * side);
       }`,
     transparent: true, depthWrite: false, side: back ? THREE.BackSide : THREE.FrontSide,
