@@ -1,6 +1,6 @@
 # Innovative
 
-Marketing site for Innovative, built around the "Parallax" direction: one glass prism that separates into six layers (the process), explains each one, then reunites around the finished product.
+Marketing site for Innovative, built around the "Parallax" direction: one crystal pyramid that breaks into six glass blocks (the process), explains each one, then re-forms around the finished product.
 
 ## Run it
 
@@ -26,7 +26,7 @@ The build uses a relative base, so `dist/` can be served from any folder or stat
 | Process content, capabilities, illustrative pricing | `src/data/process.ts` |
 | Story state model (one progress value → every visual) | `src/story/progress.ts` |
 | Scroll and navigation coordination | `src/story/controller.ts` |
-| Prism geometry | `src/three/geometry.ts` |
+| Pyramid and block geometry | `src/three/geometry.ts` |
 | Glass material | `src/three/glass.ts` |
 | Beam, launch path and return ring | `src/three/ribbon.ts` |
 | Product-plane artwork per stage | `src/three/stageArt.ts` |

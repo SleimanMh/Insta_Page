@@ -8,12 +8,13 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { story } from '../story/controller';
 import { clamp, smooth } from '../story/progress';
 import { FOV, breakState, cameraPose, panelTransit, paths, planePose, slabPoses } from './choreography';
-import { BASE_Y, BEAM_Y, MorphSlab, PIECES, SLABS, SLAB_DEPTH, closedZ } from './geometry';
-import { TO_LINEAR, backdropMaterial, crystalMaterial, floorMaterial, floorReflectionMaterial, productMaterial, shardMaterial } from './materials';
+import { APEX_Y, BASE_Y, BEAM_Y, PYR_ALT, SLABS, SLAB_DEPTH, TRI, pyramidGeometry, slabGeometry } from './geometry';
+import { TO_LINEAR, backdropMaterial, crystalMaterial, floorMaterial, floorReflectionMaterial, productMaterial, pyramidMaterial, shardMaterial } from './materials';
 import { Ribbon } from './ribbon';
 import { artFor, makeStageArt } from './stageArt';
 
-const FLOOR_OFFSET = .004;   // the slabs stand exactly on the triangle's base
+const FLOOR_OFFSET = .004;   // the pyramid and the blocks stand exactly on the base line
+const PYR_TURN = -.12;       // the pyramid's front face, turned a little from the viewer
 const SHARDS = 36;
 // fixed pseudo-random shard set, so the break looks the same every time and plays backwards cleanly
 const SHARD_SET = Array.from({ length: SHARDS }, (_, i) => {
@@ -54,17 +55,26 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     gl.toneMappingExposure = 1.05;
 
     const root = new THREE.Group();
+    const geo = slabGeometry();
     const slabs = Array.from({ length: SLABS }, (_, i) => {
-      const shape = new MorphSlab(PIECES[i]), geo = shape.geometry;
       const g = new THREE.Group();
-      const back = new THREE.Mesh(geo, crystalMaterial(true, shape.tri, i * 1.37 + .4, closedZ(i)));
-      const glass = new THREE.Mesh(geo, crystalMaterial(false, shape.tri, i * 1.37 + .4, closedZ(i)));
+      const back = new THREE.Mesh(geo, crystalMaterial(true, TRI, i * 1.37 + .4));
+      const glass = new THREE.Mesh(geo, crystalMaterial(false, TRI, i * 1.37 + .4));
       back.renderOrder = 10; glass.renderOrder = 11;
       g.add(back, glass); root.add(g);
       const mirror = new THREE.Mesh(geo, floorReflectionMaterial());
       mirror.matrixAutoUpdate = false; mirror.matrixWorldAutoUpdate = false; mirror.renderOrder = 5; mirror.frustumCulled = false;
-      return { g, shape, back, glass, mirror };
+      return { g, back, glass, mirror };
     });
+
+    // the closed form: one crystal pyramid, inner faces first, then the near faces over them
+    const pyrGeo = pyramidGeometry();
+    const pyr = new THREE.Group();
+    const pyrBack = new THREE.Mesh(pyrGeo, pyramidMaterial('back')), pyrFront = new THREE.Mesh(pyrGeo, pyramidMaterial('front'));
+    pyrBack.renderOrder = 40; pyrFront.renderOrder = 41;
+    pyr.add(pyrBack, pyrFront); root.add(pyr);
+    const pyrMirror = new THREE.Mesh(pyrGeo, pyramidMaterial('mirror'));
+    pyrMirror.matrixAutoUpdate = false; pyrMirror.matrixWorldAutoUpdate = false; pyrMirror.renderOrder = 5; pyrMirror.frustumCulled = false;
 
     const art = makeStageArt(gl.capabilities.getMaxAnisotropy());
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), productMaterial());
@@ -94,7 +104,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     glints.geometry.setAttribute('aAlpha', new THREE.BufferAttribute(new Float32Array(SLABS + 2), 1));
     glints.frustumCulled = false; glints.renderOrder = 210;
 
-    return { root, slabs, art, plane, shards, floor, backdrop, core, glowIn, glowOut, launch, ring, glints };
+    return { root, geo, slabs, pyr, pyrBack, pyrFront, pyrMirror, art, plane, shards, floor, backdrop, core, glowIn, glowOut, launch, ring, glints };
   }, [gl, lowCost]);
 
   // ---------------------------------------------------------------- post: restrained bloom, then tone mapping
@@ -120,9 +130,11 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     invalidate();
     return () => {
       story.invalidate = null;
-      world.slabs.forEach(s => s.shape.dispose());
+      world.geo.dispose();
       world.slabs.forEach(s => [s.back, s.glass, s.mirror].forEach(m => (m.material as THREE.Material).dispose()));
       Object.values(world.art).forEach(t => t.dispose());
+      [world.pyrBack, world.pyrFront, world.pyrMirror].forEach(m => (m.material as THREE.Material).dispose());
+      world.pyrBack.geometry.dispose();
       [world.plane, world.shards, world.floor, world.backdrop, world.core, world.glints].forEach(m => { m.geometry.dispose(); (m.material as THREE.Material).dispose(); });
       [world.glowIn, world.glowOut, world.launch, world.ring].forEach(r => r.dispose());
       post.composer.dispose(); post.bloom.dispose();
@@ -177,22 +189,31 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     // the six layers
     const poses = slabPoses(s, story.hover);
     const br = breakState(s);
-    const inner = Math.max(br.charge, br.fuse * .55);
     poses.forEach((p, i) => {
       const sl = world.slabs[i];
       sl.g.position.set(...p.pos);
       sl.g.rotation.set(...p.rot);
-      sl.shape.set(p.morph);
+      sl.g.scale.setScalar(p.scale);
+      sl.g.visible = sl.mirror.visible = p.fade > .001;
       const u = (sl.glass.material as THREE.ShaderMaterial).uniforms, ub = (sl.back.material as THREE.ShaderMaterial).uniforms;
       u.hl.value += (p.hl - u.hl.value) * (reduce ? 1 : 1 - Math.exp(-dt * 10));
       if (Math.abs(p.hl - u.hl.value) > .002) busy = true;
       u.reveal.value = ub.reveal.value = reveal; u.beamY.value = ub.beamY.value = BEAM_Y; ub.hl.value = u.hl.value;
-      // the light inside: the whole prism while it charges and fuses, a soft glow in the active crystal
-      const [ta, tb, tc] = sl.shape.tri;
-      u.glowC.value.set((ta.x + tb.x + tc.x) / 3, BASE_Y + (ta.y - BASE_Y) * .3); ub.glowC.value.copy(u.glowC.value);
-      u.radiant.value = ub.radiant.value = Math.max(inner, u.hl.value * .3 * s.process);
-      u.crack.value = ub.crack.value = br.crack;
+      u.fade.value = ub.fade.value = p.fade;
+      u.radiant.value = ub.radiant.value = u.hl.value * .3 * s.process;   // a soft glow inside the active block
     });
+
+    // the pyramid: charges with light, trembles as it cracks, swells a touch as it bursts, re-forms at the end
+    const whole = br.whole, shake = br.crack * .006;
+    world.pyr.visible = world.pyrMirror.visible = whole > .001;
+    world.pyr.position.set(Math.sin(s.p * 2900) * shake, Math.sin(s.p * 3700) * shake * .5, 0);
+    world.pyr.rotation.set(0, -pose.yaw + PYR_TURN, Math.sin(s.p * 3100) * shake * 1.2);
+    world.pyr.scale.setScalar(s.p < .5 ? 1 + (1 - whole) * .1 : .9 + whole * .1);
+    for (const m of [world.pyrBack, world.pyrFront, world.pyrMirror]) {
+      const pu = (m.material as THREE.ShaderMaterial).uniforms;
+      pu.opacity.value = whole; pu.reveal.value = reveal; pu.alt.value = PYR_ALT;
+      pu.charge.value = Math.max(br.charge, br.fuse * .55); pu.crack.value = br.crack;
+    }
 
     // product plane
     const pp = planePose(s);
@@ -225,8 +246,13 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     world.slabs.forEach((sl, i) => {
       sl.mirror.matrixWorld.multiplyMatrices(v.m, sl.glass.matrixWorld);
       const mu = (sl.mirror.material as THREE.ShaderMaterial).uniforms;
-      mu.floorY.value = fy; mu.hl.value = poses[i].hl; mu.reveal.value = reveal;
+      mu.floorY.value = fy; mu.hl.value = poses[i].hl; mu.reveal.value = reveal * poses[i].fade;
     });
+    world.pyrMirror.matrixWorld.multiplyMatrices(v.m, world.pyrFront.matrixWorld);
+    (world.pyrMirror.material as THREE.ShaderMaterial).uniforms.floorY.value = fy;
+    // the pyramid's split light on the floor in front of it
+    fu.caustic.value = whole;
+    fu.cGreen.value.set(pose.sculptX - .32, .5); fu.cAmber.value.set(pose.sculptX + .3, .56);
 
     // the beam enters from the left, crosses every layer and fades after the last
     let minZ = Infinity, maxZ = -Infinity;
@@ -251,7 +277,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     const ga = world.glints.geometry.attributes.aAlpha as THREE.BufferAttribute;
     poses.forEach((p, i) => {
       toWorld(0, BEAM_Y, p.pos[2] - SLAB_DEPTH / 2, v.d); gp.setXYZ(i, v.d.x, v.d.y, v.d.z);
-      gs.setX(i, (.4 + p.hl * .4) * size.height * .06); ga.setX(i, (.22 + p.hl * .4) * reveal);
+      gs.setX(i, (.4 + p.hl * .4) * size.height * .06); ga.setX(i, (.22 + p.hl * .4) * reveal * p.fade);
     });
     toWorld(0, BEAM_Y, first + SLAB_DEPTH * .3, v.d); gp.setXYZ(SLABS, v.d.x, v.d.y, v.d.z);
     gs.setX(SLABS, size.height * .14); ga.setX(SLABS, .5 * reveal);
@@ -311,8 +337,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       const show = !stacked && s.process > .6 && s.tr < .2;
       const label = show ? story.stageEls[s.stage]?.querySelector('.stage-label') : null;
       if (label) {
-        const apex = world.slabs[s.stage].shape.tri[0];
-        world.slabs[s.stage].g.localToWorld(v.d.set(apex.x, apex.y + .03, 0)).project(cam);
+        world.slabs[s.stage].g.localToWorld(v.d.set(0, APEX_Y + .03, 0)).project(cam);
         const ax = (v.d.x * .5 + .5) * size.width, ay = (-v.d.y * .5 + .5) * size.height;
         const lc = labelCache.current, now = performance.now();
         if (lc.stage !== s.stage || now - lc.at > 400) {
@@ -338,6 +363,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       <primitive object={world.floor} />
       <primitive object={world.root} />
       {world.slabs.map((s, i) => <primitive key={i} object={s.mirror} />)}
+      <primitive object={world.pyrMirror} />
       <primitive object={world.core} />
       <primitive object={world.glowIn.mesh} />
       <primitive object={world.glowOut.mesh} />
