@@ -172,11 +172,13 @@ export interface PlanePose { pos: V3; rot: V3; w: number; h: number; show: numbe
 export function planePose(s: StoryState): PlanePose {
   const T = panelTransit(s), bump = Math.sin(Math.PI * T.tr);
   const launch = Math.max(0, 1 - Math.abs(s.stageF - 4) * 1.4) * s.process;
-  // measured from the reference: tall, turned well away, standing in the opening before the active block
+  // a tall glass panel standing upright on the floor, turned a little away so its far edge recedes;
+  // as the next block turns over it only sways about its vertical axis, never tilting
+  const w = .75, h = 1.125;
   const explore = {
-    x: -.8 + bump * .1, y: .314 + bump * .04 + launch * .03, z: -.955 + bump * .06,
-    rot: [-.016 - bump * .08, -1.245 + bump * .3, -.053 + Math.sin(Math.PI * 2 * T.tr) * .05] as V3,
-    w: .618, h: .927,
+    x: -.8 + bump * .08, y: -.293 + h / 2 + .015 + launch * .02, z: -.955 + bump * .06,
+    rot: [0, -1.76 + bump * .25, 0] as V3,
+    w, h,
   };
   const inside = { x: -.01, y: -.045, z: 0, rot: [0, -Math.PI, 0] as V3, w: .3, h: .45 };
   const c = easeInOut(s.complete);

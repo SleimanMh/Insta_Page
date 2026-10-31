@@ -88,17 +88,19 @@ h1, h2, h3 { font-weight: 300; text-wrap: balance; letter-spacing: -.02em; }
 .lede { margin-top: 28px; max-width: 34ch; font-size: clamp(17px, 1.3vw, 20px); color: var(--ink-3); line-height: 1.6; }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 40px; }
 
-.process { right: var(--gut-r); top: 46%; width: min(30vw, 470px); display: grid;
-  opacity: var(--process, 0); transform: translate(calc((1 - var(--process, 0)) * 40px), -50%); }
+.process { right: var(--gut-r); width: min(30vw, 470px); display: grid; grid-template-rows: minmax(0, 1fr); align-items: center;
+  /* the copy lives between the header and the stage bar, centred in that space, so it never runs into the bar */
+  top: calc(var(--header) + 8px); bottom: 172px;
+  opacity: var(--process, 0); transform: translateX(calc((1 - var(--process, 0)) * 40px)); }
 .stage { grid-area: 1 / 1; opacity: 0; visibility: hidden; transform: translateY(10px); transition: opacity .45s ease, transform .55s cubic-bezier(.2, .8, .2, 1), visibility 0s .55s; }
 .stage.is-active { opacity: 1; visibility: visible; transform: none; transition: opacity .55s ease .08s, transform .6s cubic-bezier(.2, .8, .2, 1) .08s, visibility 0s; }
 .stage-label { font-size: 13px; font-weight: 400; letter-spacing: .24em; text-transform: uppercase; color: var(--ink-2); }
-.stage h2 { margin-top: 22px; font-size: clamp(38px, 3.9vw, 64px); line-height: 1.05; letter-spacing: -.025em; }
-.stage-body { margin-top: 24px; color: var(--ink-3); font-size: clamp(16px, 1.2vw, 19px); line-height: 1.55; }
-.deliverables { margin-top: 34px; border-top: 1px solid var(--line-2); }
-.deliverables li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 4px; border-bottom: 1px solid var(--line-2); font-size: clamp(17px, 1.3vw, 20px); }
+.stage h2 { margin-top: min(22px, 2.2vh); font-size: clamp(30px, min(3.9vw, 6.4vh), 64px); line-height: 1.05; letter-spacing: -.025em; }
+.stage-body { margin-top: min(24px, 2.4vh); color: var(--ink-3); font-size: clamp(15px, min(1.2vw, 2vh), 19px); line-height: 1.55; }
+.deliverables { margin-top: min(34px, 3.2vh); border-top: 1px solid var(--line-2); }
+.deliverables li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: min(17px, 1.6vh) 4px; border-bottom: 1px solid var(--line-2); font-size: clamp(15px, min(1.3vw, 2.1vh), 20px); }
 .deliverables svg { width: 15px; height: 15px; color: var(--ink-2); flex: none; transform: rotate(45deg); }
-.stage .btn { margin-top: 36px; }
+.stage .btn { margin-top: min(36px, 3.4vh); }
 
 .stage-nav { position: absolute; z-index: 6; left: var(--gut-l); right: var(--gut-r); bottom: 74px;
   display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));

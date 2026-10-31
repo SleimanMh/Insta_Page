@@ -19,7 +19,11 @@ function frame(g: Ctx, solid = true) {
   const bg = g.createLinearGradient(0, 0, 0, H);
   if (solid) { bg.addColorStop(0, '#17171A'); bg.addColorStop(1, '#0F0F11'); } else { bg.addColorStop(0, '#1A1A1D'); bg.addColorStop(1, '#141416'); }
   g.fillStyle = bg; g.fill();
-  g.strokeStyle = 'rgba(238,231,219,.22)'; g.lineWidth = 2; g.stroke();
+  // a polished glass bezel: bright where it faces the light, fading along the far side
+  const rim = g.createLinearGradient(0, 0, W, H);
+  rim.addColorStop(0, 'rgba(255,246,232,.75)'); rim.addColorStop(.45, 'rgba(238,231,219,.28)'); rim.addColorStop(1, 'rgba(214,184,138,.5)');
+  g.strokeStyle = rim; g.lineWidth = 5; g.stroke();
+  rr(g, 13, 13, W - 26, H - 26, 28); g.strokeStyle = 'rgba(255,255,255,.07)'; g.lineWidth = 2; g.stroke();
 }
 function text(g: Ctx, s: string, x: number, y: number, size: number, color = INK, weight = 300) {
   g.font = `${weight} ${size}px ${FONT}`; g.fillStyle = color; g.fillText(s, x, y);
