@@ -1,6 +1,6 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Fragment, ReactNode, RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, ReactNode, RefObject, useEffect, useLayoutEffect, useRef } from 'react';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -60,18 +60,6 @@ export function useSectionMotion(ref: RefObject<HTMLElement | null>) {
     }, root);
     return () => ctx.revert();
   }, [ref]);
-}
-
-/** A number that counts to its new value instead of jumping. */
-export function Num({ value, format }: { value: number; format: (n: number) => string }) {
-  const [shown, setShown] = useState(value);
-  const cur = useRef({ v: value });
-  useEffect(() => {
-    if (reduced()) { cur.current.v = value; setShown(value); return; }
-    const tw = gsap.to(cur.current, { v: value, duration: .7, ease: 'power3.out', onUpdate: () => setShown(cur.current.v) });
-    return () => { tw.kill(); };
-  }, [value]);
-  return <>{format(shown)}</>;
 }
 
 /**

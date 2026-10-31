@@ -1,6 +1,6 @@
-# Innovative
+# Refract
 
-Marketing site for Innovative, built around the "Parallax" direction: one crystal pyramid that breaks into six glass blocks (the process), explains each one, then re-forms around the finished product.
+Marketing site for Refract, built around the "Parallax" direction: one crystal pyramid that breaks into six glass blocks (the process), explains each one, then re-forms around the finished product.
 
 ## Run it
 
@@ -23,7 +23,7 @@ The build uses a relative base, so `dist/` can be served from any folder or stat
 
 | Concern | Where |
 | --- | --- |
-| Process content, capabilities, illustrative pricing | `src/data/process.ts` |
+| Process content and capabilities | `src/data/process.ts` |
 | Story state model (one progress value → every visual) | `src/story/progress.ts` |
 | Scroll and navigation coordination | `src/story/controller.ts` |
 | Pyramid and block geometry | `src/three/geometry.ts` |
@@ -33,7 +33,7 @@ The build uses a relative base, so `dist/` can be served from any folder or stat
 | Camera and sculpture choreography | `src/three/choreography.ts` |
 | Scene assembly and per-frame updates | `src/three/Scene.tsx` |
 | Accessible HTML for the story | `src/components/Story.tsx` |
-| Header, work, expertise, estimate, contact, footer | `src/components/Sections.tsx` |
+| Header, work, expertise, contact, footer | `src/components/Sections.tsx` |
 
 ### The state model
 
@@ -52,7 +52,6 @@ Clicking a stage label scrolls the page to that stage's rest point, so scrolling
 ## Content status
 
 - Work tiles are placeholders and are labelled as such.
-- All estimate figures are illustrative and labelled as such; real pricing rules will replace `CAPABILITIES` in `src/data/process.ts`.
 - The contact form validates but does not send anything yet.
 
 ## Earlier design exploration

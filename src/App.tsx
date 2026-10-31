@@ -1,12 +1,11 @@
-import { useLayoutEffect, useState, useSyncExternalStore } from 'react';
-import { Band, Contact, Estimate, Expertise, Footer, Header, Work } from './components/Sections';
+import { useLayoutEffect, useSyncExternalStore } from 'react';
+import { Band, Contact, Expertise, Footer, Header, Work } from './components/Sections';
 import { ScrollProgress, usePointerFx } from './motion/fx';
 import { Story } from './components/Story';
 import { story } from './story/controller';
 
 export default function App() {
   const snap = useSyncExternalStore(story.subscribe, story.getSnapshot);
-  const [needs, setNeeds] = useState('');
   usePointerFx();
   useLayoutEffect(() => {
     document.documentElement.dataset.layout = snap.mode;
@@ -22,8 +21,7 @@ export default function App() {
         <Band />
         <Work />
         <Expertise />
-        <Estimate onRequest={setNeeds} />
-        <Contact needs={needs} />
+        <Contact />
       </main>
       <Footer />
     </>

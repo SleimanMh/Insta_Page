@@ -31,7 +31,7 @@ function text(g: Ctx, s: string, x: number, y: number, size: number, color = INK
 function bar(g: Ctx, x: number, y: number, w: number, h = 10, color = FAINT) { g.fillStyle = color; rr(g, x, y, w, h, h / 2); g.fill(); }
 function logo(g: Ctx, x: number, y: number) {
   g.strokeStyle = INK; g.lineWidth = 2; g.beginPath(); g.moveTo(x + 11, y); g.lineTo(x + 22, y + 19); g.lineTo(x, y + 19); g.closePath(); g.stroke();
-  text(g, 'innovative', x + 32, y + 17, 22, INK, 400);
+  text(g, 'refract', x + 32, y + 17, 22, INK, 400);
 }
 function mountains(g: Ctx, x: number, y: number, w: number, h: number, seed = 1) {
   g.save(); rr(g, x, y, w, h, 18); g.clip();

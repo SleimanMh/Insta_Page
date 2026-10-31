@@ -1,6 +1,6 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { CAPABILITIES, SIZES, STAGES } from '../data/process';
-import { Marquee, Num, Split, useSectionMotion } from '../motion/fx';
+import { FormEvent, useEffect, useRef, useState } from 'react';
+import { CAPABILITIES, STAGES } from '../data/process';
+import { Marquee, Split, useSectionMotion } from '../motion/fx';
 import { story } from '../story/controller';
 
 const Arrow = () => <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5M5.5 4.5h6v6" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
@@ -26,7 +26,7 @@ export function Header() {
   }, []);
   return (
     <header className={`site-header${solid ? ' is-solid' : ''}`} id="siteHeader">
-      <a className="brand" href="#top" aria-label="Innovative, back to top"><Mark /><span>innovative</span></a>
+      <a className="brand" href="#top" aria-label="Refract, back to top"><Mark /><span>refract</span></a>
       <nav className="site-nav" aria-label="Main">
         <a href="#work">Work</a>
         <a href="#process" onClick={e => { e.preventDefault(); story.goTo(0); }}>Process</a>
@@ -145,113 +145,13 @@ export function Expertise() {
   );
 }
 
-// ---------------------------------------------------------------- estimate (illustrative)
-// round to a sensible step for the size of the number, so small monthly figures stay exact
-const eur = (n: number) => { const step = n >= 10000 ? 500 : 100; return `€${(Math.round(n / step) * step).toLocaleString('en-GB')}`; };
-const weeks = (n: number) => String(Math.round(n));
-
-/** Six slabs drawn in the same exploded arrangement as the hero; selected layers light up. */
-function LayerDiagram({ on }: { on: boolean[] }) {
-  return (
-    <svg className="est-layers" viewBox="0 0 360 150" aria-hidden="true">
-      <path d="M0 98 360 70" className="est-beam" />
-      <path d="M0 98 360 70" className="est-beam-flow" />
-      {STAGES.map((s, i) => {
-        const x = 26 + i * 52, sc = 1 - i * .07, h = 104 * sc, w = 70 * sc, y = 20 + i * 5;
-        return (
-          <g key={s.id} className={on[i] ? 'is-on' : ''} transform={`translate(${x} ${y})`}>
-            <path d={`M${w / 2} 0 L${w} ${h} L0 ${h}Z`} />
-            <text x={w / 2} y={h + 22} textAnchor="middle">{s.num}</text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-export function Estimate({ onRequest }: { onRequest: (summary: string) => void }) {
-  const ref = useRef<HTMLElement>(null);
-  useSectionMotion(ref);
-  const [picked, setPicked] = useState<string[]>(['uxui', 'web']);
-  const [size, setSize] = useState('standard');
-  const k = SIZES.find(s => s.id === size)!.k;
-  const chosen = CAPABILITIES.filter(c => picked.includes(c.id));
-  const lines = chosen.filter(c => c.price);
-  const lo = lines.reduce((a, c) => a + c.price![0] * k, 0), hi = lines.reduce((a, c) => a + c.price![1] * k, 0);
-  // stages overlap in practice, so the timeline is shorter than the sum of the parts
-  const wLo = Math.max(1, Math.round(lines.reduce((a, c) => a + c.weeks![0], 0) * k * .7));
-  const wHi = Math.max(wLo + 1, Math.round(lines.reduce((a, c) => a + c.weeks![1], 0) * k * .75));
-  const care = chosen.find(c => c.monthly);
-  const layers = useMemo(() => STAGES.map((_, i) => chosen.some(c => c.stage === i)), [chosen]);
-
-  const toggle = (id: string) => setPicked(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]));
-
-  return (
-    <section className="section estimate" id="estimate" aria-labelledby="estimate-title" ref={ref}>
-      <Aurora tone="c" />
-      <header className="section-head">
-        <p className="eyebrow" data-reveal>Project estimate</p>
-        <Split id="estimate-title" text="Shape your project, see the layers." />
-        <p className="section-lede" data-reveal>Choose what you need for an illustrative range. Every figure here is an example, not a quote; a real proposal follows a short conversation.</p>
-      </header>
-      <div className="estimate-grid">
-        <div className="est-controls" data-reveal>
-          <fieldset>
-            <legend>What do you need?</legend>
-            <div className="cap-grid">
-              {CAPABILITIES.map(c => (
-                <label key={c.id} className={`cap${picked.includes(c.id) ? ' is-on' : ''}`} data-glow>
-                  <input type="checkbox" checked={picked.includes(c.id)} onChange={() => toggle(c.id)} />
-                  <span className="cap-name">{c.name}</span>
-                  <span className="cap-stage">{STAGES[c.stage].num} {STAGES[c.stage].name}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          <fieldset>
-            <legend>How big is the first release?</legend>
-            <div className="size-grid">
-              {SIZES.map(s => (
-                <label key={s.id} className={`size${size === s.id ? ' is-on' : ''}`} data-glow>
-                  <input type="radio" name="size" value={s.id} checked={size === s.id} onChange={() => setSize(s.id)} />
-                  <span className="cap-name">{s.name}</span><span className="cap-stage">{s.desc}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        </div>
-        <aside className="est-summary" aria-labelledby="sum-title" aria-live="polite" data-reveal>
-          <LayerDiagram on={layers} />
-          <h3 id="sum-title">Your illustrative estimate</h3>
-          {chosen.length === 0 ? <p className="est-empty">Choose at least one capability to see a range.</p> : (
-            <ul className="est-lines">
-              {chosen.map(c => (
-                <li key={c.id}><span>{c.name}</span>
-                  <span>{c.price ? <><Num value={c.price[0] * k} format={eur} />–<Num value={c.price[1] * k} format={eur} /></> : `${eur(c.monthly![0])}–${eur(c.monthly![1])} / month`}</span></li>
-              ))}
-            </ul>
-          )}
-          <dl className="est-totals">
-            <div><dt>One-off range</dt><dd>{lines.length ? <><Num value={lo} format={eur} />–<Num value={hi} format={eur} /></> : '–'}</dd></div>
-            <div><dt>Timeline</dt><dd>{lines.length ? <><Num value={wLo} format={weeks} />–<Num value={wHi} format={weeks} /> weeks</> : '–'}</dd></div>
-            {care && <div><dt>Ongoing care</dt><dd>{eur(care.monthly![0])}–{eur(care.monthly![1])} / month</dd></div>}
-          </dl>
-          <p className="est-note">Illustrative pricing only. The diagram shows which layers your project touches; it does not calculate the price.</p>
-          <a className="btn btn-outline" data-magnet href="#contact" onClick={() => onRequest(chosen.map(c => c.name).join(', '))}>Request a detailed quote <Arrow /></a>
-        </aside>
-      </div>
-    </section>
-  );
-}
-
 // ---------------------------------------------------------------- contact
-export function Contact({ needs }: { needs: string }) {
+export function Contact() {
   const ref = useRef<HTMLElement>(null);
   useSectionMotion(ref);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
-  const [needsValue, setNeedsValue] = useState(needs);
-  useEffect(() => { if (needs) setNeedsValue(needs); }, [needs]);
+  const [needsValue, setNeedsValue] = useState('');
 
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -306,7 +206,7 @@ export function Contact({ needs }: { needs: string }) {
             <li data-lit><span>02</span>We arrange a short call to understand the goals.</li>
             <li data-lit><span>03</span>You receive a scoped proposal with a clear price and timeline.</li>
           </ol>
-          <p className="contact-direct">Prefer email? <span>hello@innovative.example</span></p>
+          <p className="contact-direct">Prefer email? <span>hello@refract.example</span></p>
         </aside>
       </div>
     </section>
@@ -319,14 +219,14 @@ export function Footer() {
   return (
     <footer className="site-footer" ref={ref}>
       <div className="footer-top">
-        <a className="brand" href="#top"><Mark /><span>innovative</span></a>
+        <a className="brand" href="#top"><Mark /><span>refract</span></a>
         <p>Strategy, design, engineering and care for digital products.</p>
         <a className="btn btn-outline footer-up" href="#top" data-magnet onClick={e => { e.preventDefault(); story.goTo(-1); }}>Back to top <Arrow /></a>
       </div>
       <p className="footer-word" aria-hidden="true" data-split="">
-        {'innovative'.split('').map((ch, i) => <span className="w" key={i}><span className="wi">{ch}</span></span>)}
+        {'refract'.split('').map((ch, i) => <span className="w" key={i}><span className="wi">{ch}</span></span>)}
       </p>
-      <p className="copy">© 2026 Innovative · Prototype build. Placeholder content is marked as such.</p>
+      <p className="copy">© 2026 Refract · Prototype build. Placeholder content is marked as such.</p>
     </footer>
   );
 }

@@ -1,4 +1,4 @@
-// Content for the process story, the expertise list and the illustrative estimate.
+// Content for the process story and the expertise list.
 // Everything a visitor reads lives in data and HTML; the 3D scene only illustrates it.
 
 export interface Stage {
@@ -54,28 +54,16 @@ export interface Capability {
   name: string;
   stage: number;
   desc: string;
-  price?: [number, number];
-  weeks?: [number, number];
-  monthly?: [number, number];
 }
 
-// Each capability belongs to a process stage, and so to one layer of the prism.
-// Prices are illustrative EUR ranges for a "standard" scope, to be replaced by real pricing rules.
+// Each capability belongs to a process stage, and so to one block of the sculpture.
 export const CAPABILITIES: Capability[] = [
-  { id: 'strategy', name: 'Product strategy', stage: 0, desc: 'Workshops, research and a prioritised roadmap.', price: [3000, 5000], weeks: [1, 2] },
-  { id: 'uxui', name: 'UI and UX design', stage: 1, desc: 'Journeys, interface design and a clickable prototype.', price: [6000, 12000], weeks: [2, 4] },
-  { id: 'web', name: 'Web development', stage: 2, desc: 'Websites and web applications, frontend and backend.', price: [12000, 30000], weeks: [4, 8] },
-  { id: 'software', name: 'Custom software', stage: 2, desc: 'Internal tools, platforms and mobile applications.', price: [20000, 50000], weeks: [6, 12] },
-  { id: 'integrations', name: 'Integrations and automation', stage: 3, desc: 'APIs, payments, CRMs and automated workflows.', price: [4000, 12000], weeks: [1, 4] },
-  { id: 'ai', name: 'AI solutions', stage: 3, desc: 'Assistants, search and automation, where they genuinely help.', price: [8000, 20000], weeks: [2, 5] },
-  { id: 'devops', name: 'Deployment and DevOps', stage: 4, desc: 'Cloud setup, delivery pipelines and launch readiness.', price: [3000, 8000], weeks: [1, 2] },
-  { id: 'care', name: 'Monitoring and maintenance', stage: 5, desc: 'Uptime monitoring, updates, support and improvements.', monthly: [600, 2000] },
-];
-
-export interface Size { id: string; name: string; desc: string; k: number }
-
-export const SIZES: Size[] = [
-  { id: 'focused', name: 'Focused', desc: 'A small, well-defined scope', k: 0.6 },
-  { id: 'standard', name: 'Standard', desc: 'A typical first release', k: 1 },
-  { id: 'extended', name: 'Extended', desc: 'Larger scope or several platforms', k: 1.7 },
+  { id: 'strategy', name: 'Product strategy', stage: 0, desc: 'Workshops, research and a prioritised roadmap.' },
+  { id: 'uxui', name: 'UI and UX design', stage: 1, desc: 'Journeys, interface design and a clickable prototype.' },
+  { id: 'web', name: 'Web development', stage: 2, desc: 'Websites and web applications, frontend and backend.' },
+  { id: 'software', name: 'Custom software', stage: 2, desc: 'Internal tools, platforms and mobile applications.' },
+  { id: 'integrations', name: 'Integrations and automation', stage: 3, desc: 'APIs, payments, CRMs and automated workflows.' },
+  { id: 'ai', name: 'AI solutions', stage: 3, desc: 'Assistants, search and automation, where they genuinely help.' },
+  { id: 'devops', name: 'Deployment and DevOps', stage: 4, desc: 'Cloud setup, delivery pipelines and launch readiness.' },
+  { id: 'care', name: 'Monitoring and maintenance', stage: 5, desc: 'Uptime monitoring, updates, support and improvements.' },
 ];
