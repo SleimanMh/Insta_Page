@@ -59,7 +59,8 @@ h1, h2, h3 { font-weight: 300; text-wrap: balance; letter-spacing: -.02em; }
 }
 .site-header.is-solid { background: rgba(12, 12, 14, .82); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-color: var(--line); }
 .brand { display: inline-flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 300; letter-spacing: -.01em; justify-self: start; }
-.brand-mark { width: 30px; height: 26px; }
+.brand-logo { display: block; height: 30px; width: auto; }
+.brand-stacked { display: block; height: 78px; width: auto; }
 .site-nav { display: flex; gap: clamp(20px, 3vw, 48px); font-size: 16px; }
 .site-nav a, .header-cta { color: var(--ink); opacity: .86; transition: opacity .2s; padding-block: 10px; }
 .site-nav a:hover, .header-cta:hover { opacity: 1; }
@@ -199,7 +200,7 @@ html[data-layout="stack"] .anchor { display: none; }
 }
 @media (max-width: 899px) {
   .site-header { grid-template-columns: 1fr auto; }
-  .brand { font-size: 20px; }
+  .brand-logo { height: 26px; }
   .work-grid, .expertise-list, .contact-grid { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 560px) {
@@ -352,10 +353,9 @@ html[data-layout="stack"] .anchor { display: none; }
 .footer-up { min-height: 42px; padding: 10px 22px; font-size: 14px; }
 .footer-up svg { transform: rotate(-45deg); }
 .footer-up:hover svg { transform: rotate(-45deg) translate(2px, -2px); }
-.footer-word { margin: clamp(36px, 5vw, 72px) 0 clamp(14px, 2vw, 28px); font-size: clamp(72px, 30vw, 460px); line-height: .82; letter-spacing: -.06em; font-weight: 300; white-space: nowrap; user-select: none;
-  background: linear-gradient(100deg, rgba(238, 231, 219, .12) 20%, rgba(246, 221, 176, .75) 45%, rgba(238, 231, 219, .12) 65%) 0 0 / 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 9s linear infinite; }
-.footer-word .w { overflow: hidden; display: inline-block; }
-.footer-word .wi { background: inherit; -webkit-background-clip: text; background-clip: text; }
+.footer-word { margin: clamp(40px, 6vw, 88px) 0 clamp(18px, 2.4vw, 32px); width: 100%; aspect-ratio: 1618 / 360;
+  -webkit-mask: var(--wm) center / contain no-repeat; mask: var(--wm) center / contain no-repeat;
+  background: linear-gradient(100deg, rgba(238, 231, 219, .14) 20%, rgba(246, 221, 176, .8) 45%, rgba(238, 231, 219, .14) 65%) 0 0 / 250% 100%; animation: shimmer 9s linear infinite; }
 .site-footer .copy { color: var(--ink-4); font-size: 13px; }
 
 @media (max-width: 899px) {

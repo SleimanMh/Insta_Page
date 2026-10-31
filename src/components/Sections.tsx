@@ -1,15 +1,16 @@
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { CSSProperties, FormEvent, useEffect, useRef, useState } from 'react';
 import { CAPABILITIES, STAGES } from '../data/process';
+import logoHorizontal from '../assets/brand/logo-horizontal.png';
+import logoStacked from '../assets/brand/logo-stacked.png';
+import wordmark from '../assets/brand/wordmark.png';
 import { Marquee, Split, useSectionMotion } from '../motion/fx';
 import { story } from '../story/controller';
 
 const Arrow = () => <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5M5.5 4.5h6v6" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 
-export const Mark = () => (
-  <svg className="brand-mark" viewBox="0 0 32 28" aria-hidden="true">
-    <path d="M16 2.5 30 26H2Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-    <path d="M19.6 17.4a4.2 4.2 0 1 1 0-4.8" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-  </svg>
+/** The brand: mark and wordmark side by side for the header, stacked for the footer. */
+export const Logo = ({ stacked = false }: { stacked?: boolean }) => (
+  <img className={stacked ? 'brand-stacked' : 'brand-logo'} src={stacked ? logoStacked : logoHorizontal} alt="refract" />
 );
 
 // ---------------------------------------------------------------- header
@@ -26,7 +27,7 @@ export function Header() {
   }, []);
   return (
     <header className={`site-header${solid ? ' is-solid' : ''}`} id="siteHeader">
-      <a className="brand" href="#top" aria-label="Refract, back to top"><Mark /><span>refract</span></a>
+      <a className="brand" href="#top" aria-label="Refract, back to top"><Logo /></a>
       <nav className="site-nav" aria-label="Main">
         <a href="#work">Work</a>
         <a href="#process" onClick={e => { e.preventDefault(); story.goTo(0); }}>Process</a>
@@ -219,13 +220,12 @@ export function Footer() {
   return (
     <footer className="site-footer" ref={ref}>
       <div className="footer-top">
-        <a className="brand" href="#top"><Mark /><span>refract</span></a>
+        <a className="brand" href="#top" aria-label="Refract, back to top"><Logo stacked /></a>
         <p>Strategy, design, engineering and care for digital products.</p>
         <a className="btn btn-outline footer-up" href="#top" data-magnet onClick={e => { e.preventDefault(); story.goTo(-1); }}>Back to top <Arrow /></a>
       </div>
-      <p className="footer-word" aria-hidden="true" data-split="">
-        {'refract'.split('').map((ch, i) => <span className="w" key={i}><span className="wi">{ch}</span></span>)}
-      </p>
+      {/* the wordmark, large, lit by a slow passing sheen */}
+      <div className="footer-word" aria-hidden="true" data-reveal style={{ '--wm': `url(${wordmark})` } as CSSProperties} />
       <p className="copy">© 2026 Refract · Prototype build. Placeholder content is marked as such.</p>
     </footer>
   );

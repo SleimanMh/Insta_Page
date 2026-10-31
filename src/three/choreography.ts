@@ -17,15 +17,14 @@ export function cameraPose(s: StoryState, aspect: number, stacked: boolean, comp
   const T = Math.tan((fov / 2) * Math.PI / 180);
   if (compact) {
     // Phones, pinned: the sculpture sits in the upper part of the screen, above the copy or the
-    // stage controls, and once open the camera frames the panel and the active block, letting the
-    // outer blocks run off the edges.
-    const dist = lerp(6.2, 6.1, e) * Math.max(1, .5 / aspect);
+    // stage controls, and once open the camera centres the panel, with blocks running off both edges.
+    const dist = lerp(6.2, 4.2, e) * Math.max(1, .5 / aspect, aspect / .48);   // close in on the panel so it reads
     const above = lerp(.17, .015, e);                      // how far above the middle of the screen
     return {
       fov, dist,
       camY: lerp(.36, .42, e),
       lookY: lerp(-.02, .02, e),
-      sculptX: lerp(0, -.14, e),
+      sculptX: lerp(0, .06, e),          // the panel at the centre, blocks to either side
       sculptY: above * 2 * T * dist - lerp(.2, .12, e),
       yaw: YAW + lerp(0, -.1, e),
     };
@@ -185,15 +184,15 @@ export interface PlanePose { pos: V3; rot: V3; w: number; h: number; show: numbe
  * The product panel stands large in the opening after the active layer, drawn over the glass so it stays
  * readable. Between stages it breaks through the next layer; at the end it settles inside the reunited prism.
  */
-export function planePose(s: StoryState): PlanePose {
+export function planePose(s: StoryState, facing: (x: number, z: number) => number): PlanePose {
   const T = panelTransit(s), bump = Math.sin(Math.PI * T.tr);
   const launch = Math.max(0, 1 - Math.abs(s.stageF - 4) * 1.4) * s.process;
-  // a tall glass panel standing upright on the floor, turned a little away so its far edge recedes;
+  // a tall glass card standing upright on the floor between the blocks, facing the viewer;
   // as the next block turns over it only sways about its vertical axis, never tilting
-  const w = .75, h = 1.125;
+  const w = .867, h = 1.3, x = -.8 + bump * .08, z = -.955 + bump * .06;
   const explore = {
-    x: -.8 + bump * .08, y: -.293 + h / 2 + .015 + launch * .02, z: -.955 + bump * .06,
-    rot: [0, -1.76 + bump * .25, 0] as V3,
+    x, y: -.293 + h / 2 + .015 + launch * .02, z,
+    rot: [0, facing(x, z) - .08 + bump * .22, 0] as V3,
     w, h,
   };
   const inside = { x: -.01, y: -.045, z: 0, rot: [0, -Math.PI, 0] as V3, w: .3, h: .45 };

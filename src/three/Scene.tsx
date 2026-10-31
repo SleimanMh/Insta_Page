@@ -76,7 +76,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     const pyrMirror = new THREE.Mesh(pyrGeo, pyramidMaterial('mirror'));
     pyrMirror.matrixAutoUpdate = false; pyrMirror.matrixWorldAutoUpdate = false; pyrMirror.renderOrder = 5; pyrMirror.frustumCulled = false;
 
-    const art = makeStageArt(gl.capabilities.getMaxAnisotropy());
+    const art = makeStageArt(gl.capabilities.getMaxAnisotropy(), () => invalidate());
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), productMaterial());
     plane.renderOrder = 100;   // over the glass, so every part of the panel stays readable
     root.add(plane);
@@ -220,13 +220,15 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     }
 
     // product plane
-    const pp = planePose(s);
+    // the panel turns to face the camera (about its vertical axis only), wherever the camera is
+    const lc = v.e2.set(cam.position.x - pose.sculptX, cam.position.y - pose.sculptY, cam.position.z).applyAxisAngle(v.up, -pose.yaw);
+    const pp = planePose(s, (px, pz) => Math.atan2(lc.x - px, lc.z - pz));
     world.plane.position.set(...pp.pos);
     world.plane.rotation.set(...pp.rot);
     world.plane.scale.set(pp.w * Math.max(.001, pp.show), pp.h * Math.max(.001, pp.show), 1);
     world.plane.visible = pp.show > .02;
     const pu = (world.plane.material as THREE.ShaderMaterial).uniforms;
-    const [a, b, m] = artFor(s.stageF, s.local, s.tr, s.complete);
+    const [a, b, m] = artFor(s.stageF, s.tr, s.complete);
     pu.texA.value = world.art[a]; pu.texB.value = world.art[b]; pu.mixv.value = m;
 
     root.updateMatrixWorld(true);
