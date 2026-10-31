@@ -47,7 +47,6 @@ class StoryController {
   private trigger: ScrollTrigger | null = null;
   private onStackScroll = () => this.setTarget(this.stackProgress());
   private reduceMQ = matchMedia('(prefers-reduced-motion: reduce)');
-  private narrowMQ = matchMedia('(max-width: 899px)');
   readonly finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
 
   constructor() {
@@ -55,13 +54,14 @@ class StoryController {
     this.snapshot = { mode: this.computeMode(), reduce, stage: 0, heroOn: true, processOn: false, finalOn: false, navOn: false };
     const onMedia = () => this.updateMode();
     this.reduceMQ.addEventListener('change', onMedia);
-    this.narrowMQ.addEventListener('change', onMedia);
   }
 
   get mode() { return this.snapshot.mode; }
   get reduce() { return this.snapshot.reduce; }
 
-  private computeMode(): Mode { return this.narrowMQ.matches || this.reduceMQ.matches ? 'stack' : 'wide'; }
+  // Every screen size gets the pinned, scroll-driven story; reduced motion gets the stacked sections,
+  // which step from stage to stage instead of animating between them.
+  private computeMode(): Mode { return this.reduceMQ.matches ? 'stack' : 'wide'; }
 
   private updateMode() {
     const mode = this.computeMode(), reduce = this.reduceMQ.matches;

@@ -11,8 +11,25 @@ type V3 = [number, number, number];
 
 export interface Pose { fov: number; dist: number; camY: number; lookY: number; sculptX: number; sculptY: number; yaw: number }
 
-export function cameraPose(s: StoryState, aspect: number, stacked: boolean): Pose {
+export function cameraPose(s: StoryState, aspect: number, stacked: boolean, compact = false): Pose {
   const e = easeInOut(clamp(s.open));
+  const fov = lerp(FOV, 38, e);
+  const T = Math.tan((fov / 2) * Math.PI / 180);
+  if (compact) {
+    // Phones, pinned: the sculpture sits in the upper part of the screen, above the copy or the
+    // stage controls, and once open the camera frames the panel and the active block, letting the
+    // outer blocks run off the edges.
+    const dist = lerp(6.2, 6.1, e) * Math.max(1, .5 / aspect);
+    const above = lerp(.17, .015, e);                      // how far above the middle of the screen
+    return {
+      fov, dist,
+      camY: lerp(.36, .42, e),
+      lookY: lerp(-.02, .02, e),
+      sculptX: lerp(0, -.14, e),
+      sculptY: above * 2 * T * dist - lerp(.2, .12, e),
+      yaw: YAW + lerp(0, -.1, e),
+    };
+  }
   let closed, open;
   if (stacked) {
     closed = { frac: .5, dist: 3.5 };
@@ -27,12 +44,11 @@ export function cameraPose(s: StoryState, aspect: number, stacked: boolean): Pos
   const fit = stacked ? Math.max(1, 1.15 / aspect) : Math.max(1, 1.6 / aspect);
   const dist = lerp(closed.dist, open.dist, e) * fit;
   const frac = lerp(closed.frac, open.frac, e);
-  const fov = lerp(FOV, 38, e);
   return {
     fov, dist,
     camY: lerp(.36, .42, e),
     lookY: lerp(-.02, .02, e),
-    sculptX: (frac - .5) * 2 * Math.tan((fov / 2) * Math.PI / 180) * dist * aspect,
+    sculptX: (frac - .5) * 2 * T * dist * aspect,
     sculptY: stacked ? lerp(.02, .06, e) : 0,
     yaw: YAW + lerp(0, -.1, e),
   };

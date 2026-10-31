@@ -172,7 +172,9 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     if (reveal < 1) busy = true;
 
     // camera choreography, plus subtle desktop-only parallax added on top
-    const pose = cameraPose(s, size.width / size.height, stacked);
+    // phones use the pinned story too, framed for a tall screen
+    const compact = !stacked && size.width < 900;
+    const pose = cameraPose(s, size.width / size.height, stacked, compact);
     const allowParallax = !stacked && !reduce && story.finePointer;
     const px = allowParallax ? story.pointer.x : 0, py = allowParallax ? story.pointer.y : 0;
     parallax.current.x += (px - parallax.current.x) * (1 - Math.exp(-dt * 4));

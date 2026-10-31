@@ -34,6 +34,13 @@ export function Story() {
     return () => { window.removeEventListener('hashchange', fromHash); story.unbind(); };
   }, [snap.mode]);
 
+  // when the stage bar scrolls sideways (phones), keep the current stage's chip in view
+  useEffect(() => {
+    const nav = navRef.current, btn = nav?.children[snap.stage] as HTMLElement | undefined;
+    if (!nav || !btn || nav.scrollWidth <= nav.clientWidth) return;
+    nav.scrollTo({ left: btn.offsetLeft - (nav.clientWidth - btn.offsetWidth) / 2, behavior: snap.reduce ? 'auto' : 'smooth' });
+  }, [snap.stage, snap.reduce]);
+
   const onNavKey = (e: KeyboardEvent<HTMLElement>) => {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
     const buttons = Array.from(navRef.current?.querySelectorAll('button') ?? []);
