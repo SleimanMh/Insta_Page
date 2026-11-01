@@ -195,7 +195,8 @@ html[data-layout="stack"] .anchor { display: none; }
 .next li { display: grid; grid-template-columns: 44px minmax(0, 1fr); padding: 16px 0; border-top: 1px solid var(--line); color: var(--ink-2); }
 .next li span { color: var(--gold); font-size: 13px; letter-spacing: .12em; padding-top: 3px; }
 .contact-direct { margin-top: 28px; color: var(--ink-3); }
-.contact-direct span { color: var(--ink); user-select: all; }
+.contact-direct a { color: var(--ink); border-bottom: 1px solid var(--line-2); transition: border-color .3s, color .3s; }
+.contact-direct a:hover { color: var(--gold); border-color: var(--gold); }
 
 
 /* ---------------------------------------------------------------- responsive */

@@ -208,7 +208,7 @@ export function Contact() {
             <li data-lit><span>02</span>We arrange a short call to understand the goals.</li>
             <li data-lit><span>03</span>You receive a scoped proposal with a clear price and timeline.</li>
           </ol>
-          <p className="contact-direct">Prefer email? <span>hello@refract.example</span></p>
+          <p className="contact-direct">Prefer email? <a href="mailto:refract@refract-tech.com">refract@refract-tech.com</a></p>
         </aside>
       </div>
     </section>
@@ -226,7 +226,7 @@ export function Footer() {
         <Split as="h2" className="footer-cta-title" text="Let’s refract it into a product." />
         <div className="footer-cta-actions" data-reveal>
           <a className="btn btn-outline btn-glow" href="#contact" data-magnet>Start a project <Arrow /></a>
-          <a className="footer-mail" href="mailto:hello@refract.example">hello@refract.example</a>
+          <a className="footer-mail" href="mailto:refract@refract-tech.com">refract@refract-tech.com</a>
         </div>
       </div>
 
