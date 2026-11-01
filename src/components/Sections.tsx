@@ -237,7 +237,7 @@ export function Contact() {
             <div className="field"><label htmlFor="cEmail">Email</label><input id="cEmail" name="email" type="email" autoComplete="email" /></div>
             <div className="field"><label htmlFor="cCompany">Company <span>optional</span></label><input id="cCompany" name="company" autoComplete="organization" /></div>
             <div className="field"><label htmlFor="cBudget">Budget</label>
-              <select id="cBudget" name="budget" defaultValue=""><option value="">Select a range</option><option>Under €10k</option><option>€10k–€25k</option><option>€25k–€60k</option><option>€60k+</option><option>Not sure yet</option></select></div>
+              <select id="cBudget" name="budget" defaultValue=""><option value="">Select a range</option><option>Under $1k</option><option>$1k–$5k</option><option>Above $5k</option><option>Other, or not sure yet</option></select></div>
             <div className="field"><label htmlFor="cTimeline">Timeline</label>
               <select id="cTimeline" name="timeline" defaultValue=""><option value="">Select a timeline</option><option>As soon as possible</option><option>Within 3 months</option><option>3–6 months</option><option>Flexible</option></select></div>
             <div className="field field-wide"><label htmlFor="cNeeds">What do you need?</label>
