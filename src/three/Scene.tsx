@@ -12,7 +12,7 @@ import { APEX_Y, BASE_Y, BEAM_Y, PYR_ALT, SLABS, SLAB_DEPTH, TRI, pyramidGeometr
 import { TO_LINEAR, backdropMaterial, crystalMaterial, floorMaterial, floorReflectionMaterial, productMaterial, pyramidMaterial, shardMaterial } from './materials';
 import { Ribbon } from './ribbon';
 import { artFor, makeStageArt } from './stageArt';
-import { palette, rgb, stageColor } from '../theme';
+import { onPalette, palette, rgb, stageColor } from '../theme';
 
 const FLOOR_OFFSET = .004;   // the pyramid and the blocks stand exactly on the base line
 const PYR_TURN = -.12;       // the pyramid's front face, turned a little from the viewer
@@ -96,8 +96,8 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     // the beam: a bright opaque core (so the glass refracts it) wrapped in soft glow
     const core = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 8, 1, true), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.9, 1.85, 1.75) }));
     const glowIn = new Ribbon(2, '#FFF7EC', 0, 1, .65), glowOut = new Ribbon(2, '#FFFFFF', .8, 0, .5);
-    const launch = new Ribbon(32, palette.launch, .9, .1, .5);
-    const ring = new Ribbon(97, palette.ring, .55, .55, .45);
+    const launch = new Ribbon(32, '#E8C48C', .9, .1, .5);
+    const ring = new Ribbon(97, '#8C7BFF', .55, .55, .45);
     const glints = new THREE.Points(new THREE.BufferGeometry(), glintMaterial());
     // one glint per layer, one where the beam enters, one for the flash when the panel breaks through
     glints.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array((SLABS + 2) * 3), 3));
@@ -105,17 +105,26 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     glints.geometry.setAttribute('aAlpha', new THREE.BufferAttribute(new Float32Array(SLABS + 2), 1));
     glints.frustumCulled = false; glints.renderOrder = 210;
 
-    // the palette's studio: pyramid faces, the split light on the floor, backdrop and floor tones
-    const v3 = (hex: string) => new THREE.Vector3(...rgb(hex));
-    [pyrBack, pyrFront, pyrMirror].forEach(m => { (m.material as THREE.ShaderMaterial).uniforms.tints.value = palette.pyramid.map(v3); });
-    const fu0 = (floor.material as THREE.ShaderMaterial).uniforms;
-    fu0.far.value = v3(palette.floor[0]); fu0.near.value = v3(palette.floor[1]);
-    fu0.cFront.value = v3(palette.pyramid[0]); fu0.cRight.value = v3(palette.pyramid[1]); fu0.cLeft.value = v3(palette.pyramid[2]);
-    const bu0 = (backdrop.material as THREE.ShaderMaterial).uniforms;
-    bu0.centre.value = v3(palette.backdrop[0]); bu0.edge.value = v3(palette.backdrop[1]); bu0.floorCol.value = v3(palette.floor[0]);
-
     return { root, geo, slabs, pyr, pyrBack, pyrFront, pyrMirror, art, plane, shards, floor, backdrop, core, glowIn, glowOut, launch, ring, glints };
   }, [gl, lowCost]);
+
+  // ---------------------------------------------------------------- the palette's studio
+  // pyramid faces, the split light on the floor, backdrop and floor tones, the closing paths;
+  // applied once and again whenever the visitor switches palette
+  useEffect(() => {
+    const v3 = (hex: string) => new THREE.Vector3(...rgb(hex));
+    const apply = () => {
+      [world.pyrBack, world.pyrFront, world.pyrMirror].forEach(m => { (m.material as THREE.ShaderMaterial).uniforms.tints.value = palette.pyramid.map(v3); });
+      const fu = (world.floor.material as THREE.ShaderMaterial).uniforms;
+      fu.far.value = v3(palette.floor[0]); fu.near.value = v3(palette.floor[1]);
+      fu.cFront.value = v3(palette.pyramid[0]); fu.cRight.value = v3(palette.pyramid[1]); fu.cLeft.value = v3(palette.pyramid[2]);
+      const bu = (world.backdrop.material as THREE.ShaderMaterial).uniforms;
+      bu.centre.value = v3(palette.backdrop[0]); bu.edge.value = v3(palette.backdrop[1]); bu.floorCol.value = v3(palette.floor[0]);
+      world.launch.uniforms.color.value.set(palette.launch); world.ring.uniforms.color.value.set(palette.ring);
+    };
+    apply();
+    return onPalette(() => { apply(); world.art.repaint(); invalidate(); });
+  }, [world, invalidate]);
 
   // ---------------------------------------------------------------- post: restrained bloom, then tone mapping
   const post = useMemo(() => {
@@ -142,7 +151,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       story.invalidate = null;
       world.geo.dispose();
       world.slabs.forEach(s => [s.back, s.glass, s.mirror].forEach(m => (m.material as THREE.Material).dispose()));
-      Object.values(world.art).forEach(t => t.dispose());
+      Object.values(world.art.tex).forEach(t => t.dispose());
       [world.pyrBack, world.pyrFront, world.pyrMirror].forEach(m => (m.material as THREE.Material).dispose());
       world.pyrBack.geometry.dispose();
       [world.plane, world.shards, world.floor, world.backdrop, world.core, world.glints].forEach(m => { m.geometry.dispose(); (m.material as THREE.Material).dispose(); });
@@ -241,7 +250,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     world.plane.visible = pp.show > .02;
     const pu = (world.plane.material as THREE.ShaderMaterial).uniforms;
     const [a, b, m] = artFor(s.stageF, s.tr, s.complete);
-    pu.texA.value = world.art[a]; pu.texB.value = world.art[b]; pu.mixv.value = m;
+    pu.texA.value = world.art.tex[a]; pu.texB.value = world.art.tex[b]; pu.mixv.value = m;
 
     root.updateMatrixWorld(true);
 

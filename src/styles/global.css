@@ -450,3 +450,20 @@ html[data-layout="stack"] .anchor { display: none; }
 .work-item:nth-child(1) .work-thumb svg { stroke: var(--c1); } .work-item:nth-child(2) .work-thumb svg { stroke: var(--c3); } .work-item:nth-child(3) .work-thumb svg { stroke: var(--c5); }
 .footer-word { background: linear-gradient(100deg, color-mix(in srgb, var(--ink) 10%, transparent) 15%, var(--coral) 35%, var(--lav) 48%, var(--aqua) 60%, color-mix(in srgb, var(--ink) 10%, transparent) 75%) 0 0 / 250% 100%; opacity: .75; }
 .stage-nav button small { color: var(--c, var(--ink-3)); }
+
+/* ---------------------------------------------------------------- palette switch */
+.header-actions { justify-self: end; display: flex; align-items: center; gap: clamp(14px, 2vw, 28px); }
+.theme-switch { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--line-2); border-radius: 999px; background: color-mix(in srgb, var(--bg) 60%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.theme-switch button { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 9px; border: 0; border-radius: 999px; background: none; color: var(--ink-3); font-size: 13px; cursor: pointer; transition: background .3s, color .3s; }
+.theme-switch button:hover { color: var(--ink); }
+.theme-switch button[aria-pressed="true"] { background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink); }
+.ts-dots { display: inline-flex; }
+.ts-dots i { width: 9px; height: 9px; border-radius: 50%; margin-left: -3px; box-shadow: 0 0 0 1.5px var(--bg); }
+.ts-dots i:first-child { margin-left: 0; }
+@media (max-width: 640px) {
+  .ts-label { display: none; }
+  .theme-switch button { padding: 7px 9px; }
+  .header-cta { font-size: 14px; }
+}
+/* while the palette changes, colours ease across instead of jumping */
+html.palette-shift, html.palette-shift *, html.palette-shift *::before, html.palette-shift *::after { transition: background-color .6s ease, color .6s ease, border-color .6s ease, fill .6s ease, stroke .6s ease !important; }

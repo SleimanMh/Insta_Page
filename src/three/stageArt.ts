@@ -9,9 +9,10 @@ import { palette } from '../theme';
 // Drawn into canvases in the brand's ivory, graphite, champagne and lavender.
 
 const W = 800, H = 1200, PAD = 60;
-const P = palette.css;
-const INK = P['--ink'], SOFT = P['--ink-2'], DIM = 'rgba(238,231,219,.55)', FAINT = 'rgba(238,231,219,.16)', LINE = 'rgba(238,231,219,.2)';
-const GOLD = P['--gold'], LAV = P['--lav'];
+const DIM = 'rgba(238,231,219,.55)', FAINT = 'rgba(238,231,219,.16)', LINE = 'rgba(238,231,219,.2)';
+// the palette's colours, refreshed before every paint so a palette switch repaints the cards
+let P = palette.css, INK = P['--ink'], SOFT = P['--ink-2'], GOLD = P['--gold'], LAV = P['--lav'];
+const readPalette = () => { P = palette.css; INK = P['--ink']; SOFT = P['--ink-2']; GOLD = P['--gold']; LAV = P['--lav']; };
 /** the card being drawn takes its stage's colour for the headline, the flow, the rim and the link */
 let ACC = GOLD;
 const alpha = (hex: string, a: number) => { const n = parseInt(hex.slice(1), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; };
@@ -223,11 +224,11 @@ export function makeStageArt(maxAnisotropy = 4, onRepaint?: () => void) {
   const out = {} as Record<ArtKey, THREE.CanvasTexture>;
   const canvases = {} as Record<ArtKey, HTMLCanvasElement>;
   const logo = new Image();
-  const paint = () => ART_KEYS.forEach((k, i) => {
+  const paint = () => { readPalette(); ART_KEYS.forEach((k, i) => {
     const g = canvases[k].getContext('2d')!;
     if (k === 'final') finalCard(g, logo); else stageCard(g, logo, i);
     out[k].needsUpdate = true;
-  });
+  }); };
   ART_KEYS.forEach(k => {
     const c = document.createElement('canvas'); c.width = W; c.height = H; canvases[k] = c;
     const t = new THREE.CanvasTexture(c);
@@ -239,7 +240,7 @@ export function makeStageArt(maxAnisotropy = 4, onRepaint?: () => void) {
   const fonts = document.fonts ? Promise.all(['300 72px', '400 29px', '500 19px'].map(f => document.fonts.load(`${f} "Albert Sans"`))) : Promise.resolve();
   const img = new Promise<void>(res => { logo.onload = () => res(); logo.onerror = () => res(); logo.src = logoUrl; });
   Promise.all([fonts, img]).then(() => { paint(); onRepaint?.(); }).catch(() => {});
-  return out;
+  return { tex: out, repaint: paint };
 }
 
 /** Which two cards to blend, and how far, for a given story state. */

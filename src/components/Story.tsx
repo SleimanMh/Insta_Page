@@ -2,7 +2,7 @@ import { CSSProperties, KeyboardEvent, useEffect, useRef, useSyncExternalStore }
 import { STAGES } from '../data/process';
 import { story } from '../story/controller';
 import { SceneHost } from './SceneHost';
-import { palette } from '../theme';
+import { palette, usePaletteName } from '../theme';
 
 const Arrow = ({ down = false }: { down?: boolean }) => down
   ? <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -10,6 +10,7 @@ const Arrow = ({ down = false }: { down?: boolean }) => down
 
 export function Story() {
   const snap = useSyncExternalStore(story.subscribe, story.getSnapshot);
+  usePaletteName();   // stage colours follow the palette
   const rootRef = useRef<HTMLElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const finalRef = useRef<HTMLDivElement>(null);

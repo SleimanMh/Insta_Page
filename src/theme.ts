@@ -1,6 +1,8 @@
+import { useSyncExternalStore } from 'react';
+
 // Colour for the whole site, page and 3D scene alike, from one place. Each palette names its page
 // tokens, a colour per process stage (the "spectrum" the prism throws), and the tints the glass,
-// floor and panel artwork use. Switch palettes by changing ACTIVE.
+// floor and panel artwork use. Visitors switch palettes from the header; their choice is remembered.
 
 export type PaletteName = 'spectrum' | 'aurora';
 
@@ -19,9 +21,10 @@ export interface Palette {
   ring: string;
 }
 
-export const PALETTES: Record<PaletteName, Palette> = {
+export const PALETTES: Record<PaletteName, Palette & { label: string }> = {
   // Graphite and champagne, with the colours a prism actually throws.
   spectrum: {
+    label: 'Spectrum',
     css: {
       '--bg': '#0B0B0F', '--bg-2': '#15151B',
       '--ink': '#F1ECE3', '--ink-2': '#CBC5BC', '--ink-3': '#9A94A3', '--ink-4': '#66616D',
@@ -36,6 +39,7 @@ export const PALETTES: Record<PaletteName, Palette> = {
   },
   // Midnight blue with teal, violet and pink: northern lights through glass.
   aurora: {
+    label: 'Aurora',
     css: {
       '--bg': '#090C18', '--bg-2': '#111631',
       '--ink': '#EDF0FA', '--ink-2': '#C3C8DE', '--ink-3': '#8D94B5', '--ink-4': '#5A6080',
@@ -43,15 +47,36 @@ export const PALETTES: Record<PaletteName, Palette> = {
     },
     stages: ['#6FB7FF', '#36E2C8', '#7BE8B0', '#9B7CFF', '#FF8AD8', '#FFB38A'],
     pyramid: ['#FF8AD8', '#9B7CFF', '#36E2C8', '#6FB7FF'],
-    backdrop: ['#1E2648', '#080B17'],
+    backdrop: ['#1A2142', '#080B17'],
     floor: ['#080B16', '#121935'],
     launch: '#36E2C8',
     ring: '#9B7CFF',
   },
 };
 
-export const ACTIVE: PaletteName = 'spectrum';
-export const palette = PALETTES[ACTIVE];
+const KEY = 'refract-palette';
+const saved = (() => { try { return localStorage.getItem(KEY); } catch { return null; } })();
+let active: PaletteName = saved === 'aurora' ? 'aurora' : 'spectrum';
+/** the palette in use; a live binding, so readers always see the current one */
+export let palette = PALETTES[active];
+
+const listeners = new Set<() => void>();
+export const onPalette = (fn: () => void) => { listeners.add(fn); return () => { listeners.delete(fn); }; };
+export const paletteName = () => active;
+/** React components that colour themselves from the palette re-render when it changes */
+export const usePaletteName = () => useSyncExternalStore(onPalette, paletteName);
+
+export function setPalette(name: PaletteName) {
+  if (name === active) return;
+  active = name; palette = PALETTES[name];
+  try { localStorage.setItem(KEY, name); } catch { /* a private window keeps the default */ }
+  // ease the page from one palette to the other
+  const root = document.documentElement;
+  root.classList.add('palette-shift');
+  applyPalette();
+  listeners.forEach(fn => fn());
+  window.setTimeout(() => root.classList.remove('palette-shift'), 700);
+}
 
 /** A display-space colour as 0…1 components (the shaders convert to linear themselves). */
 export function rgb(hex: string): [number, number, number] {
@@ -72,5 +97,5 @@ export function applyPalette() {
   Object.entries(palette.css).forEach(([k, v]) => s.setProperty(k, v));
   palette.stages.forEach((c, i) => s.setProperty(`--c${i + 1}`, c));
   s.setProperty('--stage', palette.stages[0]);
-  document.documentElement.dataset.palette = ACTIVE;
+  document.documentElement.dataset.palette = active;
 }
