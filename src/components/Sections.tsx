@@ -123,28 +123,42 @@ export function Work() {
 }
 
 // ---------------------------------------------------------------- expertise
+/** One beam entering the glass and leaving as the six bands the work is grouped into. */
+const Spectrum = () => (
+  <svg className="spectrum" viewBox="0 0 1200 150" preserveAspectRatio="none" aria-hidden="true">
+    <path className="sp-beam" d="M0 75H300" />
+    <path className="sp-prism" d="M330 36 384 110H276Z" />
+    {palette.stages.map((c, i) => (
+      <path key={c} className="sp-ray" style={{ stroke: c, animationDelay: `${i * .12}s` }}
+        d={`M352 78 C 620 78, 700 ${18 + i * 22.8}, 1200 ${18 + i * 22.8}`} />
+    ))}
+  </svg>
+);
+
 export function Expertise() {
   const ref = useRef<HTMLElement>(null);
   useSectionMotion(ref);
+  // the capabilities, gathered under the step of the process each one belongs to
+  const bands = STAGES.map((st, i) => ({ st, i, items: CAPABILITIES.filter(c => c.stage === i) }));
   return (
     <section className="section expertise" id="expertise" aria-labelledby="expertise-title" ref={ref}>
       <Aurora tone="b" />
       <header className="section-head">
         <p className="eyebrow" data-reveal>Expertise</p>
         <Split id="expertise-title" text="Every discipline your product needs." />
-        <p className="section-lede" data-reveal>Each capability belongs to one layer of the process. Choose one, or bring them together in a single team.</p>
+        <p className="section-lede" data-reveal>One team, split into the six steps of the process. Take a single band, or the whole spectrum.</p>
       </header>
-      <ul className="expertise-list">
-        {CAPABILITIES.map((c, i) => (
-          <li key={c.id} data-reveal data-lit data-glow style={{ '--c': palette.stages[c.stage] } as CSSProperties}>
-            <div className="exp-top">
-              <span className="exp-glyph" aria-hidden="true"><svg viewBox="0 0 20 18"><path d="M10 1.5 18.5 16.5H1.5Z" /></svg></span>
-              <span className="exp-stage">{STAGES[c.stage].num} / {STAGES[c.stage].name}</span>
-              <span className="exp-count" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
-            </div>
-            <h3>{c.name}</h3>
-            <p>{c.desc}</p>
-            <span className="exp-line" aria-hidden="true" />
+      <div className="spectrum-wrap" data-reveal data-lit><Spectrum /></div>
+      <ul className="bands">
+        {bands.map(({ st, i, items }) => (
+          <li key={st.id} data-reveal data-lit data-glow style={{ '--c': palette.stages[i] } as CSSProperties}>
+            <p className="band-head"><span className="band-num">{st.num}</span>{st.name}</p>
+            {items.map(c => (
+              <div className="band-item" key={c.id}>
+                <h3>{c.name}</h3>
+                <p>{c.keys.join(' · ')}</p>
+              </div>
+            ))}
           </li>
         ))}
       </ul>

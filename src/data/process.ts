@@ -53,17 +53,18 @@ export interface Capability {
   id: string;
   name: string;
   stage: number;
-  desc: string;
+  /** three words for what it covers, shown in place of a sentence */
+  keys: string[];
 }
 
 // Each capability belongs to a process stage, and so to one block of the sculpture.
 export const CAPABILITIES: Capability[] = [
-  { id: 'strategy', name: 'Product strategy', stage: 0, desc: 'Workshops, research and a prioritised roadmap.' },
-  { id: 'uxui', name: 'UI and UX design', stage: 1, desc: 'Journeys, interface design and a clickable prototype.' },
-  { id: 'web', name: 'Web development', stage: 2, desc: 'Websites and web applications, frontend and backend.' },
-  { id: 'software', name: 'Custom software', stage: 2, desc: 'Internal tools, platforms and mobile applications.' },
-  { id: 'integrations', name: 'Integrations and automation', stage: 3, desc: 'APIs, payments, CRMs and automated workflows.' },
-  { id: 'ai', name: 'AI solutions', stage: 3, desc: 'Assistants, search and automation, where they genuinely help.' },
-  { id: 'devops', name: 'Deployment and DevOps', stage: 4, desc: 'Cloud setup, delivery pipelines and launch readiness.' },
-  { id: 'care', name: 'Monitoring and maintenance', stage: 5, desc: 'Uptime monitoring, updates, support and improvements.' },
+  { id: 'strategy', name: 'Product strategy', stage: 0, keys: ['Workshops', 'Research', 'Roadmap'] },
+  { id: 'uxui', name: 'UI and UX design', stage: 1, keys: ['Journeys', 'Interfaces', 'Prototype'] },
+  { id: 'web', name: 'Web development', stage: 2, keys: ['Frontend', 'Backend', 'APIs'] },
+  { id: 'software', name: 'Custom software', stage: 2, keys: ['Internal tools', 'Platforms', 'Mobile'] },
+  { id: 'integrations', name: 'Integrations and automation', stage: 3, keys: ['APIs', 'Payments', 'Workflows'] },
+  { id: 'ai', name: 'AI solutions', stage: 3, keys: ['Assistants', 'Search', 'Automation'] },
+  { id: 'devops', name: 'Deployment and DevOps', stage: 4, keys: ['Cloud', 'Pipelines', 'Releases'] },
+  { id: 'care', name: 'Monitoring and maintenance', stage: 5, keys: ['Uptime', 'Updates', 'Improvements'] },
 ];
