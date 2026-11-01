@@ -51,7 +51,7 @@ Clicking a stage label scrolls the page to that stage's rest point, so scrolling
 
 ## Content status
 
-- Work tiles are placeholders and are labelled as such.
+- The "What we build" cards describe services; there are no client case studies yet. Their "Plan a …" links fill in the contact form's "What do you need?" field.
 - The contact form validates but does not send anything yet.
 
 ## Earlier design exploration

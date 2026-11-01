@@ -374,7 +374,6 @@ html[data-layout="stack"] .anchor { display: none; }
 .footer-col a { position: relative; display: inline-flex; align-items: baseline; gap: 10px; color: var(--ink-2); transition: color .3s; padding-block: 2px; }
 .footer-col a:hover { color: var(--ink); }
 .footer-col a span { font-size: 11px; letter-spacing: .1em; color: var(--ink-4); }
-.footer-col a[aria-disabled="true"] { cursor: default; }
 .footer-word { width: clamp(220px, 38vw, 600px); max-width: 100%; aspect-ratio: 1618 / 360; margin-bottom: clamp(20px, 2.6vw, 36px); opacity: .9;
   -webkit-mask: var(--wm) left center / contain no-repeat; mask: var(--wm) left center / contain no-repeat;
   background: linear-gradient(100deg, color-mix(in srgb, var(--ink) 10%, transparent) 20%, rgba(246, 221, 176, .55) 45%, color-mix(in srgb, var(--ink) 10%, transparent) 65%) 0 0 / 250% 100%; animation: shimmer 9s linear infinite; }
@@ -461,3 +460,19 @@ html[data-layout="stack"] .anchor { display: none; }
 @media (prefers-reduced-motion: reduce) { .sky-stars { animation: none; } }
 .botcheck { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 .contact-form .btn[disabled] { opacity: .7; cursor: progress; }
+
+/* ---------------------------------------------------------------- footer links that open things, and the privacy note */
+.footer-link { position: relative; padding: 2px 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; transition: color .3s; }
+.footer-col .footer-link { color: var(--ink-2); }
+.footer-link:hover { color: var(--ink); }
+.footer-bottom .footer-link { text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+.footer-sep { margin: 0 6px; }
+.privacy { width: min(560px, calc(100vw - 32px)); max-height: calc(100svh - 48px); padding: 0; border: 1px solid var(--line-2); border-radius: 18px; background: var(--bg-2); color: var(--ink-2); box-shadow: 0 40px 120px -20px rgba(0, 0, 0, .8); }
+.privacy::backdrop { background: color-mix(in srgb, var(--bg) 70%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.privacy-body { display: grid; gap: 14px; padding: clamp(24px, 4vw, 36px); line-height: 1.6; font-size: 15px; }
+.privacy h2 { font-size: 28px; color: var(--ink); margin-bottom: 4px; }
+.privacy a { color: var(--gold); }
+.privacy-date { font-size: 13px; color: var(--ink-4); }
+.privacy form { margin-top: 8px; }
+.footer-col .footer-link { display: inline-flex; align-items: baseline; gap: 10px; }
+.footer-col .footer-link span { font-size: 11px; letter-spacing: .1em; color: var(--ink-4); }

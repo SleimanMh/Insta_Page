@@ -85,7 +85,8 @@ class StoryController {
     gsap.ticker.add(this.step); this.running = true;
     // smooth wheel scrolling on desktop; touch keeps its native momentum, reduced motion keeps plain scrolling
     if (this.mode === 'wide' && !this.reduce && this.finePointer) {
-      this.lenis = new Lenis({ lerp: .09, wheelMultiplier: .9, smoothWheel: true });
+      // anchors: in-page links glide with the smooth scroll instead of jumping under it
+      this.lenis = new Lenis({ lerp: .09, wheelMultiplier: .9, smoothWheel: true, anchors: true });
       this.lenis.on('scroll', ScrollTrigger.update);
     }
     if (this.mode === 'wide') {

@@ -55,12 +55,17 @@ export function Band() {
   );
 }
 
-// ---------------------------------------------------------------- work (placeholders)
+// ---------------------------------------------------------------- what we build
 const WORK = [
-  { kind: 't1', title: 'Web platform', desc: 'Strategy, design and build of a customer-facing web application.' },
-  { kind: 't2', title: 'Mobile application', desc: 'A mobile app with its backend, launch and ongoing care.' },
-  { kind: 't3', title: 'Workflow automation', desc: 'Integrations and AI-assisted automation for an operations team.' },
+  { kind: 't1', tag: 'Web', title: 'Web platforms', need: 'Web platform', cta: 'Plan a web platform',
+    desc: 'Customer portals, marketplaces and SaaS products, designed around your users and built to grow with your business.' },
+  { kind: 't2', tag: 'Mobile', title: 'Mobile apps', need: 'Mobile app', cta: 'Plan a mobile app',
+    desc: 'iOS and Android apps with the backend, payments and store launch taken care of, and updates after release.' },
+  { kind: 't3', tag: 'Automation and AI', title: 'Automation and AI', need: 'Workflow automation and AI', cta: 'Plan an automation',
+    desc: 'Integrations, internal tools and AI assistants that take repetitive work off your team, added only where they help.' },
 ];
+/** Ask the contact form to note what the visitor is interested in, then take them to it. */
+const requestNeed = (need: string) => window.dispatchEvent(new CustomEvent('refract:need', { detail: need }));
 /** Small living illustrations: a page assembling itself, a feed scrolling, data flowing between systems. */
 const Thumb = ({ kind }: { kind: string }) => (
   <div className={`work-thumb ${kind}`} aria-hidden="true">
@@ -96,19 +101,19 @@ export function Work() {
     <section className="section work" id="work" aria-labelledby="work-title" ref={ref}>
       <Aurora tone="a" />
       <header className="section-head">
-        <p className="eyebrow" data-reveal>Selected work</p>
-        <Split id="work-title" text="Case studies are on their way." />
-        <p className="section-lede" data-reveal>These tiles are placeholders. Real projects, shared with each client’s permission, will replace them.</p>
+        <p className="eyebrow" data-reveal>What we build</p>
+        <Split id="work-title" text="Products we bring to life." />
+        <p className="section-lede" data-reveal>Three kinds of product we design, build and look after. Each one goes through the same six steps, from the first conversation to every release after launch.</p>
       </header>
       <ul className="work-grid">
         {WORK.map((w, i) => (
           <li className="work-item" key={w.kind} data-reveal>
             <div className="work-card" data-tilt data-glow>
               <Thumb kind={w.kind} />
-              <div className="work-meta"><span className="work-num">{String(i + 1).padStart(2, '0')}</span><p className="tag">Placeholder project</p></div>
+              <div className="work-meta"><span className="work-num">{String(i + 1).padStart(2, '0')}</span><p className="tag">{w.tag}</p></div>
               <h3>{w.title}</h3>
               <p>{w.desc}</p>
-              <span className="work-more">Case study coming soon <Arrow /></span>
+              <a className="work-more" href="#contact" onClick={() => requestNeed(w.need)}>{w.cta} <Arrow /></a>
             </div>
           </li>
         ))}
@@ -160,6 +165,16 @@ export function Contact() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [needsValue, setNeedsValue] = useState('');
+  // "Plan a …" links elsewhere on the page fill in what the visitor needs
+  useEffect(() => {
+    const on = (e: Event) => {
+      const need = (e as CustomEvent<string>).detail;
+      setSent(false);
+      setNeedsValue(v => (!v ? need : v.split(', ').includes(need) ? v : `${v}, ${need}`));
+    };
+    window.addEventListener('refract:need', on);
+    return () => window.removeEventListener('refract:need', on);
+  }, []);
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -250,6 +265,7 @@ export function Contact() {
 
 export function Footer() {
   const ref = useRef<HTMLElement>(null);
+  const privacyRef = useRef<HTMLDialogElement>(null);
   useSectionMotion(ref);
   const toTop = (e: React.MouseEvent) => { e.preventDefault(); story.goTo(-1); };
   return (
@@ -281,17 +297,16 @@ export function Footer() {
           <h3>Process</h3>
           <ul>
             {STAGES.map((st, i) => (
-              <li key={st.id}><a href={`#stage-${st.id}`} onClick={e => { e.preventDefault(); story.goTo(i); }}><span>{st.num}</span>{st.name}</a></li>
+              <li key={st.id}><button type="button" className="footer-link" onClick={() => story.goTo(i)}><span>{st.num}</span>{st.name}</button></li>
             ))}
           </ul>
         </div>
         <div className="footer-col" data-reveal>
-          <h3>Follow</h3>
-          {/* placeholder profiles until the real handles are in */}
+          <h3>Get in touch</h3>
           <ul>
-            <li><a href="#" aria-disabled="true">Instagram</a></li>
-            <li><a href="#" aria-disabled="true">LinkedIn</a></li>
-            <li><a href="#" aria-disabled="true">Behance</a></li>
+            <li><a href={`mailto:${EMAIL}`}>{EMAIL}</a></li>
+            <li><a href="#contact">Start a project</a></li>
+            <li><button type="button" className="footer-link" onClick={() => privacyRef.current?.showModal()}>Privacy</button></li>
           </ul>
         </div>
       </div>
@@ -300,9 +315,20 @@ export function Footer() {
       <div className="footer-word" aria-hidden="true" data-reveal style={{ '--wm': `url(${wordmark})` } as CSSProperties} />
 
       <div className="footer-bottom">
-        <p>© 2026 Refract · Prototype build. Placeholder content is marked as such.</p>
+        <p>© {new Date().getFullYear()} Refract. All rights reserved. <span className="footer-sep">·</span> <button type="button" className="footer-link" onClick={() => privacyRef.current?.showModal()}>Privacy</button></p>
         <a className="footer-up" href="#top" onClick={toTop}>Back to top <Arrow /></a>
       </div>
+
+      <dialog className="privacy" ref={privacyRef} aria-labelledby="privacy-title" onClick={e => { if (e.target === e.currentTarget) e.currentTarget.close(); }}>
+        <div className="privacy-body">
+          <h2 id="privacy-title">Privacy</h2>
+          <p>When you send an enquiry, we receive what you enter in the form: your name, email address, company, budget, timeline and project description. We use it only to reply to you and to prepare a proposal.</p>
+          <p>The form is delivered to our inbox by Web3Forms. We do not sell or share your details, and we delete them on request. Write to <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.</p>
+          <p>This site uses no advertising or tracking cookies. It is hosted on Vercel and loads its typeface from Google Fonts, which may record technical details such as your IP address.</p>
+          <p className="privacy-date">Last updated November 2026</p>
+          <form method="dialog"><button className="btn btn-outline" type="submit">Close</button></form>
+        </div>
+      </dialog>
     </footer>
   );
 }
