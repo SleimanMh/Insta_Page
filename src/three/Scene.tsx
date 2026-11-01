@@ -328,10 +328,14 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     const lead = 1.0 + 2.4 * smooth(.2, .8, s.open);   // beside the hero copy, not across it
     const start = onBeam(first - lead, v.start), mid = onBeam(last, v.mid);
     const end = onBeam(last + 2.6 - 1.9 * s.process, v.end);
-    world.glowIn.update([start, mid], cam, .006, .016); world.glowIn.uniforms.prog.value = reveal;
-    world.glowOut.update([mid, end], cam, .016, .01); world.glowOut.uniforms.prog.value = smooth(.6, 1, reveal);
+    // the beam belongs to the opened sculpture: while the pyramid stands whole there is none, and as it
+    // breaks the beam shoots in from the left and runs through the blocks (and draws back as it re-forms)
+    const beam = reveal * smooth(.05, .85, 1 - br.whole);
+    world.glowIn.mesh.visible = world.glowOut.mesh.visible = world.core.visible = beam > .002;
+    world.glowIn.update([start, mid], cam, .006, .016); world.glowIn.uniforms.prog.value = beam;
+    world.glowOut.update([mid, end], cam, .016, .01); world.glowOut.uniforms.prog.value = smooth(.6, 1, beam);
     const cs = v.cs.copy(start).lerp(mid, .3), ce = v.ce.copy(mid).lerp(end, .25);
-    const dir = v.d.subVectors(ce, cs), len = dir.length() * reveal;
+    const dir = v.d.subVectors(ce, cs), len = dir.length() * beam;
     dir.normalize();
     world.core.position.copy(cs).addScaledVector(dir, len / 2);
     world.core.quaternion.copy(v.q.setFromUnitVectors(v.up, dir));
@@ -349,7 +353,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       (sl.glass.material as THREE.ShaderMaterial).uniforms.beamY.value = (sl.back.material as THREE.ShaderMaterial).uniforms.beamY.value = by;
     });
     onBeam(first + SLAB_DEPTH * .3, v.d); gp.setXYZ(SLABS, v.d.x, v.d.y, v.d.z);
-    gs.setX(SLABS, size.height * .14); ga.setX(SLABS, .5 * reveal);
+    gs.setX(SLABS, size.height * .14); ga.setX(SLABS, .5 * beam);
 
     // breaking: when the prism shatters open the flare sits at its heart and the glass flies out all
     // around; when the panel breaks through a layer the flare sits on that layer and shards fly toward the viewer
