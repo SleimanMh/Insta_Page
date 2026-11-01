@@ -217,16 +217,58 @@ export function Contact() {
 export function Footer() {
   const ref = useRef<HTMLElement>(null);
   useSectionMotion(ref);
+  const toTop = (e: React.MouseEvent) => { e.preventDefault(); story.goTo(-1); };
   return (
     <footer className="site-footer" ref={ref}>
-      <div className="footer-top">
-        <a className="brand" href="#top" aria-label="Refract, back to top"><Logo stacked /></a>
-        <p>Strategy, design, engineering and care for digital products.</p>
-        <a className="btn btn-outline footer-up" href="#top" data-magnet onClick={e => { e.preventDefault(); story.goTo(-1); }}>Back to top <Arrow /></a>
+      <div className="footer-cta">
+        <p className="eyebrow" data-reveal>Have an idea?</p>
+        <Split as="h2" className="footer-cta-title" text="Let’s refract it into a product." />
+        <div className="footer-cta-actions" data-reveal>
+          <a className="btn btn-outline btn-glow" href="#contact" data-magnet>Start a project <Arrow /></a>
+          <a className="footer-mail" href="mailto:hello@refract.example">hello@refract.example</a>
+        </div>
       </div>
-      {/* the wordmark, large, lit by a slow passing sheen */}
+
+      <div className="footer-grid">
+        <div className="footer-brand" data-reveal>
+          <a href="#top" aria-label="Refract, back to top" onClick={toTop}><Logo stacked /></a>
+          <p>Strategy, design, engineering and care for digital products, from the first idea to every release after launch.</p>
+        </div>
+        <nav className="footer-col" aria-label="Footer" data-reveal>
+          <h3>Explore</h3>
+          <ul>
+            <li><a href="#work">Work</a></li>
+            <li><a href="#process" onClick={e => { e.preventDefault(); story.goTo(0); }}>Process</a></li>
+            <li><a href="#expertise">Expertise</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+        </nav>
+        <div className="footer-col" data-reveal>
+          <h3>Process</h3>
+          <ul>
+            {STAGES.map((st, i) => (
+              <li key={st.id}><a href={`#stage-${st.id}`} onClick={e => { e.preventDefault(); story.goTo(i); }}><span>{st.num}</span>{st.name}</a></li>
+            ))}
+          </ul>
+        </div>
+        <div className="footer-col" data-reveal>
+          <h3>Follow</h3>
+          {/* placeholder profiles until the real handles are in */}
+          <ul>
+            <li><a href="#" aria-disabled="true">Instagram</a></li>
+            <li><a href="#" aria-disabled="true">LinkedIn</a></li>
+            <li><a href="#" aria-disabled="true">Behance</a></li>
+          </ul>
+        </div>
+      </div>
+
+      {/* the wordmark, lit by a slow passing sheen */}
       <div className="footer-word" aria-hidden="true" data-reveal style={{ '--wm': `url(${wordmark})` } as CSSProperties} />
-      <p className="copy">© 2026 Refract · Prototype build. Placeholder content is marked as such.</p>
+
+      <div className="footer-bottom">
+        <p>© 2026 Refract · Prototype build. Placeholder content is marked as such.</p>
+        <a className="footer-up" href="#top" onClick={toTop}>Back to top <Arrow /></a>
+      </div>
     </footer>
   );
 }
