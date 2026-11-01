@@ -459,3 +459,5 @@ html[data-layout="stack"] .anchor { display: none; }
 .sky-aurora { position: absolute; left: -4%; top: -6%; width: 108%; height: 78%; opacity: .42; mix-blend-mode: screen; filter: blur(2px) saturate(1.15); }
 @keyframes twinkle { from { opacity: .95; } to { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .sky-stars { animation: none; } }
+.botcheck { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.contact-form .btn[disabled] { opacity: .7; cursor: progress; }

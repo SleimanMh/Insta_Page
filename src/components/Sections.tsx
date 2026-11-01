@@ -148,22 +148,53 @@ export function Expertise() {
 }
 
 // ---------------------------------------------------------------- contact
+// Enquiries are delivered by Web3Forms to refract@refract-tech.com. The access key only lets a form send
+// to that inbox, so it is safe to ship in the page.
+const WEB3FORMS_KEY = '1a1d6b2c-6057-4d87-b8c4-314f803d54d2';
+const EMAIL = 'refract@refract-tech.com';
+
 export function Contact() {
   const ref = useRef<HTMLElement>(null);
   useSectionMotion(ref);
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [needsValue, setNeedsValue] = useState('');
 
-  const submit = (e: FormEvent<HTMLFormElement>) => {
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (sending) return;
     const f = new FormData(e.currentTarget);
     const missing = [['name', 'your name'], ['email', 'an email address'], ['message', 'a short project description']]
       .filter(([k]) => !String(f.get(k) ?? '').trim()).map(([, label]) => label);
     const list = missing.length > 1 ? `${missing.slice(0, -1).join(', ')} and ${missing[missing.length - 1]}` : missing[0];
     if (missing.length) { setError(`Please add ${list}.`); return; }
     if (!/^\S+@\S+\.\S+$/.test(String(f.get('email')))) { setError('Please check the email address; it should look like name@company.com.'); return; }
-    setError(''); setSent(true);
+    setError(''); setSending(true);
+    const v = (k: string) => String(f.get(k) ?? '').trim();
+    try {
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          access_key: WEB3FORMS_KEY,
+          subject: `New project enquiry from ${v('name')}${v('company') ? ` (${v('company')})` : ''}`,
+          from_name: 'Refract website',
+          replyto: v('email'),
+          name: v('name'), email: v('email'), company: v('company') || '-',
+          budget: v('budget') || 'Not given', timeline: v('timeline') || 'Not given', needs: v('needs') || '-',
+          message: v('message'),
+          botcheck: Boolean(f.get('botcheck')),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.message || 'send failed');
+      setSent(true);
+    } catch {
+      setError(`Sorry, your enquiry could not be sent. Please try again, or write to us at ${EMAIL}.`);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -182,8 +213,8 @@ export function Contact() {
         {sent ? (
           <div className="sent" role="status">
             <svg className="sent-check" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24" /><path d="M15 27l7 7 15-16" /></svg>
-            <h3>Thank you. Your enquiry is ready.</h3>
-            <p>This is a prototype, so nothing has been sent yet. In the live site this form will reach the team directly.</p>
+            <h3>Thank you. Your enquiry is on its way.</h3>
+            <p>We will read it and come back to you shortly, usually with a few questions and a time for a short call.</p>
           </div>
         ) : (
           <form className="contact-form" onSubmit={submit} noValidate data-reveal>
@@ -197,8 +228,10 @@ export function Contact() {
             <div className="field field-wide"><label htmlFor="cNeeds">What do you need?</label>
               <input id="cNeeds" name="needs" value={needsValue} onChange={e => setNeedsValue(e.target.value)} placeholder="For example: UI and UX design, web development" /></div>
             <div className="field field-wide"><label htmlFor="cMessage">Project description</label><textarea id="cMessage" name="message" rows={5} placeholder="What are you building, and for whom?" /></div>
+            {/* a field people never see; bots fill it in, and the form service then discards the message */}
+            <input type="checkbox" name="botcheck" className="botcheck" tabIndex={-1} autoComplete="off" aria-hidden="true" />
             {error && <p className="form-error" role="alert">{error}</p>}
-            <button className="btn btn-outline btn-glow" type="submit" data-magnet>Send enquiry <Arrow /></button>
+            <button className="btn btn-outline btn-glow" type="submit" data-magnet disabled={sending} aria-busy={sending}>{sending ? 'Sending…' : <>Send enquiry <Arrow /></>}</button>
           </form>
         )}
         <aside className="contact-side" data-reveal>
@@ -208,7 +241,7 @@ export function Contact() {
             <li data-lit><span>02</span>We arrange a short call to understand the goals.</li>
             <li data-lit><span>03</span>You receive a scoped proposal with a clear price and timeline.</li>
           </ol>
-          <p className="contact-direct">Prefer email? <a href="mailto:refract@refract-tech.com">refract@refract-tech.com</a></p>
+          <p className="contact-direct">Prefer email? <a href={`mailto:${EMAIL}`}>{EMAIL}</a></p>
         </aside>
       </div>
     </section>
