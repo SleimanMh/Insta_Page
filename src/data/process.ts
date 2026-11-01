@@ -68,3 +68,23 @@ export const CAPABILITIES: Capability[] = [
   { id: 'devops', name: 'Deployment and DevOps', stage: 4, keys: ['Cloud', 'Pipelines', 'Releases'] },
   { id: 'care', name: 'Monitoring and maintenance', stage: 5, keys: ['Uptime', 'Updates', 'Improvements'] },
 ];
+
+export interface Project {
+  id: string;
+  name: string;
+  /** the short mark shown until a logo file is in place */
+  mark: string;
+  url: string;
+  host: string;
+  /** one line on what the site is; shown when it is filled in */
+  note?: string;
+  /** a logo in src/assets/work, imported by the work section when present */
+  logo?: string;
+}
+
+/** Live client sites. Logos go in src/assets/work and are wired up in Sections.tsx. */
+export const PROJECTS: Project[] = [
+  { id: 'tpl', name: 'TPL Rachaya', mark: 'TPL', url: 'https://tplrachaya.com/', host: 'tplrachaya.com' },
+  { id: 'ruffieux', name: 'Étude Ruffieux', mark: 'ÉR', url: 'https://etude-ruffieux.ch/', host: 'etude-ruffieux.ch' },
+  { id: 'joydayz', name: 'Joydayz', mark: 'JD', url: 'https://joydayz-dev.kataflow.ch/', host: 'joydayz-dev.kataflow.ch' },
+];

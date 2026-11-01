@@ -1,5 +1,5 @@
 import { CSSProperties, FormEvent, useEffect, useRef, useState } from 'react';
-import { CAPABILITIES, STAGES } from '../data/process';
+import { CAPABILITIES, PROJECTS, STAGES } from '../data/process';
 import logoHorizontal from '../assets/brand/logo-horizontal.png';
 import logoStacked from '../assets/brand/logo-stacked.png';
 import wordmark from '../assets/brand/wordmark.png';
@@ -55,6 +55,37 @@ export function Band() {
   );
 }
 
+// ---------------------------------------------------------------- selected work
+/** Sites we have built and look after. Each card carries the client's own mark, name and address. */
+export function Work() {
+  const ref = useRef<HTMLElement>(null);
+  useSectionMotion(ref);
+  return (
+    <section className="section selected" id="work" aria-labelledby="selected-title" ref={ref}>
+      <Aurora tone="a" />
+      <header className="section-head">
+        <p className="eyebrow" data-reveal>Selected work</p>
+        <Split id="selected-title" text="Products already live." />
+        <p className="section-lede" data-reveal>Three sites we designed, built and still look after. Open any of them to see the work in use.</p>
+      </header>
+      <ul className="proj-grid">
+        {PROJECTS.map((p, i) => (
+          <li key={p.id} data-reveal style={{ '--c': palette.stages[i * 2] } as CSSProperties}>
+            <a className="proj" href={p.url} target="_blank" rel="noreferrer noopener" data-glow>
+              <span className="proj-logo" aria-hidden="true">
+                {p.logo ? <img src={p.logo} alt="" /> : <b>{p.mark}</b>}
+              </span>
+              <h3>{p.name}</h3>
+              {p.note && <p className="proj-note">{p.note}</p>}
+              <span className="proj-foot"><span className="proj-host">{p.host}</span><span className="proj-go">Visit site <Arrow /></span></span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 // ---------------------------------------------------------------- what we build
 const WORK = [
   { kind: 't1', tag: 'Web', title: 'Web platforms', need: 'Web platform', cta: 'Plan a web platform',
@@ -94,11 +125,11 @@ const Thumb = ({ kind }: { kind: string }) => (
     </svg>
   </div>
 );
-export function Work() {
+export function Services() {
   const ref = useRef<HTMLElement>(null);
   useSectionMotion(ref);
   return (
-    <section className="section work" id="work" aria-labelledby="work-title" ref={ref}>
+    <section className="section work" id="services" aria-labelledby="work-title" ref={ref}>
       <Aurora tone="a" />
       <header className="section-head">
         <p className="eyebrow" data-reveal>What we build</p>
@@ -123,18 +154,6 @@ export function Work() {
 }
 
 // ---------------------------------------------------------------- expertise
-/** One beam entering the glass and leaving as the six bands the work is grouped into. */
-const Spectrum = () => (
-  <svg className="spectrum" viewBox="0 0 1200 150" preserveAspectRatio="none" aria-hidden="true">
-    <path className="sp-beam" d="M0 75H300" />
-    <path className="sp-prism" d="M330 36 384 110H276Z" />
-    {palette.stages.map((c, i) => (
-      <path key={c} className="sp-ray" style={{ stroke: c, animationDelay: `${i * .12}s` }}
-        d={`M352 78 C 620 78, 700 ${18 + i * 22.8}, 1200 ${18 + i * 22.8}`} />
-    ))}
-  </svg>
-);
-
 export function Expertise() {
   const ref = useRef<HTMLElement>(null);
   useSectionMotion(ref);
@@ -146,22 +165,22 @@ export function Expertise() {
       <header className="section-head">
         <p className="eyebrow" data-reveal>Expertise</p>
         <Split id="expertise-title" text="Every discipline your product needs." />
-        <p className="section-lede" data-reveal>One team, split into the six steps of the process. Take a single band, or the whole spectrum.</p>
+        <p className="section-lede" data-reveal>One team, linked across the six steps of the process. Take a single step, or the whole chain.</p>
       </header>
-      <div className="spectrum-wrap" data-reveal data-lit><Spectrum /></div>
-      <ul className="bands">
+      <ol className="chain">
         {bands.map(({ st, i, items }) => (
-          <li key={st.id} data-reveal data-lit data-glow style={{ '--c': palette.stages[i] } as CSSProperties}>
-            <p className="band-head"><span className="band-num">{st.num}</span>{st.name}</p>
-            {items.map(c => (
-              <div className="band-item" key={c.id}>
-                <h3>{c.name}</h3>
-                <p>{c.keys.join(' · ')}</p>
-              </div>
-            ))}
+          <li key={st.id} data-reveal data-lit style={{ '--c': palette.stages[i] } as CSSProperties}>
+            <span className="chain-link" aria-hidden="true" />
+            <span className="chain-dot" aria-hidden="true" />
+            <p className="chain-step"><span>{st.num}</span>{st.name}</p>
+            <ul>
+              {items.map(c => (
+                <li key={c.id}><h3>{c.name}</h3><p>{c.keys.join(' · ')}</p></li>
+              ))}
+            </ul>
           </li>
         ))}
-      </ul>
+      </ol>
     </section>
   );
 }
@@ -302,6 +321,7 @@ export function Footer() {
           <h3>Explore</h3>
           <ul>
             <li><a href="#work">Work</a></li>
+            <li><a href="#services">Services</a></li>
             <li><a href="#process" onClick={e => { e.preventDefault(); story.goTo(0); }}>Process</a></li>
             <li><a href="#expertise">Expertise</a></li>
             <li><a href="#contact">Contact</a></li>

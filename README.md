@@ -23,7 +23,7 @@ The build uses a relative base, so `dist/` can be served from any folder or stat
 
 | Concern | Where |
 | --- | --- |
-| Process content and capabilities | `src/data/process.ts` |
+| Process content, capabilities and client projects | `src/data/process.ts` |
 | Story state model (one progress value → every visual) | `src/story/progress.ts` |
 | Scroll and navigation coordination | `src/story/controller.ts` |
 | Pyramid and block geometry | `src/three/geometry.ts` |
@@ -33,7 +33,7 @@ The build uses a relative base, so `dist/` can be served from any folder or stat
 | Camera and sculpture choreography | `src/three/choreography.ts` |
 | Scene assembly and per-frame updates | `src/three/Scene.tsx` |
 | Accessible HTML for the story | `src/components/Story.tsx` |
-| Header, work, expertise, contact, footer | `src/components/Sections.tsx` |
+| Header, work, services, expertise, contact, footer | `src/components/Sections.tsx` |
 
 ### The state model
 
@@ -51,7 +51,8 @@ Clicking a stage label scrolls the page to that stage's rest point, so scrolling
 
 ## Content status
 
-- The "What we build" cards describe services; there are no client case studies yet. Their "Plan a …" links fill in the contact form's "What do you need?" field.
+- Selected work lists live client sites from `PROJECTS`. Each shows a short mark until a logo file is added under `src/assets/work` and set as that project's `logo`; a one-line `note` is shown when filled in.
+- The "What we build" cards describe services. Their "Plan a …" links fill in the contact form's "What do you need?" field.
 - The contact form validates but does not send anything yet.
 
 ## Earlier design exploration
