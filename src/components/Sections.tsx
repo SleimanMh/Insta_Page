@@ -4,7 +4,7 @@ import logoHorizontal from '../assets/brand/logo-horizontal.png';
 import logoStacked from '../assets/brand/logo-stacked.png';
 import wordmark from '../assets/brand/wordmark.png';
 import { Marquee, Split, useSectionMotion } from '../motion/fx';
-import { PALETTES, PaletteName, palette, setPalette, usePaletteName } from '../theme';
+import { palette } from '../theme';
 import { story } from '../story/controller';
 
 const Arrow = () => <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5M5.5 4.5h6v6" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
@@ -13,22 +13,6 @@ const Arrow = () => <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 11
 export const Logo = ({ stacked = false }: { stacked?: boolean }) => (
   <img className={stacked ? 'brand-stacked' : 'brand-logo'} src={stacked ? logoStacked : logoHorizontal} alt="refract" />
 );
-
-// ---------------------------------------------------------------- palette switch
-/** Two swatches in the header: each shows its palette's stage colours and switches the whole site to it. */
-function ThemeSwitch() {
-  const current = usePaletteName();
-  return (
-    <div className="theme-switch" role="group" aria-label="Colour theme">
-      {(Object.keys(PALETTES) as PaletteName[]).map(name => (
-        <button key={name} type="button" aria-pressed={current === name} onClick={() => setPalette(name)} title={`${PALETTES[name].label} colours`}>
-          <span className="ts-dots" aria-hidden="true">{PALETTES[name].stages.slice(0, 4).map(c => <i key={c} style={{ background: c }} />)}</span>
-          <span className="ts-label">{PALETTES[name].label}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------- header
 export function Header() {
@@ -50,10 +34,7 @@ export function Header() {
         <a href="#process" onClick={e => { e.preventDefault(); story.goTo(0); }}>Process</a>
         <a href="#expertise">Expertise</a>
       </nav>
-      <div className="header-actions">
-        <ThemeSwitch />
-        <a className="header-cta" href="#contact">Start a project <Arrow /></a>
-      </div>
+      <a className="header-cta" href="#contact">Start a project <Arrow /></a>
     </header>
   );
 }
@@ -138,7 +119,6 @@ export function Work() {
 
 // ---------------------------------------------------------------- expertise
 export function Expertise() {
-  usePaletteName();
   const ref = useRef<HTMLElement>(null);
   useSectionMotion(ref);
   return (

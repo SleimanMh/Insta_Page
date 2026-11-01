@@ -8,11 +8,11 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { story } from '../story/controller';
 import { clamp, smooth } from '../story/progress';
 import { FOV, activeBlock, beamAt, breakState, cameraPose, panelTransit, paths, planePose, slabPoses } from './choreography';
-import { APEX_Y, BASE_Y, BEAM_Y, PYR_ALT, SLABS, SLAB_DEPTH, TRI, pyramidGeometry, slabGeometry } from './geometry';
-import { TO_LINEAR, backdropMaterial, crystalMaterial, floorMaterial, floorReflectionMaterial, productMaterial, pyramidMaterial, shardMaterial } from './materials';
+import { APEX_Y, BASE_Y, BEAM_Y, PYR_ALT, SLABS, SLAB_DEPTH, TRI, pyramidCorners, pyramidGeometry, slabGeometry } from './geometry';
+import { TO_LINEAR, backdropMaterial, crystalMaterial, edgeGlassMaterial, floorMaterial, floorReflectionMaterial, productMaterial, pyramidMaterial, shardMaterial } from './materials';
 import { Ribbon } from './ribbon';
 import { artFor, makeStageArt } from './stageArt';
-import { auroraHue, onPalette, palette, rgb, stageColor } from '../theme';
+import { auroraHue, palette, rgb, stageColor } from '../theme';
 
 const FLOOR_OFFSET = .004;   // the pyramid and the blocks stand exactly on the base line
 const PYR_TURN = -.12;       // the pyramid's front face, turned a little from the viewer
@@ -75,6 +75,17 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     const pyr = new THREE.Group();
     const pyrBack = new THREE.Mesh(pyrGeo, pyramidMaterial('back')), pyrFront = new THREE.Mesh(pyrGeo, pyramidMaterial('front'));
     pyrBack.renderOrder = 40; pyrFront.renderOrder = 41;
+    // its six edges as polished glass rods, so it reads as a solid object rather than a drawing
+    const edgeMat = edgeGlassMaterial();
+    const corners = pyramidCorners();
+    const edges = [[0, 1], [1, 2], [2, 0], [0, 3], [1, 3], [2, 3]].map(([i, j]) => {
+      const a = corners[i], b = corners[j], len = a.distanceTo(b);
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(.013, .013, len, 14, 1, true), edgeMat);
+      m.position.copy(a).add(b).multiplyScalar(.5);
+      m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+      m.renderOrder = 42; pyr.add(m);
+      return m;
+    });
     pyr.add(pyrBack, pyrFront); root.add(pyr);
     const pyrMirror = new THREE.Mesh(pyrGeo, pyramidMaterial('mirror'));
     pyrMirror.matrixAutoUpdate = false; pyrMirror.matrixWorldAutoUpdate = false; pyrMirror.renderOrder = 5; pyrMirror.frustumCulled = false;
@@ -107,7 +118,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     glints.geometry.setAttribute('aAlpha', new THREE.BufferAttribute(new Float32Array(SLABS + 2), 1));
     glints.frustumCulled = false; glints.renderOrder = 210;
 
-    return { root, geo, slabs, pyr, pyrBack, pyrFront, pyrMirror, art, plane, shards, floor, backdrop, core, glowIn, glowOut, launch, ring, glints };
+    return { root, geo, slabs, pyr, pyrBack, pyrFront, pyrMirror, edges, edgeMat, art, plane, shards, floor, backdrop, core, glowIn, glowOut, launch, ring, glints };
   }, [gl, lowCost]);
 
   useEffect(() => {
@@ -117,8 +128,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
   }, [gl, invalidate]);
 
   // ---------------------------------------------------------------- the palette's studio
-  // pyramid faces, the split light on the floor, backdrop and floor tones, the closing paths;
-  // applied once and again whenever the visitor switches palette
+  // pyramid faces, the split light on the floor, the night sky, backdrop and floor tones, the closing paths
   useEffect(() => {
     const v3 = (hex: string) => new THREE.Vector3(...rgb(hex));
     const apply = () => {
@@ -128,16 +138,13 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       fu.cFront.value = v3(palette.pyramid[0]); fu.cRight.value = v3(palette.pyramid[1]); fu.cLeft.value = v3(palette.pyramid[2]);
       const bu = (world.backdrop.material as THREE.ShaderMaterial).uniforms;
       bu.centre.value = v3(palette.backdrop[0]); bu.edge.value = v3(palette.backdrop[1]); bu.floorCol.value = v3(palette.floor[0]);
-      bu.sky.value = palette.sky ? 1 : 0;
-      if (palette.sky) {
-        bu.auroraA.value = v3(palette.sky.aurora[0]); bu.auroraB.value = v3(palette.sky.aurora[1]); bu.auroraC.value = v3(palette.sky.aurora[2]);
-        bu.skyTop.value = v3(palette.sky.top); bu.skyHorizon.value = v3(palette.sky.horizon);
-      }
+      bu.sky.value = 1;
+      bu.auroraA.value = v3(palette.sky.aurora[0]); bu.auroraB.value = v3(palette.sky.aurora[1]); bu.auroraC.value = v3(palette.sky.aurora[2]);
+      bu.skyTop.value = v3(palette.sky.top); bu.skyHorizon.value = v3(palette.sky.horizon);
       world.launch.uniforms.color.value.set(palette.launch); world.ring.uniforms.color.value.set(palette.ring);
     };
     apply();
-    return onPalette(() => { apply(); world.art.repaint(); invalidate(); });
-  }, [world, invalidate]);
+  }, [world]);
 
   // ---------------------------------------------------------------- post: restrained bloom, then tone mapping
   const post = useMemo(() => {
@@ -166,7 +173,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       world.slabs.forEach(s => [s.back, s.glass, s.mirror].forEach(m => (m.material as THREE.Material).dispose()));
       Object.values(world.art.tex).forEach(t => t.dispose());
       [world.pyrBack, world.pyrFront, world.pyrMirror].forEach(m => (m.material as THREE.Material).dispose());
-      world.pyrBack.geometry.dispose();
+      world.pyrBack.geometry.dispose(); world.edges.forEach(m => m.geometry.dispose()); world.edgeMat.dispose();
       [world.plane, world.shards, world.floor, world.backdrop, world.core, world.glints].forEach(m => { m.geometry.dispose(); (m.material as THREE.Material).dispose(); });
       [world.glowIn, world.glowOut, world.launch, world.ring].forEach(r => r.dispose());
       post.composer.dispose(); post.bloom.dispose();
@@ -245,13 +252,19 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     const whole = br.whole, shake = br.crack * .006;
     world.pyr.visible = world.pyrMirror.visible = whole > .001;
     world.pyr.position.set(Math.sin(s.p * 2900) * shake, Math.sin(s.p * 3700) * shake * .5, 0);
-    world.pyr.rotation.set(0, -pose.yaw + PYR_TURN, Math.sin(s.p * 3100) * shake * 1.2);
+    // it turns slowly on its own, so it reads as a real object from every side
+    const now = performance.now() / 1000, spin = reduce ? 0 : now * .2;
+    if (!reduce && whole > .001 && onScreen.current) busy = true;
+    world.pyr.rotation.set(0, -pose.yaw + PYR_TURN + spin, Math.sin(s.p * 3100) * shake * 1.2);
     world.pyr.scale.setScalar(s.p < .5 ? 1 + (1 - whole) * .1 : .9 + whole * .1);
     for (const m of [world.pyrBack, world.pyrFront, world.pyrMirror]) {
       const pu = (m.material as THREE.ShaderMaterial).uniforms;
       pu.opacity.value = whole; pu.reveal.value = reveal; pu.alt.value = PYR_ALT;
       pu.charge.value = Math.max(br.charge, br.fuse * .55); pu.crack.value = br.crack;
+      pu.time.value = now;
     }
+    const eu = world.edgeMat.uniforms;
+    eu.opacity.value = whole; eu.time.value = now; eu.charge.value = Math.max(br.charge, br.fuse * .55);
 
     // product plane
     // the panel turns to face the camera (about its vertical axis only), wherever the camera is
@@ -298,7 +311,9 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     (world.pyrMirror.material as THREE.ShaderMaterial).uniforms.floorY.value = fy;
     // the pyramid's split light on the floor in front of it
     fu.caustic.value = whole;
-    fu.cGreen.value.set(pose.sculptX - .32, .5); fu.cAmber.value.set(pose.sculptX + .3, .56);
+    // its split light lands in front of it and turns with it
+    const ca = Math.cos(spin * .5), sa = Math.sin(spin * .5);
+    fu.cGreen.value.set(pose.sculptX - .32 * ca + .5 * sa * .4, .5 + .32 * sa * .4); fu.cAmber.value.set(pose.sculptX + .3 * ca - .56 * sa * .4, .56 - .3 * sa * .4);
     // a warm pool of light on the floor under the active block
     const act = world.slabs[activeBlock(s.stage)].g.getWorldPosition(v.a);
     fu.glowAt.value.set(act.x, act.z); fu.glow.value = s.process * (1 - s.tr * 1.5); fu.glowColor.value.set(...sc);

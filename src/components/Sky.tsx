@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { auroraHue, palette, rgb, usePaletteName } from '../theme';
+import { auroraHue, palette, rgb } from '../theme';
 
-// A night sky behind the page for palettes that have one: a fixed field of stars that twinkles, and
+// A night sky behind the page: a fixed field of stars that twinkles, and
 // curtains of aurora that fold and drift across the top of the screen while their hues slowly shift.
 // The aurora is computed at low resolution and stretched, which keeps it soft and cheap; it pauses
 // while the story's own 3D sky fills the screen, and holds still for visitors who prefer reduced motion.
@@ -43,7 +43,7 @@ function SkyLayers() {
 
   useEffect(() => {
     const cv = auroraRef.current;
-    if (!cv || !palette.sky) return;
+    if (!cv) return;
     cv.width = AW; cv.height = AH;
     const g = cv.getContext('2d')!, img = g.createImageData(AW, AH), px = img.data;
     const [A, B, C] = palette.sky.aurora.map(rgb);
@@ -90,7 +90,7 @@ function SkyLayers() {
   }, []);
 
   return (
-    <div className="sky" aria-hidden="true" style={{ background: `radial-gradient(120% 70% at 50% 0%, ${palette.sky!.horizon}, ${palette.sky!.top} 75%)` }}>
+    <div className="sky" aria-hidden="true" style={{ background: `radial-gradient(120% 70% at 50% 0%, ${palette.sky.horizon}, ${palette.sky.top} 75%)` }}>
       <canvas className="sky-stars" ref={starsA} />
       <canvas className="sky-stars is-b" ref={starsB} />
       <canvas className="sky-aurora" ref={auroraRef} />
@@ -98,8 +98,4 @@ function SkyLayers() {
   );
 }
 
-/** The sky appears only with palettes that have one, and rebuilds when the palette changes. */
-export function Sky() {
-  const name = usePaletteName();
-  return palette.sky ? <SkyLayers key={name} /> : null;
-}
+export const Sky = SkyLayers;

@@ -76,6 +76,12 @@ export const PYR_ALT = PYR_EDGE * Math.sqrt(3) / 2;   // height of each face, fo
  * Flat-shaded tetrahedron. Each face carries barycentric coordinates (the third one at the apex)
  * and its index: 0 front, 1 right, 2 left, 3 base.
  */
+/** The pyramid's four corners: front left, front right, back, apex. */
+export function pyramidCorners(): THREE.Vector3[] {
+  const e = PYR_EDGE, r = e / (2 * Math.sqrt(3));
+  return [new THREE.Vector3(-e / 2, BASE_Y, r), new THREE.Vector3(e / 2, BASE_Y, r), new THREE.Vector3(0, BASE_Y, -2 * r), new THREE.Vector3(0, BASE_Y + PYR_H, 0)];
+}
+
 export function pyramidGeometry() {
   const e = PYR_EDGE, r = e / (2 * Math.sqrt(3));
   const A = [-e / 2, BASE_Y, r], B = [e / 2, BASE_Y, r], C = [0, BASE_Y, -2 * r], D = [0, BASE_Y + PYR_H, 0];

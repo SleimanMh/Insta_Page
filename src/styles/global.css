@@ -1,24 +1,24 @@
-/* Refract · Parallax direction
-   Dark studio, ivory type, champagne glass, and the spectrum a prism throws. Single dark theme by design.
-   The colours below are the "spectrum" palette; src/theme.ts writes the active palette over them. */
-@property --stage { syntax: '<color>'; inherits: true; initial-value: #E8C48C; }
+/* Refract · Aurora
+   Midnight blue, starlight type, teal glass, and the colours of the northern lights. Single dark theme by design.
+   The colours below match src/theme.ts, which the 3D scene and panel art read too. */
+@property --stage { syntax: '<color>'; inherits: true; initial-value: #6FB7FF; }
 :root {
   color-scheme: dark;
-  --bg: #0B0B0F;
-  --bg-2: #15151B;
-  --ink: #F1ECE3;          /* warm ivory */
-  --ink-2: #CBC5BC;        /* softer ivory */
-  --ink-3: #9A94A3;        /* supporting text */
-  --ink-4: #66616D;        /* hints */
+  --bg: #090C18;
+  --bg-2: #111631;
+  --ink: #EDF0FA;          /* starlight */
+  --ink-2: #C3C8DE;
+  --ink-3: #8D94B5;        /* supporting text */
+  --ink-4: #5A6080;        /* hints */
   --line: color-mix(in srgb, var(--ink) 12%, transparent);
   --line-2: color-mix(in srgb, var(--ink) 24%, transparent);
-  --gold: #E8C48C;         /* champagne: buttons, rules, the main accent */
-  --gold-2: #B8956A;
-  --lav: #8C7BFF;          /* violet */
-  --aqua: #47E0C0;
-  --coral: #FF7E6B;
+  --gold: #36E2C8;         /* aurora teal: buttons, rules, the main accent */
+  --gold-2: #2AA898;
+  --lav: #9B7CFF;          /* violet */
+  --aqua: #6FB7FF;
+  --coral: #FF8AD8;
   /* one colour per process stage, Discover … Evolve */
-  --c1: #FF7E6B; --c2: #E8C48C; --c3: #47E0C0; --c4: #5BB8FF; --c5: #8C7BFF; --c6: #F27BD4;
+  --c1: #6FB7FF; --c2: #36E2C8; --c3: #7BE8B0; --c4: #9B7CFF; --c5: #FF8AD8; --c6: #FFB38A;
   --stage: var(--c1);      /* the current stage's colour, set by the story */
   --spectrum: linear-gradient(90deg, var(--gold), var(--coral) 30%, var(--lav) 62%, var(--aqua));
   --f: "Albert Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -451,23 +451,6 @@ html[data-layout="stack"] .anchor { display: none; }
 .footer-word { background: linear-gradient(100deg, color-mix(in srgb, var(--ink) 10%, transparent) 15%, var(--coral) 35%, var(--lav) 48%, var(--aqua) 60%, color-mix(in srgb, var(--ink) 10%, transparent) 75%) 0 0 / 250% 100%; opacity: .75; }
 .stage-nav button small { color: var(--c, var(--ink-3)); }
 
-/* ---------------------------------------------------------------- palette switch */
-.header-actions { justify-self: end; display: flex; align-items: center; gap: clamp(14px, 2vw, 28px); }
-.theme-switch { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--line-2); border-radius: 999px; background: color-mix(in srgb, var(--bg) 60%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
-.theme-switch button { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 9px; border: 0; border-radius: 999px; background: none; color: var(--ink-3); font-size: 13px; cursor: pointer; transition: background .3s, color .3s; }
-.theme-switch button:hover { color: var(--ink); }
-.theme-switch button[aria-pressed="true"] { background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink); }
-.ts-dots { display: inline-flex; }
-.ts-dots i { width: 9px; height: 9px; border-radius: 50%; margin-left: -3px; box-shadow: 0 0 0 1.5px var(--bg); }
-.ts-dots i:first-child { margin-left: 0; }
-@media (max-width: 640px) {
-  .ts-label { display: none; }
-  .theme-switch button { padding: 7px 9px; }
-  .header-cta { font-size: 14px; }
-}
-/* while the palette changes, colours ease across instead of jumping */
-html.palette-shift, html.palette-shift *, html.palette-shift *::before, html.palette-shift *::after { transition: background-color .6s ease, color .6s ease, border-color .6s ease, fill .6s ease, stroke .6s ease !important; }
-
 /* ---------------------------------------------------------------- the night sky (palettes that have one) */
 .sky { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
 .sky-stars { position: absolute; inset: 0; width: 100%; height: 100%; animation: twinkle 5.5s ease-in-out infinite alternate; }
@@ -475,4 +458,3 @@ html.palette-shift, html.palette-shift *, html.palette-shift *::before, html.pal
 .sky-aurora { position: absolute; left: -4%; top: -6%; width: 108%; height: 78%; opacity: .42; mix-blend-mode: screen; filter: blur(2px) saturate(1.15); }
 @keyframes twinkle { from { opacity: .95; } to { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .sky-stars { animation: none; } }
-html[data-palette="aurora"] body { background: var(--bg); }

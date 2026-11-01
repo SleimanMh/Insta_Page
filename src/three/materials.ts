@@ -191,14 +191,14 @@ export function pyramidMaterial(mode: 'back' | 'front' | 'mirror') {
   return new THREE.ShaderMaterial({
     uniforms: {
       opacity: { value: 1 }, reveal: { value: 0 }, charge: { value: 0 }, crack: { value: 0 }, floorY: { value: 0 },
-      alt: { value: 1 }, mode: { value: mode === 'back' ? 0 : mode === 'front' ? 1 : 2 },
+      alt: { value: 1 }, mode: { value: mode === 'back' ? 0 : mode === 'front' ? 1 : 2 }, time: { value: 0 },
       tints: { value: [new THREE.Vector3(.95, .3, .75), new THREE.Vector3(1, .52, .1), new THREE.Vector3(.12, .95, .55), new THREE.Vector3(1, .8, .35)] },
     },
     vertexShader: /* glsl */`
       attribute vec3 aBary; attribute float aFace;
-      varying vec3 vB; varying float vF; varying vec3 vWN; varying vec3 vWP;
+      varying vec3 vB; varying float vF; varying vec3 vWN; varying vec3 vWP; varying vec3 vLP;
       void main(){
-        vB = aBary; vF = aFace;
+        vB = aBary; vF = aFace; vLP = position;
         vec4 wp = modelMatrix * vec4(position, 1.0);
         vWP = wp.xyz; vWN = normalize(mat3(modelMatrix) * normal);
         gl_Position = projectionMatrix * viewMatrix * wp;
@@ -210,8 +210,21 @@ export function pyramidMaterial(mode: 'back' | 'front' | 'mirror') {
       ${RAYS}
       ${FRACTURE}
       uniform float opacity; uniform float reveal; uniform float charge; uniform float crack; uniform float floorY;
-      uniform float alt; uniform float mode; uniform vec3 tints[4];
-      varying vec3 vB; varying float vF; varying vec3 vWN; varying vec3 vWP;
+      uniform float alt; uniform float mode; uniform vec3 tints[4]; uniform float time;
+      varying vec3 vB; varying float vF; varying vec3 vWN; varying vec3 vWP; varying vec3 vLP;
+
+      // the light inside drifts: a smooth field through the volume, so colour flows across face boundaries
+      float field(vec3 p){
+        return sin(p.x * 3.4 + time * .55) + sin(p.y * 4.1 - time * .42 + p.z * 2.7) + sin((p.x + p.z) * 2.9 + time * .33)
+             + .5 * sin((p.y - p.x) * 6.3 - time * .7);
+      }
+      // a smooth cycle through the four colours the pyramid splits light into
+      vec3 ramp(float h){
+        h = fract(h) * 4.0; float i = floor(h), f = smoothstep(0.0, 1.0, h - i);
+        vec3 a = i < .5 ? tints[0] : i < 1.5 ? tints[1] : i < 2.5 ? tints[2] : tints[3];
+        vec3 b = i < .5 ? tints[1] : i < 1.5 ? tints[2] : i < 2.5 ? tints[3] : tints[0];
+        return mix(a, b, f);
+      }
 
       void main(){
         vec3 N = normalize(vWN); if (!gl_FrontFacing) N = -N;
@@ -230,8 +243,11 @@ export function pyramidMaterial(mode: 'back' | 'front' | 'mirror') {
         vec3 fringe = edgeId < .5 ? vec3(1.0, .35, .75) : edgeId < 1.5 ? vec3(1.0, .78, .35) : vec3(.85, .9, 1.0);
         fringe = mix(fringe, hue(fract(d * 9.0 + dot(V, N) * .5 + vF * .2)), .25);
 
-        // the colour each face carries once the light has split
-        vec3 tint = vF < .5 ? tints[0] : vF < 1.5 ? tints[1] : vF < 2.5 ? tints[2] : tints[3];
+        // the colour each face carries once the light has split, flowing slowly through the glass
+        float fl = field(vLP * 1.15);
+        vec3 tint = ramp(fl * .09 + vLP.y * .35 - time * .045 + vF * .25);
+        // thin bright filaments of light, like caustics drifting through water
+        float caustic = pow(.5 + .5 * sin(fl * 2.4), 7.0) + .6 * pow(.5 + .5 * sin(field(vLP * 2.1 + 3.0) * 1.9), 9.0);
         float toBase = pow(1.0 - vB.z, 1.6);                         // brightest toward the floor
         float lateral = .45 + .55 * smoothstep(.0, .8, abs(vF - 1.0) < .5 ? vB.x : vB.y);
         float band = smoothstep(.0, .25, vB.x) * smoothstep(.0, .25, vB.y);
@@ -239,15 +255,19 @@ export function pyramidMaterial(mode: 'back' | 'front' | 'mirror') {
         vec3 col; float a;
         if (mode < .5) {
           // the inside of the far faces: saturated split light with sharp boundaries at the inner edges
-          float glow = toBase * lateral * band;
-          col = tint * glow * 2.1 + mix(vec3(1.0), tint, .5) * inner * .35 + vec3(.06, .06, .07);
-          a = .22 + glow * .7 + inner * .25;
+          float glow = toBase * lateral * band * (.75 + .25 * sin(fl * .9));
+          col = tint * glow * 2.5 + mix(vec3(1.0), tint, .45) * caustic * band * .6 + mix(vec3(1.0), tint, .5) * inner * .35 + vec3(.05, .06, .09);
+          a = .22 + glow * .65 + caustic * band * .25 + inner * .25;
         } else {
           // the near faces: clear glass, studio reflections, bright bevelled edges with spectral fringes
+          // the near faces: clear glass. Studio reflections, a soft sheen that slides across as the pyramid
+          // turns, bright bevelled edges with spectral fringes, and the inner light seen through the surface
           vec3 refl = studio(reflect(-V, N));
-          col = refl * F * 1.3 + vec3(.98, .95, .9) * (edge * .5 + bevel * .22) + fringe * fringeBand * .45
-              + vec3(.95) * inner * .25 + tint * toBase * .12 + vec3(.04, .04, .045);
-          a = .08 + F * .55 + edge * .5 + bevel * .3 + fringeBand * .35 + inner * .2;
+          vec3 vh = vec3(V.x, 0.0, V.z), nh = vec3(N.x, 0.0, N.z);   // horizontal directions; the base has none, so guard the length
+          float sheen = pow(max(0.0, 1.0 - abs(dot(vh / max(length(vh), 1e-4), nh / max(length(nh), 1e-4)) - .55) * 3.0), 3.0) * step(.05, length(nh));
+          col = refl * F * 1.45 + vec3(.9, .95, 1.0) * sheen * .12 + vec3(.98, .97, 1.0) * (edge * .55 + bevel * .25) + fringe * fringeBand * .4
+              + vec3(.95) * inner * .3 + tint * (toBase * .14 + caustic * .08) + vec3(.03, .035, .05);
+          a = .1 + F * .6 + sheen * .06 + edge * .5 + bevel * .32 + fringeBand * .3 + inner * .22 + caustic * .04;
         }
 
         // face-local 2D coordinates (edge 1, centroid at the origin) for the rays and the fractures
@@ -443,5 +463,31 @@ export function productMaterial() {
         gl_FragColor = vec4(toLin(c.rgb), c.a);
       }`,
     side: THREE.DoubleSide, transparent: true, depthWrite: false,
+  });
+}
+
+/**
+ * The pyramid's edges as polished glass rods: a bright core where they face the camera, a cool rim,
+ * a faint spectral fringe and a highlight that slides along them as the pyramid turns.
+ */
+export function edgeGlassMaterial() {
+  return new THREE.ShaderMaterial({
+    uniforms: { opacity: { value: 1 }, time: { value: 0 }, charge: { value: 0 } },
+    vertexShader: 'varying vec3 vN; varying vec3 vWP; varying float vAlong; void main(){ vAlong = uv.y; vec4 wp = modelMatrix * vec4(position, 1.0); vWP = wp.xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * wp; }',
+    fragmentShader: /* glsl */`
+      ${TO_LINEAR}
+      ${HUE}
+      uniform float opacity; uniform float time; uniform float charge;
+      varying vec3 vN; varying vec3 vWP; varying float vAlong;
+      void main(){
+        vec3 N = normalize(vN), V = normalize(cameraPosition - vWP);
+        float f = abs(dot(N, V));
+        float core = pow(f, 6.0), rim = pow(1.0 - f, 2.5);
+        float glint = exp(-pow((fract(vAlong * .8 - time * .12) - .5) / .06, 2.0));
+        vec3 col = vec3(.95, .97, 1.0) * (core * .8 + glint * .9) + hue(fract(vAlong * .6 + rim * .5 + time * .03)) * rim * .35 + vec3(.6, .7, .9) * rim * .4;
+        col *= 1.0 + charge * 1.5;
+        gl_FragColor = vec4(toLin(col), (.25 + core * .55 + rim * .35 + glint * .4) * opacity);
+      }`,
+    transparent: true, depthWrite: false,
   });
 }

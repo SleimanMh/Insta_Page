@@ -1,10 +1,6 @@
-import { useSyncExternalStore } from 'react';
-
-// Colour for the whole site, page and 3D scene alike, from one place. Each palette names its page
-// tokens, a colour per process stage (the "spectrum" the prism throws), and the tints the glass,
-// floor and panel artwork use. Visitors switch palettes from the header; their choice is remembered.
-
-export type PaletteName = 'spectrum' | 'aurora';
+// Colour for the whole site, page and 3D scene alike, from one place: the page tokens, a colour per
+// process stage, and the tints the glass, floor, sky and panel artwork use. One theme: Aurora,
+// midnight blue with teal, violet and pink, northern lights through glass.
 
 export interface Palette {
   /** page tokens, written onto :root as CSS custom properties */
@@ -19,67 +15,24 @@ export interface Palette {
   /** launch path and the ring that closes the story */
   launch: string;
   ring: string;
-  /** a night sky behind everything: aurora curtain colours (low, middle, crown) and the sky's top and horizon */
-  sky?: { aurora: [string, string, string]; top: string; horizon: string };
+  /** the night sky behind everything: aurora curtain colours (low, middle, crown) and the sky's top and horizon */
+  sky: { aurora: [string, string, string]; top: string; horizon: string };
 }
 
-export const PALETTES: Record<PaletteName, Palette & { label: string }> = {
-  // Graphite and champagne, with the colours a prism actually throws.
-  spectrum: {
-    label: 'Spectrum',
-    css: {
-      '--bg': '#0B0B0F', '--bg-2': '#15151B',
-      '--ink': '#F1ECE3', '--ink-2': '#CBC5BC', '--ink-3': '#9A94A3', '--ink-4': '#66616D',
-      '--gold': '#E8C48C', '--gold-2': '#B8956A', '--lav': '#8C7BFF', '--aqua': '#47E0C0', '--coral': '#FF7E6B',
-    },
-    stages: ['#FF7E6B', '#E8C48C', '#47E0C0', '#5BB8FF', '#8C7BFF', '#F27BD4'],
-    pyramid: ['#F27BD4', '#FF8A5B', '#47E0C0', '#E8C48C'],
-    backdrop: ['#302E36', '#0F0F14'],
-    floor: ['#0D0D12', '#1A1920'],
-    launch: '#E8C48C',
-    ring: '#8C7BFF',
+export const palette: Palette = {
+  css: {
+    '--bg': '#090C18', '--bg-2': '#111631',
+    '--ink': '#EDF0FA', '--ink-2': '#C3C8DE', '--ink-3': '#8D94B5', '--ink-4': '#5A6080',
+    '--gold': '#36E2C8', '--gold-2': '#2AA898', '--lav': '#9B7CFF', '--aqua': '#6FB7FF', '--coral': '#FF8AD8',
   },
-  // Midnight blue with teal, violet and pink: northern lights through glass.
-  aurora: {
-    label: 'Aurora',
-    css: {
-      '--bg': '#090C18', '--bg-2': '#111631',
-      '--ink': '#EDF0FA', '--ink-2': '#C3C8DE', '--ink-3': '#8D94B5', '--ink-4': '#5A6080',
-      '--gold': '#36E2C8', '--gold-2': '#2AA898', '--lav': '#9B7CFF', '--aqua': '#6FB7FF', '--coral': '#FF8AD8',
-    },
-    stages: ['#6FB7FF', '#36E2C8', '#7BE8B0', '#9B7CFF', '#FF8AD8', '#FFB38A'],
-    pyramid: ['#FF8AD8', '#9B7CFF', '#36E2C8', '#6FB7FF'],
-    backdrop: ['#1A2142', '#080B17'],
-    floor: ['#080B16', '#121935'],
-    launch: '#36E2C8',
-    ring: '#9B7CFF',
-    sky: { aurora: ['#3CF0B4', '#36C8E2', '#B46CFF'], top: '#04061A', horizon: '#121A3A' },
-  },
+  stages: ['#6FB7FF', '#36E2C8', '#7BE8B0', '#9B7CFF', '#FF8AD8', '#FFB38A'],
+  pyramid: ['#FF8AD8', '#9B7CFF', '#36E2C8', '#6FB7FF'],
+  backdrop: ['#1A2142', '#080B17'],
+  floor: ['#080B16', '#121935'],
+  launch: '#36E2C8',
+  ring: '#9B7CFF',
+  sky: { aurora: ['#3CF0B4', '#36C8E2', '#B46CFF'], top: '#04061A', horizon: '#121A3A' },
 };
-
-const KEY = 'refract-palette';
-const saved = (() => { try { return localStorage.getItem(KEY); } catch { return null; } })();
-let active: PaletteName = saved === 'spectrum' ? 'spectrum' : 'aurora';
-/** the palette in use; a live binding, so readers always see the current one */
-export let palette = PALETTES[active];
-
-const listeners = new Set<() => void>();
-export const onPalette = (fn: () => void) => { listeners.add(fn); return () => { listeners.delete(fn); }; };
-export const paletteName = () => active;
-/** React components that colour themselves from the palette re-render when it changes */
-export const usePaletteName = () => useSyncExternalStore(onPalette, paletteName);
-
-export function setPalette(name: PaletteName) {
-  if (name === active) return;
-  active = name; palette = PALETTES[name];
-  try { localStorage.setItem(KEY, name); } catch { /* a private window keeps the default */ }
-  // ease the page from one palette to the other
-  const root = document.documentElement;
-  root.classList.add('palette-shift');
-  applyPalette();
-  listeners.forEach(fn => fn());
-  window.setTimeout(() => root.classList.remove('palette-shift'), 700);
-}
 
 /**
  * How far the aurora's hues have drifted at a given time, in radians: a slow swing through greens,
@@ -106,5 +59,4 @@ export function applyPalette() {
   Object.entries(palette.css).forEach(([k, v]) => s.setProperty(k, v));
   palette.stages.forEach((c, i) => s.setProperty(`--c${i + 1}`, c));
   s.setProperty('--stage', palette.stages[0]);
-  document.documentElement.dataset.palette = active;
 }
