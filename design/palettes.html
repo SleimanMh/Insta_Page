@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Refract Palette Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300;400;500&display=swap">
+<style>
+/* One dark studio page; each option re-skins the same miniature of the site with its own tokens. */
+:root {
+  color-scheme: dark;
+  --page: #0A0A0B;
+  --ink: #EEE7DB;
+  --ink-2: #A8A196;
+  --line: rgba(238, 231, 219, .12);
+  --accent: #D6B88A;
+  --f: "Albert Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--f); font-weight: 300; line-height: 1.55; }
+h1, h2, h3, p { margin: 0; }
+h1, h2, h3 { font-weight: 300; letter-spacing: -.02em; text-wrap: balance; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 56px 24px 80px; }
+.intro { display: grid; gap: 14px; max-width: 64ch; margin-bottom: 44px; }
+.intro .kicker { font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--accent); font-weight: 400; }
+.intro h1 { font-size: clamp(32px, 4.4vw, 54px); line-height: 1.05; }
+.intro p { color: var(--ink-2); font-size: 17px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- one option ---- */
+.opt { --bg: #0C0C0E; --surface: #141417; --text: #EEE7DB; --muted: #8E887F; --a1: #D6B88A; --a2: #B5ACD8; --a3: #D6B88A; --a4: #D6B88A;
+  border: 1px solid var(--line); border-radius: 22px; overflow: hidden; background: var(--bg); color: var(--text); display: grid; }
+.opt[data-p="spectrum"] { --bg: #0B0B0F; --surface: #15151B; --text: #F1ECE3; --muted: #9A94A3; --a1: #E8C48C; --a2: #8C7BFF; --a3: #47E0C0; --a4: #FF7E6B; }
+.opt[data-p="aurora"]   { --bg: #090C18; --surface: #111631; --text: #EDF0FA; --muted: #8D94B5; --a1: #36E2C8; --a2: #9B7CFF; --a3: #FF8AD8; --a4: #6FB7FF; }
+.opt[data-p="ember"]    { --bg: #110C0A; --surface: #1C1411; --text: #F6EBDD; --muted: #A99686; --a1: #FFB547; --a2: #FF6A3D; --a3: #F2547E; --a4: #FFD9A0; }
+.opt[data-p="current"]  { --bg: #0C0C0E; --surface: #141417; --text: #EEE7DB; --muted: #8E887F; --a1: #D6B88A; --a2: #B5ACD8; --a3: #9ED6BE; --a4: #E9A6A0; }
+
+/* the miniature: header, glowing pyramid, headline, button, stage chips, panel card */
+.mock { position: relative; padding: 18px 22px 22px; min-height: 360px; overflow: hidden;
+  background:
+    radial-gradient(42% 46% at 70% 44%, color-mix(in srgb, var(--a2) 22%, transparent), transparent 70%),
+    radial-gradient(36% 40% at 82% 74%, color-mix(in srgb, var(--a1) 20%, transparent), transparent 70%),
+    radial-gradient(60% 50% at 10% 0%, color-mix(in srgb, var(--a3) 10%, transparent), transparent 70%), var(--bg); }
+.m-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); }
+.m-logo { font-size: 19px; font-weight: 500; letter-spacing: -.02em; color: var(--text); }
+.m-logo b { font-weight: 500; color: var(--a1); }
+.m-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .9fr); gap: 16px; align-items: center; margin-top: 26px; }
+.m-copy h2 { font-size: clamp(24px, 2.6vw, 32px); line-height: 1.05; }
+.m-copy h2 span { background: linear-gradient(90deg, var(--a1), var(--a2) 55%, var(--a3)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.m-copy p { margin-top: 10px; font-size: 13px; color: var(--muted); max-width: 30ch; }
+.m-btn { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--a1); font-size: 13px; color: var(--text);
+  background: color-mix(in srgb, var(--a1) 12%, transparent); box-shadow: 0 8px 30px -10px color-mix(in srgb, var(--a1) 60%, transparent); }
+.prism { position: relative; aspect-ratio: 1 / .9; }
+.prism i { position: absolute; inset: 6% 8% 12%; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.prism .p-glass { background: linear-gradient(160deg, rgba(255,255,255,.1), rgba(255,255,255,.02)); }
+.prism .p-left { background: linear-gradient(200deg, transparent 30%, color-mix(in srgb, var(--a3) 75%, transparent) 75%); clip-path: polygon(50% 0, 50% 100%, 0 100%); }
+.prism .p-right { background: linear-gradient(160deg, transparent 30%, color-mix(in srgb, var(--a1) 85%, transparent) 78%); clip-path: polygon(50% 0, 100% 100%, 50% 100%); }
+.prism .p-edge { background: linear-gradient(90deg, var(--a2), var(--a1)); clip-path: polygon(50% 0, 100% 100%, 0 100%, 2.4% 97.6%, 97.6% 97.6%, 50% 3.6%, 2.4% 97.6%, 0 100%); }
+.prism .p-beam { position: absolute; left: -40%; right: -10%; top: 58%; height: 2px; background: linear-gradient(90deg, transparent, #fff 40%, #fff 60%, transparent); box-shadow: 0 0 14px #fff; transform: rotate(-6deg); }
+.prism .p-floor { position: absolute; left: 0; right: 0; bottom: 0; height: 22%; background: radial-gradient(50% 60% at 35% 0, color-mix(in srgb, var(--a3) 45%, transparent), transparent 70%), radial-gradient(50% 60% at 70% 0, color-mix(in srgb, var(--a1) 45%, transparent), transparent 70%); filter: blur(6px); }
+.m-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 20px; }
+.m-chips span { padding: 5px 11px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--text) 18%, transparent); font-size: 12px; color: var(--muted); }
+.m-chips span.on { border-color: var(--a1); color: var(--text); background: color-mix(in srgb, var(--a1) 14%, transparent); }
+.m-card { margin-top: 18px; padding: 14px 16px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--a1) 60%, transparent); background: var(--surface); display: grid; gap: 8px; }
+.m-card .lab { font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+.m-card .ttl { font-size: 18px; line-height: 1.1; }
+.m-card .ttl em { font-style: normal; color: var(--a1); }
+.m-flow { display: flex; align-items: center; gap: 6px; }
+.m-flow b { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.m-flow s { flex: 1; height: 1px; background: color-mix(in srgb, var(--text) 30%, transparent); }
+.m-row { display: flex; justify-content: space-between; font-size: 12px; padding-top: 7px; border-top: 1px solid color-mix(in srgb, var(--text) 12%, transparent); }
+
+/* the description under each miniature */
+.info { padding: 20px 22px 24px; border-top: 1px solid var(--line); background: #0E0E10; color: var(--ink); display: grid; gap: 14px; }
+.info-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.info h3 { font-size: 24px; }
+.info .tag { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); font-weight: 400; }
+.info p { color: var(--ink-2); font-size: 15px; max-width: 62ch; }
+.sw { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 520px) { .sw { grid-template-columns: repeat(3, minmax(0, 1fr)); } .m-body { grid-template-columns: minmax(0, 1fr); } }
+.sw div { display: grid; gap: 4px; font-size: 11px; color: var(--ink-2); }
+.sw i { display: block; height: 38px; border-radius: 10px; border: 1px solid var(--line); }
+.sw code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--ink); }
+.uses { display: grid; gap: 6px; padding: 0; margin: 0; list-style: none; font-size: 14px; color: var(--ink-2); }
+.uses li::before { content: "→ "; color: var(--accent); }
+.foot { margin-top: 40px; color: var(--ink-2); font-size: 15px; max-width: 70ch; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="intro">
+    <p class="kicker">Refract · colour direction</p>
+    <h1>Four palettes for the site, side by side</h1>
+    <p>Each card re-skins the same miniature of the site: header, the glowing pyramid, a headline, the main button, the stage chips and the panel card. Pick the one that feels right, or mix (for example, one option's background with another's accents). The 3D glass, beam glow, floor light and panel art follow whichever you choose.</p>
+  </header>
+
+  <section class="grid">
+    <!-- 1 -->
+    <article class="opt" data-p="spectrum">
+      <div class="mock">
+        <div class="m-head"><span class="m-logo">refract</span><span>Work · Process · Expertise</span></div>
+        <div class="m-body">
+          <div class="m-copy">
+            <h2>One idea. <span>Extraordinary possibilities.</span></h2>
+            <p>Strategy, design and engineering in one product.</p>
+            <span class="m-btn">Explore the process ↓</span>
+          </div>
+          <div class="prism"><span class="p-floor"></span><i class="p-glass"></i><i class="p-left"></i><i class="p-right"></i><i class="p-edge"></i><span class="p-beam"></span></div>
+        </div>
+        <div class="m-chips"><span>01 Discover</span><span class="on">02 Design</span><span>03 Build</span><span>04 Connect</span></div>
+        <div class="m-card"><span class="lab">02 / Design</span><span class="ttl">From vision <em>to interface.</em></span>
+          <span class="m-flow"><b style="background:var(--a1)"></b><s></s><b style="background:var(--a2)"></b><s></s><b style="background:var(--a3)"></b><s></s><b style="background:var(--a4)"></b></span>
+          <span class="m-row"><span>User journeys</span><span>→</span></span></div>
+      </div>
+      <div class="info">
+        <div class="info-head"><h3>1 · Prism spectrum</h3><span class="tag">Recommended</span></div>
+        <p>Keeps today's graphite and champagne, and adds the colours a prism actually throws: violet, aqua and coral. It's the most on-brand option for a studio called Refract. Colour shows up as light (in the beam, the active block, gradient headline words), so the site stays premium.</p>
+        <div class="sw">
+          <div><i style="background:#0B0B0F"></i><code>#0B0B0F</code>Background</div>
+          <div><i style="background:#F1ECE3"></i><code>#F1ECE3</code>Text</div>
+          <div><i style="background:#E8C48C"></i><code>#E8C48C</code>Champagne</div>
+          <div><i style="background:#8C7BFF"></i><code>#8C7BFF</code>Violet</div>
+          <div><i style="background:#47E0C0"></i><code>#47E0C0</code>Aqua</div>
+          <div><i style="background:#FF7E6B"></i><code>#FF7E6B</code>Coral</div>
+        </div>
+        <ul class="uses"><li>Each stage gets its own spectrum colour on its block, chip and panel accents</li><li>Headlines can end in a spectrum gradient</li><li>Buttons stay champagne</li></ul>
+      </div>
+    </article>
+
+    <!-- 2 -->
+    <article class="opt" data-p="aurora">
+      <div class="mock">
+        <div class="m-head"><span class="m-logo">refract</span><span>Work · Process · Expertise</span></div>
+        <div class="m-body">
+          <div class="m-copy">
+            <h2>One idea. <span>Extraordinary possibilities.</span></h2>
+            <p>Strategy, design and engineering in one product.</p>
+            <span class="m-btn">Explore the process ↓</span>
+          </div>
+          <div class="prism"><span class="p-floor"></span><i class="p-glass"></i><i class="p-left"></i><i class="p-right"></i><i class="p-edge"></i><span class="p-beam"></span></div>
+        </div>
+        <div class="m-chips"><span>01 Discover</span><span class="on">02 Design</span><span>03 Build</span><span>04 Connect</span></div>
+        <div class="m-card"><span class="lab">02 / Design</span><span class="ttl">From vision <em>to interface.</em></span>
+          <span class="m-flow"><b style="background:var(--a1)"></b><s></s><b style="background:var(--a2)"></b><s></s><b style="background:var(--a3)"></b><s></s><b style="background:var(--a4)"></b></span>
+          <span class="m-row"><span>User journeys</span><span>→</span></span></div>
+      </div>
+      <div class="info">
+        <div class="info-head"><h3>2 · Aurora</h3><span class="tag">Cool · tech</span></div>
+        <p>A deep midnight-blue base with teal, violet and soft pink, like northern lights through glass. It feels fresh, digital and confident, and suits a studio that leads with software and AI. It's the biggest change in mood from today.</p>
+        <div class="sw">
+          <div><i style="background:#090C18"></i><code>#090C18</code>Background</div>
+          <div><i style="background:#EDF0FA"></i><code>#EDF0FA</code>Text</div>
+          <div><i style="background:#36E2C8"></i><code>#36E2C8</code>Teal</div>
+          <div><i style="background:#9B7CFF"></i><code>#9B7CFF</code>Violet</div>
+          <div><i style="background:#FF8AD8"></i><code>#FF8AD8</code>Pink</div>
+          <div><i style="background:#6FB7FF"></i><code>#6FB7FF</code>Sky</div>
+        </div>
+        <ul class="uses"><li>Teal replaces champagne for buttons and the active block</li><li>The background moves from graphite to midnight blue</li><li>The pyramid glows teal and violet</li></ul>
+      </div>
+    </article>
+
+    <!-- 3 -->
+    <article class="opt" data-p="ember">
+      <div class="mock">
+        <div class="m-head"><span class="m-logo">refract</span><span>Work · Process · Expertise</span></div>
+        <div class="m-body">
+          <div class="m-copy">
+            <h2>One idea. <span>Extraordinary possibilities.</span></h2>
+            <p>Strategy, design and engineering in one product.</p>
+            <span class="m-btn">Explore the process ↓</span>
+          </div>
+          <div class="prism"><span class="p-floor"></span><i class="p-glass"></i><i class="p-left"></i><i class="p-right"></i><i class="p-edge"></i><span class="p-beam"></span></div>
+        </div>
+        <div class="m-chips"><span>01 Discover</span><span class="on">02 Design</span><span>03 Build</span><span>04 Connect</span></div>
+        <div class="m-card"><span class="lab">02 / Design</span><span class="ttl">From vision <em>to interface.</em></span>
+          <span class="m-flow"><b style="background:var(--a1)"></b><s></s><b style="background:var(--a2)"></b><s></s><b style="background:var(--a3)"></b><s></s><b style="background:var(--a4)"></b></span>
+          <span class="m-row"><span>User journeys</span><span>→</span></span></div>
+      </div>
+      <div class="info">
+        <div class="info-head"><h3>3 · Ember</h3><span class="tag">Warm · energetic</span></div>
+        <p>A warm espresso base with amber, tangerine and rose, like a sunset caught in glass. It's the warmest and most human option, inviting and bold, and still feels luxurious against the dark. It suits a studio that wants to feel like a close partner.</p>
+        <div class="sw">
+          <div><i style="background:#110C0A"></i><code>#110C0A</code>Background</div>
+          <div><i style="background:#F6EBDD"></i><code>#F6EBDD</code>Text</div>
+          <div><i style="background:#FFB547"></i><code>#FFB547</code>Amber</div>
+          <div><i style="background:#FF6A3D"></i><code>#FF6A3D</code>Tangerine</div>
+          <div><i style="background:#F2547E"></i><code>#F2547E</code>Rose</div>
+          <div><i style="background:#FFD9A0"></i><code>#FFD9A0</code>Glow</div>
+        </div>
+        <ul class="uses"><li>Amber for buttons and the active block</li><li>The pyramid burns amber to rose</li><li>A warmer floor glow and backdrop</li></ul>
+      </div>
+    </article>
+
+    <!-- 4 -->
+    <article class="opt" data-p="current">
+      <div class="mock">
+        <div class="m-head"><span class="m-logo">refract</span><span>Work · Process · Expertise</span></div>
+        <div class="m-body">
+          <div class="m-copy">
+            <h2>One idea. <span>Extraordinary possibilities.</span></h2>
+            <p>Strategy, design and engineering in one product.</p>
+            <span class="m-btn">Explore the process ↓</span>
+          </div>
+          <div class="prism"><span class="p-floor"></span><i class="p-glass"></i><i class="p-left"></i><i class="p-right"></i><i class="p-edge"></i><span class="p-beam"></span></div>
+        </div>
+        <div class="m-chips"><span>01 Discover</span><span class="on">02 Design</span><span>03 Build</span><span>04 Connect</span></div>
+        <div class="m-card"><span class="lab">02 / Design</span><span class="ttl">From vision <em>to interface.</em></span>
+          <span class="m-flow"><b style="background:var(--a1)"></b><s></s><b style="background:var(--a2)"></b><s></s><b style="background:var(--a3)"></b><s></s><b style="background:var(--a4)"></b></span>
+          <span class="m-row"><span>User journeys</span><span>→</span></span></div>
+      </div>
+      <div class="info">
+        <div class="info-head"><h3>4 · Champagne, lifted</h3><span class="tag">Closest to today</span></div>
+        <p>Today's look with a little more life: champagne and lavender stay, and soft mint and blush join as supporting accents in charts, chips and the panel art. It's the safest move, keeping the calm luxury and adding warmth without changing the mood.</p>
+        <div class="sw">
+          <div><i style="background:#0C0C0E"></i><code>#0C0C0E</code>Background</div>
+          <div><i style="background:#EEE7DB"></i><code>#EEE7DB</code>Text</div>
+          <div><i style="background:#D6B88A"></i><code>#D6B88A</code>Champagne</div>
+          <div><i style="background:#B5ACD8"></i><code>#B5ACD8</code>Lavender</div>
+          <div><i style="background:#9ED6BE"></i><code>#9ED6BE</code>Mint</div>
+          <div><i style="background:#E9A6A0"></i><code>#E9A6A0</code>Blush</div>
+        </div>
+        <ul class="uses"><li>Same buttons and active block as now</li><li>Mint and blush in illustrations and hovers</li><li>Slightly brighter, more saturated glows</li></ul>
+      </div>
+    </article>
+  </section>
+
+  <p class="foot">Tell me a number (or a mix, such as "Aurora background with Spectrum accents") and I'll apply it across the whole site: CSS, the 3D glass and beam, the floor light, the panel cards and the section accents.</p>
+</main>
+</body>
+</html>
