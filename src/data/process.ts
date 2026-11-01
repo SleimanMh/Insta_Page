@@ -53,20 +53,18 @@ export interface Capability {
   id: string;
   name: string;
   stage: number;
-  /** three words for what it covers, shown in place of a sentence */
-  keys: string[];
 }
 
 // Each capability belongs to a process stage, and so to one block of the sculpture.
 export const CAPABILITIES: Capability[] = [
-  { id: 'strategy', name: 'Product strategy', stage: 0, keys: ['Workshops', 'Research', 'Roadmap'] },
-  { id: 'uxui', name: 'UI and UX design', stage: 1, keys: ['Journeys', 'Interfaces', 'Prototype'] },
-  { id: 'web', name: 'Web development', stage: 2, keys: ['Frontend', 'Backend', 'APIs'] },
-  { id: 'software', name: 'Custom software', stage: 2, keys: ['Internal tools', 'Platforms', 'Mobile'] },
-  { id: 'integrations', name: 'Integrations and automation', stage: 3, keys: ['APIs', 'Payments', 'Workflows'] },
-  { id: 'ai', name: 'AI solutions', stage: 3, keys: ['Assistants', 'Search', 'Automation'] },
-  { id: 'devops', name: 'Deployment and DevOps', stage: 4, keys: ['Cloud', 'Pipelines', 'Releases'] },
-  { id: 'care', name: 'Monitoring and maintenance', stage: 5, keys: ['Uptime', 'Updates', 'Improvements'] },
+  { id: 'strategy', name: 'Product strategy', stage: 0 },
+  { id: 'uxui', name: 'UI and UX design', stage: 1 },
+  { id: 'web', name: 'Web development', stage: 2 },
+  { id: 'software', name: 'Custom software', stage: 2 },
+  { id: 'integrations', name: 'Integrations and automation', stage: 3 },
+  { id: 'ai', name: 'AI solutions', stage: 3 },
+  { id: 'devops', name: 'Deployment and DevOps', stage: 4 },
+  { id: 'care', name: 'Monitoring and maintenance', stage: 5 },
 ];
 
 export interface Project {

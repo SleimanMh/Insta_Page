@@ -88,12 +88,9 @@ export function Work() {
 
 // ---------------------------------------------------------------- what we build
 const WORK = [
-  { kind: 't1', tag: 'Web', title: 'Web platforms', need: 'Web platform', cta: 'Plan a web platform',
-    desc: 'Customer portals, marketplaces and SaaS products, designed around your users and built to grow with your business.' },
-  { kind: 't2', tag: 'Mobile', title: 'Mobile apps', need: 'Mobile app', cta: 'Plan a mobile app',
-    desc: 'iOS and Android apps with the backend, payments and store launch taken care of, and updates after release.' },
-  { kind: 't3', tag: 'Automation and AI', title: 'Automation and AI', need: 'Workflow automation and AI', cta: 'Plan an automation',
-    desc: 'Integrations, internal tools and AI assistants that take repetitive work off your team, added only where they help.' },
+  { kind: 't1', tag: 'Web', title: 'Web platforms', need: 'Web platform', cta: 'Plan a web platform' },
+  { kind: 't2', tag: 'Mobile', title: 'Mobile apps', need: 'Mobile app', cta: 'Plan a mobile app' },
+  { kind: 't3', tag: 'Automation and AI', title: 'Automation and AI', need: 'Workflow automation and AI', cta: 'Plan an automation' },
 ];
 /** Ask the contact form to note what the visitor is interested in, then take them to it. */
 const requestNeed = (need: string) => window.dispatchEvent(new CustomEvent('refract:need', { detail: need }));
@@ -143,7 +140,6 @@ export function Services() {
               <Thumb kind={w.kind} />
               <div className="work-meta"><span className="work-num">{String(i + 1).padStart(2, '0')}</span><p className="tag">{w.tag}</p></div>
               <h3>{w.title}</h3>
-              <p>{w.desc}</p>
               <a className="work-more" href="#contact" onClick={() => requestNeed(w.need)}>{w.cta} <Arrow /></a>
             </div>
           </li>
@@ -175,7 +171,7 @@ export function Expertise() {
             <p className="chain-step"><span>{st.num}</span>{st.name}</p>
             <ul>
               {items.map(c => (
-                <li key={c.id}><h3>{c.name}</h3><p>{c.keys.join(' · ')}</p></li>
+                <li key={c.id}><h3>{c.name}</h3></li>
               ))}
             </ul>
           </li>
