@@ -399,18 +399,19 @@ export function backdropMaterial() {
         vec3 aur = vec3(0.0);
         for (int k = 0; k < 3; k++){
           float fk = float(k);
-          float x = q.x * (.22 + fk * .05) + fk * 3.7;
-          float base = 1.55 + fk * .5 + .55 * sin(x * 1.1 + time * (.05 + fk * .02)) + 1.1 * (fbm(vec2(x * .8, time * .025 + fk)) - .5);
+          // each curtain drifts sideways at its own pace as it folds
+          float x = (q.x + time * (.35 + fk * .18) * (k == 1 ? -1.0 : 1.0)) * (.22 + fk * .05) + fk * 3.7;
+          float base = 1.55 + fk * .5 + .55 * sin(x * 1.1 + time * (.16 + fk * .05)) + 1.1 * (fbm(vec2(x * .8, time * .07 + fk)) - .5);
           float d = q.y - base;
           // a sharp lower hem and a long fade upward
           float band = d < 0.0 ? exp(-d * d / .02) : exp(-d * d / (1.1 + fk * .4));
-          float rays = .35 + .9 * fbm(vec2(q.x * (1.6 + fk * .3) + fk * 9.0, time * .09));
-          float fold = .55 + .45 * fbm(vec2(x * 2.4, time * .04 + fk * 5.0));
+          float rays = .35 + .9 * fbm(vec2((q.x + time * .5) * (1.6 + fk * .3) + fk * 9.0, time * .24));
+          float fold = .55 + .45 * fbm(vec2(x * 2.4, time * .11 + fk * 5.0));
           vec3 col = mix(auroraA, auroraB, smoothstep(.0, .9, d));
           col = mix(col, auroraC, smoothstep(.7, 2.2, d));
           aur += col * band * rays * fold * (k == 1 ? 1.0 : .7);
         }
-        c += hueTurn(aur, hue) * .55;
+        c += hueTurn(aur, hue) * .4;
         return c;
       }
 

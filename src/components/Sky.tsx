@@ -58,11 +58,12 @@ function SkyLayers() {
           const u = x / AW;
           let R = 0, G = 0, Bl = 0, I = 0;
           for (let k = 0; k < 2; k++) {
-            const yc = .34 + k * .14 + .07 * Math.sin(u * 5.5 + t * .12 + k * 2.1) + .045 * Math.sin(u * 12.7 - t * .09 + k * 4.3);
+            const uu = u + t * (k ? -.018 : .024);   // each curtain drifts sideways at its own pace
+            const yc = .34 + k * .14 + .07 * Math.sin(uu * 5.5 + t * .32 + k * 2.1) + .045 * Math.sin(uu * 12.7 - t * .24 + k * 4.3);
             const d = yc - v;   // height above the curtain's lower hem
             const band = d < 0 ? Math.exp(-d * d / .0007) : Math.exp(-d * d / (.028 + k * .02));
-            const ray = .5 + .5 * Math.sin(u * (62 + k * 21) + Math.sin(u * 8 + t * .25 + k) * 3.2 + t * .05);
-            const it = band * (.3 + .7 * ray * ray) * (.55 + .45 * Math.sin(u * 3.6 + t * .17 + k * 1.7)) * (k ? .7 : 1);
+            const ray = .5 + .5 * Math.sin(uu * (62 + k * 21) + Math.sin(uu * 8 + t * .6 + k) * 3.2 + t * .4);
+            const it = band * (.3 + .7 * ray * ray) * (.55 + .45 * Math.sin(uu * 3.6 + t * .45 + k * 1.7)) * (k ? .7 : 1);
             const m1 = smooth(0, .1, d), m2 = smooth(.08, .26, d);
             R += it * ((a[0] * (1 - m1) + b[0] * m1) * (1 - m2) + c[0] * m2);
             G += it * ((a[1] * (1 - m1) + b[1] * m1) * (1 - m2) + c[1] * m2);
@@ -79,7 +80,7 @@ function SkyLayers() {
     const storyEl = document.querySelector('.story');
     const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
-      if (now - last < 50 || document.hidden) return;                 // about twenty frames a second is plenty for drifting light
+      if (now - last < 33 || document.hidden) return;                 // about thirty frames a second keeps the drift smooth
       if (storyEl && storyEl.getBoundingClientRect().bottom > innerHeight) return;   // the story's own sky covers the screen
       last = now; paint(now / 1000);
     };
