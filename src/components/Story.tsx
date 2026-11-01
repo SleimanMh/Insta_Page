@@ -1,7 +1,8 @@
-import { KeyboardEvent, useEffect, useRef, useSyncExternalStore } from 'react';
+import { CSSProperties, KeyboardEvent, useEffect, useRef, useSyncExternalStore } from 'react';
 import { STAGES } from '../data/process';
 import { story } from '../story/controller';
 import { SceneHost } from './SceneHost';
+import { palette } from '../theme';
 
 const Arrow = ({ down = false }: { down?: boolean }) => down
   ? <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -56,6 +57,7 @@ export function Story() {
 
   return (
     <section className="story" id="top" ref={rootRef} aria-label="Our process, from one idea to one complete product"
+      style={{ '--stage': palette.stages[snap.stage] } as CSSProperties}
       onPointerMove={e => { if (wide) story.setPointer((e.clientX / innerWidth - .5) * 2, (e.clientY / innerHeight - .5) * 2); }}
       onPointerLeave={() => story.setPointer(0, 0)}>
       <div className="story-sticky">
@@ -92,7 +94,7 @@ export function Story() {
 
         <nav className={`stage-nav${snap.navOn || !wide ? ' is-on' : ''}`} aria-label="Process stages" ref={navRef} onKeyDown={onNavKey}>
           {STAGES.map((s, i) => (
-            <button key={s.id} type="button" aria-current={snap.stage === i && snap.processOn ? 'step' : undefined}
+            <button key={s.id} type="button" style={{ '--c': palette.stages[i] } as CSSProperties} aria-current={snap.stage === i && snap.processOn ? 'step' : undefined}
               aria-controls={`stage-${s.id}`}
               onClick={() => story.goTo(i)}
               onMouseEnter={() => story.setHover(i)} onMouseLeave={() => story.setHover(-1)}

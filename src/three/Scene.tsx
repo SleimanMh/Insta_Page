@@ -12,6 +12,7 @@ import { APEX_Y, BASE_Y, BEAM_Y, PYR_ALT, SLABS, SLAB_DEPTH, TRI, pyramidGeometr
 import { TO_LINEAR, backdropMaterial, crystalMaterial, floorMaterial, floorReflectionMaterial, productMaterial, pyramidMaterial, shardMaterial } from './materials';
 import { Ribbon } from './ribbon';
 import { artFor, makeStageArt } from './stageArt';
+import { palette, rgb, stageColor } from '../theme';
 
 const FLOOR_OFFSET = .004;   // the pyramid and the blocks stand exactly on the base line
 const PYR_TURN = -.12;       // the pyramid's front face, turned a little from the viewer
@@ -95,14 +96,23 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     // the beam: a bright opaque core (so the glass refracts it) wrapped in soft glow
     const core = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 8, 1, true), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.9, 1.85, 1.75) }));
     const glowIn = new Ribbon(2, '#FFF7EC', 0, 1, .65), glowOut = new Ribbon(2, '#FFFFFF', .8, 0, .5);
-    const launch = new Ribbon(32, '#D6B88A', .9, .1, .5);
-    const ring = new Ribbon(97, '#E2C495', .55, .55, .45);
+    const launch = new Ribbon(32, palette.launch, .9, .1, .5);
+    const ring = new Ribbon(97, palette.ring, .55, .55, .45);
     const glints = new THREE.Points(new THREE.BufferGeometry(), glintMaterial());
     // one glint per layer, one where the beam enters, one for the flash when the panel breaks through
     glints.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array((SLABS + 2) * 3), 3));
     glints.geometry.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array(SLABS + 2), 1));
     glints.geometry.setAttribute('aAlpha', new THREE.BufferAttribute(new Float32Array(SLABS + 2), 1));
     glints.frustumCulled = false; glints.renderOrder = 210;
+
+    // the palette's studio: pyramid faces, the split light on the floor, backdrop and floor tones
+    const v3 = (hex: string) => new THREE.Vector3(...rgb(hex));
+    [pyrBack, pyrFront, pyrMirror].forEach(m => { (m.material as THREE.ShaderMaterial).uniforms.tints.value = palette.pyramid.map(v3); });
+    const fu0 = (floor.material as THREE.ShaderMaterial).uniforms;
+    fu0.far.value = v3(palette.floor[0]); fu0.near.value = v3(palette.floor[1]);
+    fu0.cFront.value = v3(palette.pyramid[0]); fu0.cRight.value = v3(palette.pyramid[1]); fu0.cLeft.value = v3(palette.pyramid[2]);
+    const bu0 = (backdrop.material as THREE.ShaderMaterial).uniforms;
+    bu0.centre.value = v3(palette.backdrop[0]); bu0.edge.value = v3(palette.backdrop[1]); bu0.floorCol.value = v3(palette.floor[0]);
 
     return { root, geo, slabs, pyr, pyrBack, pyrFront, pyrMirror, art, plane, shards, floor, backdrop, core, glowIn, glowOut, launch, ring, glints };
   }, [gl, lowCost]);
@@ -192,6 +202,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     // the six layers
     const poses = slabPoses(s, story.hover);
     const br = breakState(s);
+    const sc = stageColor(s.stageF);   // the active block glows in its stage's colour
     poses.forEach((p, i) => {
       const sl = world.slabs[i];
       sl.g.position.set(...p.pos);
@@ -203,6 +214,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       if (Math.abs(p.hl - u.hl.value) > .002) busy = true;
       u.reveal.value = ub.reveal.value = reveal; ub.hl.value = u.hl.value;
       u.fade.value = ub.fade.value = p.fade;
+      u.hlColor.value.set(...sc); ub.hlColor.value.set(...sc);
       // the stages already behind keep a faint sketch of their work etched into the glass
       u.etch.value = ub.etch.value = p.etch * s.process;
     });
@@ -261,7 +273,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     fu.cGreen.value.set(pose.sculptX - .32, .5); fu.cAmber.value.set(pose.sculptX + .3, .56);
     // a warm pool of light on the floor under the active block
     const act = world.slabs[activeBlock(s.stage)].g.getWorldPosition(v.a);
-    fu.glowAt.value.set(act.x, act.z); fu.glow.value = s.process * (1 - s.tr * 1.5);
+    fu.glowAt.value.set(act.x, act.z); fu.glow.value = s.process * (1 - s.tr * 1.5); fu.glowColor.value.set(...sc);
 
     // the beam enters from the left, crosses every layer and fades after the last
     let minZ = Infinity, maxZ = -Infinity;

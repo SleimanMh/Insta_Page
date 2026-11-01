@@ -4,6 +4,7 @@ import logoHorizontal from '../assets/brand/logo-horizontal.png';
 import logoStacked from '../assets/brand/logo-stacked.png';
 import wordmark from '../assets/brand/wordmark.png';
 import { Marquee, Split, useSectionMotion } from '../motion/fx';
+import { palette } from '../theme';
 import { story } from '../story/controller';
 
 const Arrow = () => <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5M5.5 4.5h6v6" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
@@ -130,7 +131,7 @@ export function Expertise() {
       </header>
       <ul className="expertise-list">
         {CAPABILITIES.map((c, i) => (
-          <li key={c.id} data-reveal data-lit data-glow>
+          <li key={c.id} data-reveal data-lit data-glow style={{ '--c': palette.stages[c.stage] } as CSSProperties}>
             <div className="exp-top">
               <span className="exp-glyph" aria-hidden="true"><svg viewBox="0 0 20 18"><path d="M10 1.5 18.5 16.5H1.5Z" /></svg></span>
               <span className="exp-stage">{STAGES[c.stage].num} / {STAGES[c.stage].name}</span>

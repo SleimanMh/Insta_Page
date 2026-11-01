@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import logoUrl from '../assets/brand/logo-horizontal.png';
 import { STAGES } from '../data/process';
+import { palette } from '../theme';
 
 // The product panel's artwork: one glass card per stage, plus the finished product.
 // Each card carries the logo, the stage, a short headline with its second line in champagne,
@@ -8,8 +9,12 @@ import { STAGES } from '../data/process';
 // Drawn into canvases in the brand's ivory, graphite, champagne and lavender.
 
 const W = 800, H = 1200, PAD = 60;
-const INK = '#EEE7DB', SOFT = '#C9C1B4', DIM = 'rgba(238,231,219,.55)', FAINT = 'rgba(238,231,219,.16)', LINE = 'rgba(238,231,219,.2)';
-const GOLD = '#D6B88A', LAV = '#A79CE0';
+const P = palette.css;
+const INK = P['--ink'], SOFT = P['--ink-2'], DIM = 'rgba(238,231,219,.55)', FAINT = 'rgba(238,231,219,.16)', LINE = 'rgba(238,231,219,.2)';
+const GOLD = P['--gold'], LAV = P['--lav'];
+/** the card being drawn takes its stage's colour for the headline, the flow, the rim and the link */
+let ACC = GOLD;
+const alpha = (hex: string, a: number) => { const n = parseInt(hex.slice(1), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; };
 const FONT = '"Albert Sans", ui-sans-serif, system-ui, sans-serif';
 
 type Ctx = CanvasRenderingContext2D;
@@ -60,11 +65,11 @@ function hills(g: Ctx, x: number, y: number, w: number, h: number, color = 'rgba
 function base(g: Ctx, logo: HTMLImageElement | null, label: string, head: [string, string, string]) {
   g.clearRect(0, 0, W, H);
   rr(g, 6, 6, W - 12, H - 12, 46);
-  const bg = g.createLinearGradient(0, 0, W * .4, H); bg.addColorStop(0, '#18181C'); bg.addColorStop(1, '#0C0C0E');
+  const bg = g.createLinearGradient(0, 0, W * .4, H); bg.addColorStop(0, P['--bg-2']); bg.addColorStop(1, P['--bg']);
   g.fillStyle = bg; g.fill();
   // a polished champagne rim, brightest where it catches the light
   const rim = g.createLinearGradient(0, 0, W, H);
-  rim.addColorStop(0, 'rgba(240,214,170,.95)'); rim.addColorStop(.5, 'rgba(214,184,138,.55)'); rim.addColorStop(1, 'rgba(240,214,170,.85)');
+  rim.addColorStop(0, alpha(ACC, .95)); rim.addColorStop(.5, alpha(GOLD, .5)); rim.addColorStop(1, alpha(ACC, .85));
   g.strokeStyle = rim; g.lineWidth = 4; g.stroke();
   rr(g, 14, 14, W - 28, H - 28, 40); stroke(g, 'rgba(255,255,255,.05)', 2);
   // soft sheen across the glass
@@ -75,7 +80,7 @@ function base(g: Ctx, logo: HTMLImageElement | null, label: string, head: [strin
   else text(g, 'refract', PAD, 100, 44, INK, 400);
   text(g, label, PAD, 196, 19, 'rgba(238,231,219,.6)', 500, 6);
   text(g, head[0], PAD, 284, 72, INK, 300, -1);
-  text(g, head[1], PAD, 364, 72, GOLD, 300, -1);
+  text(g, head[1], PAD, 364, 72, ACC, 300, -1);
   text(g, head[2], PAD, 424, 27, SOFT, 300);
 }
 
@@ -83,7 +88,7 @@ function base(g: Ctx, logo: HTMLImageElement | null, label: string, head: [strin
 function flow(g: Ctx, y: number) {
   ring(g, PAD + 14, y, 13, SOFT);
   g.beginPath(); g.moveTo(PAD + 28, y); g.lineTo(PAD + 170, y); stroke(g, SOFT, 2);
-  dot(g, PAD + 186, y, 14, GOLD);
+  dot(g, PAD + 186, y, 14, ACC);
   g.beginPath(); g.moveTo(PAD + 202, y); g.lineTo(PAD + 330, y); stroke(g, SOFT, 2); arrow(g, PAD + 330, y, SOFT);
   dot(g, PAD + 372, y, 13, LAV);
   g.beginPath(); g.moveTo(PAD + 386, y); g.bezierCurveTo(PAD + 450, y, PAD + 450, y + 34, PAD + 510, y + 34); g.bezierCurveTo(PAD + 560, y + 34, PAD + 560, y, PAD + 600, y); stroke(g, SOFT, 2);
@@ -91,7 +96,7 @@ function flow(g: Ctx, y: number) {
 }
 
 function footer(g: Ctx, items: string[], link: string, y: number) {
-  dot(g, PAD + 12, y, 11, GOLD); dot(g, PAD + 46, y, 11, LAV); dot(g, PAD + 80, y, 11, '#3A3A40');
+  dot(g, PAD + 12, y, 11, ACC); dot(g, PAD + 46, y, 11, LAV); dot(g, PAD + 80, y, 11, '#3A3A40');
   g.beginPath(); g.moveTo(PAD + 112, y); g.lineTo(W - PAD, y); stroke(g, FAINT, 2);
   items.forEach((it, i) => {
     const ry = y + 36 + i * 70;
@@ -101,10 +106,10 @@ function footer(g: Ctx, items: string[], link: string, y: number) {
   });
   const ly = y + 36 + items.length * 70;
   g.beginPath(); g.moveTo(PAD, ly); g.lineTo(W - PAD, ly); stroke(g, LINE, 2);
-  text(g, link, PAD + 4, ly + 58, 26, GOLD, 400);
+  text(g, link, PAD + 4, ly + 58, 26, ACC, 400);
   g.font = `400 26px ${FONT}`; const tw = g.measureText(link).width;
   g.beginPath(); g.moveTo(PAD + tw + 22, ly + 60); g.lineTo(PAD + tw + 40, ly + 42); g.moveTo(PAD + tw + 26, ly + 42); g.lineTo(PAD + tw + 40, ly + 42); g.lineTo(PAD + tw + 40, ly + 56);
-  stroke(g, GOLD, 2.4);
+  stroke(g, ACC, 2.4);
 }
 
 // The two illustrations for each stage, in a wide card (left) and a narrow one (right).
@@ -154,7 +159,7 @@ const ILLUSTRATE: Record<string, (g: Ctx) => void> = {
     const cx = L.x + L.w / 2, cy = L.y + L.h / 2;
     const nodes: [number, number, string][] = [[L.x + 70, L.y + 70, GOLD], [L.x + L.w - 70, L.y + 66, LAV], [L.x + 74, L.y + L.h - 64, SOFT], [L.x + L.w - 66, L.y + L.h - 70, GOLD]];
     nodes.forEach(([x, y, c]) => { g.beginPath(); g.moveTo(cx, cy); g.bezierCurveTo((cx + x) / 2, cy, (cx + x) / 2, y, x, y); stroke(g, c === SOFT ? 'rgba(238,231,219,.35)' : c, 2); g.fillStyle = '#121215'; g.beginPath(); g.arc(x, y, 18, 0, Math.PI * 2); g.fill(); ring(g, x, y, 18, c, 2); dot(g, x, y, 6, c); });
-    rr(g, cx - 46, cy - 34, 92, 68, 14); g.fillStyle = '#17171B'; g.fill(); stroke(g, GOLD, 2.4); bar(g, cx - 26, cy - 6, 52, 8, INK); bar(g, cx - 26, cy + 10, 34, 6, 'rgba(238,231,219,.4)');
+    rr(g, cx - 46, cy - 34, 92, 68, 14); g.fillStyle = P['--bg-2']; g.fill(); stroke(g, GOLD, 2.4); bar(g, cx - 26, cy - 6, 52, 8, INK); bar(g, cx - 26, cy + 10, 34, 6, 'rgba(238,231,219,.4)');
     text(g, 'Linked', R.x + 24, R.y + 52, 22, INK, 400);
     [['Payments', GOLD], ['CRM', GOLD], ['AI assist', LAV]].forEach(([t, c], i) => { const y = R.y + 104 + i * 54; dot(g, R.x + 32, y - 7, 7, c); text(g, t, R.x + 52, y, 20, SOFT, 300); });
   },
@@ -188,6 +193,7 @@ const ILLUSTRATE: Record<string, (g: Ctx) => void> = {
 
 function stageCard(g: Ctx, logo: HTMLImageElement | null, i: number) {
   const s = STAGES[i];
+  ACC = palette.stages[i];
   base(g, logo, `${s.num} / ${s.name}`.toUpperCase(), HEAD[s.id]);
   flow(g, 474);
   ILLUSTRATE[s.id](g);
@@ -196,6 +202,7 @@ function stageCard(g: Ctx, logo: HTMLImageElement | null, i: number) {
 
 /** The finished product, shown inside the re-formed pyramid. */
 function finalCard(g: Ctx, logo: HTMLImageElement | null) {
+  ACC = GOLD;
   base(g, logo, 'YOUR PRODUCT', ['Products for a', 'brighter tomorrow.', 'Designed, built, launched and cared for.']);
   flow(g, 474);
   card(g, L.x, L.y, L.w + R.w + 20, L.h);

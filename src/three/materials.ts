@@ -76,6 +76,7 @@ export function crystalMaterial(back: boolean, tri: THREE.Vector2[], seed: numbe
       hl: { value: 0 }, reveal: { value: 0 }, beamY: { value: 0 }, side: { value: back ? .5 : 1 }, fade: { value: 1 },
       triA: { value: tri[0] }, triB: { value: tri[1] }, triC: { value: tri[2] },
       radiant: { value: 0 }, glowC: { value: new THREE.Vector2(0, -.17) }, seed: { value: seed }, etch: { value: 0 },
+      hlColor: { value: new THREE.Vector3(1, .78, .5) },
     },
     vertexShader: slabVertex,
     fragmentShader: /* glsl */`
@@ -85,7 +86,7 @@ export function crystalMaterial(back: boolean, tri: THREE.Vector2[], seed: numbe
       ${RAYS}
       uniform float hl; uniform float reveal; uniform float beamY; uniform float side; uniform float fade;
       uniform vec2 triA; uniform vec2 triB; uniform vec2 triC;
-      uniform float radiant; uniform vec2 glowC; uniform float seed; uniform float etch;
+      uniform float radiant; uniform vec2 glowC; uniform float seed; uniform float etch; uniform vec3 hlColor;
       varying vec3 vWN; varying vec3 vWP; varying vec3 vLN; varying vec3 vLP;
 
       // signed distance to the block's triangle; negative inside
@@ -138,7 +139,7 @@ export function crystalMaterial(back: boolean, tri: THREE.Vector2[], seed: numbe
         float beamCore = exp(-pow((vLP.y - beamY) / .02, 2.0)) * reveal;
         float beamWide = exp(-pow((vLP.y - beamY) / .13, 2.0)) * reveal;
 
-        vec3 champ = mix(vec3(.96, .93, .88), vec3(1.0, .78, .5), hl);
+        vec3 champ = mix(vec3(.96, .93, .88), hlColor, hl);
         // Solid clear glass, seen as it photographs: the faces are smoky and see-through, lit by a soft haze
         // that drifts across them with the viewing angle; near the edges the thickness shows as a brighter
         // refracted band with a thin internal reflection; the polished chamfers catch the studio lights;
@@ -191,6 +192,7 @@ export function pyramidMaterial(mode: 'back' | 'front' | 'mirror') {
     uniforms: {
       opacity: { value: 1 }, reveal: { value: 0 }, charge: { value: 0 }, crack: { value: 0 }, floorY: { value: 0 },
       alt: { value: 1 }, mode: { value: mode === 'back' ? 0 : mode === 'front' ? 1 : 2 },
+      tints: { value: [new THREE.Vector3(.95, .3, .75), new THREE.Vector3(1, .52, .1), new THREE.Vector3(.12, .95, .55), new THREE.Vector3(1, .8, .35)] },
     },
     vertexShader: /* glsl */`
       attribute vec3 aBary; attribute float aFace;
@@ -208,7 +210,7 @@ export function pyramidMaterial(mode: 'back' | 'front' | 'mirror') {
       ${RAYS}
       ${FRACTURE}
       uniform float opacity; uniform float reveal; uniform float charge; uniform float crack; uniform float floorY;
-      uniform float alt; uniform float mode;
+      uniform float alt; uniform float mode; uniform vec3 tints[4];
       varying vec3 vB; varying float vF; varying vec3 vWN; varying vec3 vWP;
 
       void main(){
@@ -229,7 +231,7 @@ export function pyramidMaterial(mode: 'back' | 'front' | 'mirror') {
         fringe = mix(fringe, hue(fract(d * 9.0 + dot(V, N) * .5 + vF * .2)), .25);
 
         // the colour each face carries once the light has split
-        vec3 tint = vF < .5 ? vec3(.95, .3, .75) : vF < 1.5 ? vec3(1.0, .52, .1) : vF < 2.5 ? vec3(.12, .95, .55) : vec3(1.0, .8, .35);
+        vec3 tint = vF < .5 ? tints[0] : vF < 1.5 ? tints[1] : vF < 2.5 ? tints[2] : tints[3];
         float toBase = pow(1.0 - vB.z, 1.6);                         // brightest toward the floor
         float lateral = .45 + .55 * smoothstep(.0, .8, abs(vF - 1.0) < .5 ? vB.x : vB.y);
         float band = smoothstep(.0, .25, vB.x) * smoothstep(.0, .25, vB.y);
@@ -329,26 +331,28 @@ export function floorMaterial() {
     uniforms: {
       center: { value: new THREE.Vector2() }, reveal: { value: 0 },
       caustic: { value: 0 }, cGreen: { value: new THREE.Vector2() }, cAmber: { value: new THREE.Vector2() },
-      glow: { value: 0 }, glowAt: { value: new THREE.Vector2() },
+      glow: { value: 0 }, glowAt: { value: new THREE.Vector2() }, glowColor: { value: new THREE.Vector3(1, .78, .5) },
+      far: { value: new THREE.Vector3(.05, .05, .055) }, near: { value: new THREE.Vector3(.1, .098, .1) },
+      cLeft: { value: new THREE.Vector3(.1, .75, .45) }, cRight: { value: new THREE.Vector3(1, .5, .12) }, cFront: { value: new THREE.Vector3(.85, .3, .65) },
     },
     vertexShader: 'varying vec3 vWP; void main(){ vec4 wp = modelMatrix * vec4(position, 1.0); vWP = wp.xyz; gl_Position = projectionMatrix * viewMatrix * wp; }',
     fragmentShader: /* glsl */`
       ${TO_LINEAR}
       uniform vec2 center; uniform float reveal; varying vec3 vWP;
-      uniform float caustic; uniform vec2 cGreen; uniform vec2 cAmber; uniform float glow; uniform vec2 glowAt;
+      uniform float caustic; uniform vec2 cGreen; uniform vec2 cAmber; uniform float glow; uniform vec2 glowAt; uniform vec3 glowColor;
+      uniform vec3 far; uniform vec3 near; uniform vec3 cLeft; uniform vec3 cRight; uniform vec3 cFront;
       // a soft streak of coloured light thrown forward across the floor
       float streak(vec2 p, vec2 at, vec2 size){ vec2 q = (p - at) / size; return exp(-dot(q, q)) * smoothstep(-1.6, -.2, q.y); }
       void main(){
         vec2 d = vWP.xz - center;
         float pool = exp(-dot(d * vec2(.4, .8), d * vec2(.4, .8)) / 2.4);
-        vec3 far = vec3(.05, .05, .055), near = vec3(.1, .098, .1);
-        vec3 c = mix(far, near, pool) + vec3(.12, .11, .1) * pool * pool * .35 * reveal;
+                vec3 c = mix(far, near, pool) + vec3(.12, .11, .1) * pool * pool * .35 * reveal;
         // the pyramid's split light, landing on the floor in front of it
-        c += (vec3(.1, .75, .45) * streak(vWP.xz, cGreen, vec2(.2, .55)) + vec3(1.0, .5, .12) * streak(vWP.xz, cAmber, vec2(.24, .6))
-            + vec3(.85, .3, .65) * streak(vWP.xz, (cGreen + cAmber) * .5 + vec2(0.0, .5), vec2(.12, .3)) * .5) * caustic * reveal * .9;
+        c += (cLeft * streak(vWP.xz, cGreen, vec2(.2, .55)) + cRight * streak(vWP.xz, cAmber, vec2(.24, .6))
+            + cFront * streak(vWP.xz, (cGreen + cAmber) * .5 + vec2(0.0, .5), vec2(.12, .3)) * .5) * caustic * reveal * .9;
         // warm light pooled under the active block, stretched toward the viewer
         vec2 gq = (vWP.xz - glowAt) / vec2(.5, .32);
-        c += vec3(1.0, .78, .5) * exp(-dot(gq, gq)) * glow * .22 * reveal;
+        c += glowColor * exp(-dot(gq, gq)) * glow * .22 * reveal;
         gl_FragColor = vec4(toLin(c), 1.0);
       }`,
   });
@@ -357,16 +361,16 @@ export function floorMaterial() {
 /** Deep graphite backdrop with a soft lift behind the sculpture. Opaque, so the glass refracts it. */
 export function backdropMaterial() {
   return new THREE.ShaderMaterial({
-    uniforms: { focus: { value: new THREE.Vector2(.6, .5) } },
+    uniforms: { focus: { value: new THREE.Vector2(.6, .5) }, centre: { value: new THREE.Vector3(.19, .188, .19) }, edge: { value: new THREE.Vector3(.06, .06, .065) }, floorCol: { value: new THREE.Vector3(.05, .05, .055) } },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: /* glsl */`
       ${TO_LINEAR}
-      uniform vec2 focus; varying vec2 vUv;
+      uniform vec2 focus; uniform vec3 centre; uniform vec3 edge; uniform vec3 floorCol; varying vec2 vUv;
       void main(){
         vec2 d = (vUv - focus) * vec2(1.8, 1.0);
-        vec3 c = mix(vec3(.19, .188, .19), vec3(.06, .06, .065), smoothstep(0.0, .7, length(d)));
+        vec3 c = mix(centre, edge, smoothstep(0.0, .7, length(d)));
         // the backdrop curves into the floor without a seam, like a studio cyclorama
-        c = mix(vec3(.05, .05, .055), c, smoothstep(.0, .3, vUv.y));
+        c = mix(floorCol, c, smoothstep(.0, .3, vUv.y));
         gl_FragColor = vec4(toLin(c), 1.0);
       }`,
     depthWrite: false,
