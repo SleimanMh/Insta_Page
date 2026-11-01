@@ -19,6 +19,8 @@ export interface Palette {
   /** launch path and the ring that closes the story */
   launch: string;
   ring: string;
+  /** a night sky behind everything: aurora curtain colours (low, middle, crown) and the sky's top and horizon */
+  sky?: { aurora: [string, string, string]; top: string; horizon: string };
 }
 
 export const PALETTES: Record<PaletteName, Palette & { label: string }> = {
@@ -51,12 +53,13 @@ export const PALETTES: Record<PaletteName, Palette & { label: string }> = {
     floor: ['#080B16', '#121935'],
     launch: '#36E2C8',
     ring: '#9B7CFF',
+    sky: { aurora: ['#3CF0B4', '#36C8E2', '#B46CFF'], top: '#04061A', horizon: '#121A3A' },
   },
 };
 
 const KEY = 'refract-palette';
 const saved = (() => { try { return localStorage.getItem(KEY); } catch { return null; } })();
-let active: PaletteName = saved === 'aurora' ? 'aurora' : 'spectrum';
+let active: PaletteName = saved === 'spectrum' ? 'spectrum' : 'aurora';
 /** the palette in use; a live binding, so readers always see the current one */
 export let palette = PALETTES[active];
 
@@ -77,6 +80,12 @@ export function setPalette(name: PaletteName) {
   listeners.forEach(fn => fn());
   window.setTimeout(() => root.classList.remove('palette-shift'), 700);
 }
+
+/**
+ * How far the aurora's hues have drifted at a given time, in radians: a slow swing through greens,
+ * teals, blues and violets and back, a little over a minute each way. Shared by the 3D sky and the page sky.
+ */
+export const auroraHue = (seconds: number) => Math.sin(seconds * Math.PI * 2 / 140) * .75;
 
 /** A display-space colour as 0…1 components (the shaders convert to linear themselves). */
 export function rgb(hex: string): [number, number, number] {

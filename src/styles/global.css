@@ -467,3 +467,12 @@ html[data-layout="stack"] .anchor { display: none; }
 }
 /* while the palette changes, colours ease across instead of jumping */
 html.palette-shift, html.palette-shift *, html.palette-shift *::before, html.palette-shift *::after { transition: background-color .6s ease, color .6s ease, border-color .6s ease, fill .6s ease, stroke .6s ease !important; }
+
+/* ---------------------------------------------------------------- the night sky (palettes that have one) */
+.sky { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.sky-stars { position: absolute; inset: 0; width: 100%; height: 100%; animation: twinkle 5.5s ease-in-out infinite alternate; }
+.sky-stars.is-b { animation-delay: -2.75s; opacity: .4; }
+.sky-aurora { position: absolute; left: -4%; top: -6%; width: 108%; height: 78%; opacity: .62; mix-blend-mode: screen; filter: blur(2px) saturate(1.15); }
+@keyframes twinkle { from { opacity: .95; } to { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .sky-stars { animation: none; } }
+html[data-palette="aurora"] body { background: var(--bg); }

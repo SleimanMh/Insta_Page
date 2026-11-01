@@ -361,14 +361,66 @@ export function floorMaterial() {
 /** Deep graphite backdrop with a soft lift behind the sculpture. Opaque, so the glass refracts it. */
 export function backdropMaterial() {
   return new THREE.ShaderMaterial({
-    uniforms: { focus: { value: new THREE.Vector2(.6, .5) }, centre: { value: new THREE.Vector3(.19, .188, .19) }, edge: { value: new THREE.Vector3(.06, .06, .065) }, floorCol: { value: new THREE.Vector3(.05, .05, .055) } },
+    uniforms: {
+      focus: { value: new THREE.Vector2(.6, .5) }, centre: { value: new THREE.Vector3(.19, .188, .19) }, edge: { value: new THREE.Vector3(.06, .06, .065) }, floorCol: { value: new THREE.Vector3(.05, .05, .055) },
+      sky: { value: 0 }, time: { value: 0 }, hue: { value: 0 },
+      auroraA: { value: new THREE.Vector3() }, auroraB: { value: new THREE.Vector3() }, auroraC: { value: new THREE.Vector3() },
+      skyTop: { value: new THREE.Vector3() }, skyHorizon: { value: new THREE.Vector3() },
+    },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: /* glsl */`
       ${TO_LINEAR}
       uniform vec2 focus; uniform vec3 centre; uniform vec3 edge; uniform vec3 floorCol; varying vec2 vUv;
+      uniform float sky; uniform float time; uniform float hue;
+      uniform vec3 auroraA; uniform vec3 auroraB; uniform vec3 auroraC; uniform vec3 skyTop; uniform vec3 skyHorizon;
+
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y); }
+      float fbm(vec2 p){ float v = 0.0, a = .5; for (int i = 0; i < 4; i++){ v += a * noise(p); p *= 2.03; a *= .5; } return v; }
+      // turn a colour around the grey axis: the aurora's hues drift while staying an aurora
+      vec3 hueTurn(vec3 c, float a){ const vec3 k = vec3(.57735); float ca = cos(a); return c * ca + cross(k, c) * sin(a) + k * dot(k, c) * (1.0 - ca); }
+
+      // A northern sky: stars that twinkle, and curtains of light that fold and drift, green at their
+      // lower edge, rising through teal into violet. q is in world units across the backdrop.
+      vec3 northernSky(vec2 q){
+        vec3 c = mix(skyHorizon, skyTop, smoothstep(.0, 6.0, q.y));
+        // stars, two sizes, thinning toward the horizon
+        for (int l = 0; l < 2; l++){
+          float s = l == 0 ? 7.0 : 3.2;
+          vec2 g = q * s, id = floor(g), f = fract(g) - .5;
+          float h = hash(id + float(l) * 17.0);
+          vec2 o = (vec2(hash(id + 3.1), hash(id + 7.7)) - .5) * .6;
+          float on = step(l == 0 ? .955 : .985, h);
+          float tw = .55 + .45 * sin(time * (1.2 + h * 3.0) + h * 60.0);
+          c += vec3(.85, .9, 1.0) * on * tw * smoothstep(l == 0 ? .12 : .16, .0, length(f - o)) * (l == 0 ? 1.0 : 1.6) * smoothstep(.4, 2.2, q.y);
+        }
+        // three curtains at different heights and speeds
+        vec3 aur = vec3(0.0);
+        for (int k = 0; k < 3; k++){
+          float fk = float(k);
+          float x = q.x * (.22 + fk * .05) + fk * 3.7;
+          float base = 1.55 + fk * .5 + .55 * sin(x * 1.1 + time * (.05 + fk * .02)) + 1.1 * (fbm(vec2(x * .8, time * .025 + fk)) - .5);
+          float d = q.y - base;
+          // a sharp lower hem and a long fade upward
+          float band = d < 0.0 ? exp(-d * d / .02) : exp(-d * d / (1.1 + fk * .4));
+          float rays = .35 + .9 * fbm(vec2(q.x * (1.6 + fk * .3) + fk * 9.0, time * .09));
+          float fold = .55 + .45 * fbm(vec2(x * 2.4, time * .04 + fk * 5.0));
+          vec3 col = mix(auroraA, auroraB, smoothstep(.0, .9, d));
+          col = mix(col, auroraC, smoothstep(.7, 2.2, d));
+          aur += col * band * rays * fold * (k == 1 ? 1.0 : .7);
+        }
+        c += hueTurn(aur, hue) * .55;
+        return c;
+      }
+
       void main(){
         vec2 d = (vUv - focus) * vec2(1.8, 1.0);
         vec3 c = mix(centre, edge, smoothstep(0.0, .7, length(d)));
+        if (sky > .001) {
+          vec2 q = vec2((vUv.x - .5) * 70.0, vUv.y * 18.0);
+          c = mix(c, northernSky(q), sky);
+        }
         // the backdrop curves into the floor without a seam, like a studio cyclorama
         c = mix(floorCol, c, smoothstep(.0, .3, vUv.y));
         gl_FragColor = vec4(toLin(c), 1.0);

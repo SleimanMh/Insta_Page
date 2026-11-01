@@ -12,7 +12,7 @@ import { APEX_Y, BASE_Y, BEAM_Y, PYR_ALT, SLABS, SLAB_DEPTH, TRI, pyramidGeometr
 import { TO_LINEAR, backdropMaterial, crystalMaterial, floorMaterial, floorReflectionMaterial, productMaterial, pyramidMaterial, shardMaterial } from './materials';
 import { Ribbon } from './ribbon';
 import { artFor, makeStageArt } from './stageArt';
-import { onPalette, palette, rgb, stageColor } from '../theme';
+import { auroraHue, onPalette, palette, rgb, stageColor } from '../theme';
 
 const FLOOR_OFFSET = .004;   // the pyramid and the blocks stand exactly on the base line
 const PYR_TURN = -.12;       // the pyramid's front face, turned a little from the viewer
@@ -44,6 +44,8 @@ const glintMaterial = () => new THREE.ShaderMaterial({
 function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolean }) {
   const { camera, gl, scene, size, invalidate, setDpr } = useThree();
   const born = useRef(performance.now());
+  // the night sky moves on its own, so it keeps drawing, but only while the story is on screen
+  const onScreen = useRef(true);
   const parallax = useRef({ x: 0, y: 0 });
   // layout reads are expensive mid-scroll; the leader's label position is cached and refreshed sparingly
   const labelCache = useRef({ stage: -1, at: 0, x: 0, y: 0 });
@@ -108,6 +110,12 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     return { root, geo, slabs, pyr, pyrBack, pyrFront, pyrMirror, art, plane, shards, floor, backdrop, core, glowIn, glowOut, launch, ring, glints };
   }, [gl, lowCost]);
 
+  useEffect(() => {
+    const io = new IntersectionObserver(([e]) => { onScreen.current = e.isIntersecting; if (e.isIntersecting) invalidate(); });
+    io.observe(gl.domElement);
+    return () => io.disconnect();
+  }, [gl, invalidate]);
+
   // ---------------------------------------------------------------- the palette's studio
   // pyramid faces, the split light on the floor, backdrop and floor tones, the closing paths;
   // applied once and again whenever the visitor switches palette
@@ -120,6 +128,11 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       fu.cFront.value = v3(palette.pyramid[0]); fu.cRight.value = v3(palette.pyramid[1]); fu.cLeft.value = v3(palette.pyramid[2]);
       const bu = (world.backdrop.material as THREE.ShaderMaterial).uniforms;
       bu.centre.value = v3(palette.backdrop[0]); bu.edge.value = v3(palette.backdrop[1]); bu.floorCol.value = v3(palette.floor[0]);
+      bu.sky.value = palette.sky ? 1 : 0;
+      if (palette.sky) {
+        bu.auroraA.value = v3(palette.sky.aurora[0]); bu.auroraB.value = v3(palette.sky.aurora[1]); bu.auroraC.value = v3(palette.sky.aurora[2]);
+        bu.skyTop.value = v3(palette.sky.top); bu.skyHorizon.value = v3(palette.sky.horizon);
+      }
       world.launch.uniforms.color.value.set(palette.launch); world.ring.uniforms.color.value.set(palette.ring);
     };
     apply();
@@ -268,7 +281,13 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     fu.center.value.set(pose.sculptX, 0); fu.reveal.value = reveal;
     world.backdrop.position.set(0, fy + 9, -14);
     world.backdrop.scale.set(70, 18, 1);
-    (world.backdrop.material as THREE.ShaderMaterial).uniforms.focus.value.set(.5 + pose.sculptX / 70, .32);
+    const bu = (world.backdrop.material as THREE.ShaderMaterial).uniforms;
+    bu.focus.value.set(.5 + pose.sculptX / 70, .32);
+    if (bu.sky.value > 0) {
+      const t = reduce ? 0 : performance.now() / 1000;
+      bu.time.value = t; bu.hue.value = auroraHue(t);
+      if (!reduce && onScreen.current) busy = true;
+    }
     v.m.makeTranslation(0, 2 * fy, 0).multiply(v.s.makeScale(1, -1, 1));
     world.slabs.forEach((sl, i) => {
       sl.mirror.matrixWorld.multiplyMatrices(v.m, sl.glass.matrixWorld);
