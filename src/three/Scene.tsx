@@ -46,7 +46,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
   const born = useRef(performance.now());
   // the night sky moves on its own, so it keeps drawing, but only while the story is on screen
   const onScreen = useRef(true);
-  const sky = useRef({ at: -1, ambient: -1, frame: -9, n: 0 });
+  const sky = useRef({ at: -1, frame: -9, n: 0 });
   const parallax = useRef({ x: 0, y: 0 });
   // layout reads are expensive mid-scroll; the leader's label position is cached and refreshed sparingly
   const labelCache = useRef({ stage: -1, at: 0, x: 0, y: 0 });
@@ -265,7 +265,6 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     world.pyr.position.set(Math.sin(s.p * 2900) * shake, Math.sin(s.p * 3700) * shake * .5, 0);
     // it turns slowly on its own, so it reads as a real object from every side
     const now = performance.now() / 1000, spin = reduce ? 0 : now * .2;
-    const ambient = !reduce && onScreen.current && now - sky.current.ambient > 1 / 20;
     world.pyr.rotation.set(0, -pose.yaw + PYR_TURN + spin, Math.sin(s.p * 3100) * shake * 1.2);
     world.pyr.scale.setScalar(s.p < .5 ? 1 + (1 - whole) * .1 : .9 + whole * .1);
     for (const m of [world.pyrBack, world.pyrFront, world.pyrMirror]) {
@@ -321,9 +320,9 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
         gl.setRenderTarget(null);
       }
     }
-    // the sky and the turning pyramid keep the scene awake on their own, at a modest rate;
-    // while the visitor scrolls the story asks for frames itself, so nothing is held back
-    if (ambient && (bu.sky.value > 0 || whole > .001)) { sky.current.ambient = now; busy = true; }
+    // the drifting sky and the turning pyramid keep the scene awake for as long as it is on screen;
+    // what they cost is held down by drawing the curtains into their small texture, not by dropping frames
+    if (!reduce && onScreen.current && (bu.sky.value > 0 || whole > .001)) busy = true;
     v.m.makeTranslation(0, 2 * fy, 0).multiply(v.s.makeScale(1, -1, 1));
     world.slabs.forEach((sl, i) => {
       sl.mirror.matrixWorld.multiplyMatrices(v.m, sl.glass.matrixWorld);
