@@ -4,6 +4,8 @@
 export const clamp = (x: number, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 export const smooth = (a: number, b: number, x: number) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
 export const easeInOut = (t: number) => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+/** Eases in and out with no kick at either end, so one move joins the next without a seam. */
+export const glide = (t: number) => { const x = clamp(t); return x * x * x * (x * (x * 6 - 15) + 10); };
 export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 // Where each phase sits along the scroll
@@ -13,7 +15,7 @@ export const P = {
   re0: .84, re1: .95,            // the layers reassemble
 } as const;
 
-const HOLD = .62;                // share of each stage spent resting before moving on
+const HOLD = .42;                // share of each stage spent resting; the rest carries the move to the next
 
 /** Progress at which a stage is fully settled; used for navigation. */
 export const stageCenter = (i: number) => P.stage0 + P.stageLen * i + P.stageLen * HOLD * .5;
@@ -42,7 +44,7 @@ export function stateFromProgress(p: number): StoryState {
   const open = smooth(P.open0, P.open1, p) * (1 - smooth(P.re0, P.re1, p));
   const raw = clamp((p - P.stage0) / P.stageLen, 0, 5.9999);
   const k = Math.floor(raw), f = raw - k;
-  const tr = k < 5 ? easeInOut(clamp((f - HOLD) / (1 - HOLD))) : 0;
+  const tr = k < 5 ? glide((f - HOLD) / (1 - HOLD)) : 0;
   const stageF = k + tr;
   const complete = smooth(.88, .97, p);
   let phase: Phase = 'exploring';

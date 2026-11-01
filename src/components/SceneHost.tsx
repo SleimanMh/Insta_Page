@@ -1,8 +1,8 @@
 import { Component, ReactNode, Suspense, lazy, useCallback, useEffect, useState } from 'react';
 
-// The 3D scene is the heaviest part of the page. The HTML renders first; three.js is fetched
-// once the browser is idle, and only if WebGL is available. Until then (or without WebGL)
-// an intentional static drawing of the prism stands in.
+// The 3D scene is the heaviest part of the page. The HTML renders first and three.js is fetched
+// straight away, so nothing stands in for the sculpture while it loads: the dark sky simply holds
+// the space and the scene fades in. The flat drawing below appears only where WebGL cannot run.
 
 const Scene = lazy(() => import('../three/Scene'));
 
@@ -20,16 +20,15 @@ export function SceneHost() {
 
   useEffect(() => {
     if (!webglAvailable()) { setFailed(true); return; }
-    const go = () => setLoad(true);
-    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
-    if (w.requestIdleCallback) w.requestIdleCallback(go, { timeout: 900 }); else setTimeout(go, 200);
+    setLoad(true);
   }, []);
 
   const onReady = useCallback(() => setReady(true), []);
 
   return (
     <>
-      <svg className={`poster${ready ? ' is-hidden' : ''}${failed ? ' is-fallback' : ''}`} viewBox="0 0 420 300" aria-hidden="true">
+      {failed && (
+      <svg className="poster is-fallback" viewBox="0 0 420 300" aria-hidden="true">
         <defs>
           <linearGradient id="pEdge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#F3E3C6" /><stop offset="1" stopColor="#8E7E6A" /></linearGradient>
           <linearGradient id="pBeam" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#fff" stopOpacity="0" /><stop offset=".55" stopColor="#fff" stopOpacity=".85" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
@@ -41,10 +40,13 @@ export function SceneHost() {
           ))}
         </g>
       </svg>
+      )}
       {load && !failed && (
-        <Suspense fallback={null}>
-          <ErrorCatcher onError={() => setFailed(true)}><Scene onReady={onReady} /></ErrorCatcher>
-        </Suspense>
+        <div className={`scene-fade${ready ? ' is-ready' : ''}`}>
+          <Suspense fallback={null}>
+            <ErrorCatcher onError={() => setFailed(true)}><Scene onReady={onReady} /></ErrorCatcher>
+          </Suspense>
+        </div>
       )}
     </>
   );

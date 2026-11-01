@@ -25,7 +25,7 @@
   --gut-l: max(clamp(20px, 4.4vw, 72px), env(safe-area-inset-left, 0px));
   --gut-r: max(clamp(20px, 4.4vw, 72px), env(safe-area-inset-right, 0px));
   --header: 84px;
-  --story-range: 540vh;    /* scroll distance of the pinned story on desktop */
+  --story-range: 660vh;    /* scroll distance of the pinned story on desktop */
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -81,8 +81,10 @@ h1, h2, h3 { font-weight: 300; text-wrap: balance; letter-spacing: -.02em; }
   background: radial-gradient(60% 70% at 62% 55%, var(--bg-2) 0%, transparent 70%), radial-gradient(80% 60% at 50% 110%, var(--bg-2) 0%, transparent 70%), var(--bg); }
 .canvas-wrap { position: absolute; inset: 0; }
 .canvas-wrap canvas { display: block; }
-.poster { position: absolute; width: min(46vw, 640px); top: 50%; left: calc(50% + (var(--open, 0) * -26vw) + 16vw); transform: translate(-50%, -50%); opacity: .95; transition: opacity .9s ease; pointer-events: none; }
-.poster.is-hidden { opacity: 0; }
+.poster { position: absolute; width: min(46vw, 640px); top: 50%; left: calc(50% + (var(--open, 0) * -26vw) + 16vw); transform: translate(-50%, -50%); opacity: .95; pointer-events: none; }
+/* the sculpture fades up once its first frame is drawn, so it never pops in */
+.scene-fade { position: absolute; inset: 0; opacity: 0; transition: opacity .7s ease; }
+.scene-fade.is-ready { opacity: 1; }
 .leader { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; overflow: visible; }
 .leader line { stroke: var(--stage); stroke-width: 1; stroke-opacity: .75; }
 .leader circle { fill: var(--stage); }

@@ -9,7 +9,7 @@ import { story } from '../story/controller';
 import { clamp, smooth } from '../story/progress';
 import { FOV, activeBlock, beamAt, breakState, cameraPose, panelTransit, paths, planePose, slabPoses } from './choreography';
 import { APEX_Y, BASE_Y, BEAM_Y, PYR_ALT, SLABS, SLAB_DEPTH, TRI, pyramidCorners, pyramidGeometry, slabGeometry } from './geometry';
-import { TO_LINEAR, backdropMaterial, crystalMaterial, edgeGlassMaterial, floorMaterial, floorReflectionMaterial, productMaterial, pyramidMaterial, shardMaterial } from './materials';
+import { TO_LINEAR, auroraCurtainMaterial, backdropMaterial, crystalMaterial, edgeGlassMaterial, floorMaterial, floorReflectionMaterial, productMaterial, pyramidMaterial, shardMaterial } from './materials';
 import { Ribbon } from './ribbon';
 import { artFor, makeStageArt } from './stageArt';
 import { auroraHue, palette, rgb, stageColor } from '../theme';
@@ -46,6 +46,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
   const born = useRef(performance.now());
   // the night sky moves on its own, so it keeps drawing, but only while the story is on screen
   const onScreen = useRef(true);
+  const sky = useRef({ at: -1, ambient: -1, frame: -9, n: 0 });
   const parallax = useRef({ x: 0, y: 0 });
   // layout reads are expensive mid-scroll; the leader's label position is cached and refreshed sparingly
   const labelCache = useRef({ stage: -1, at: 0, x: 0, y: 0 });
@@ -105,6 +106,13 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     floor.rotation.x = -Math.PI / 2; floor.renderOrder = -1;
     const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), backdropMaterial());
     backdrop.renderOrder = -2;
+    // the aurora's curtains live in their own small texture, redrawn a few times a second
+    const skyTarget = new THREE.WebGLRenderTarget(640, 256, { depthBuffer: false, stencilBuffer: false });
+    skyTarget.texture.minFilter = skyTarget.texture.magFilter = THREE.LinearFilter;
+    const skyMat = auroraCurtainMaterial();
+    const skyScene = new THREE.Scene().add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), skyMat));
+    const skyCam = new THREE.Camera();
+    (backdrop.material as THREE.ShaderMaterial).uniforms.skyTex.value = skyTarget.texture;
 
     // the beam: a bright opaque core (so the glass refracts it) wrapped in soft glow
     const core = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 8, 1, true), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.9, 1.85, 1.75) }));
@@ -118,7 +126,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     glints.geometry.setAttribute('aAlpha', new THREE.BufferAttribute(new Float32Array(SLABS + 2), 1));
     glints.frustumCulled = false; glints.renderOrder = 210;
 
-    return { root, geo, slabs, pyr, pyrBack, pyrFront, pyrMirror, edges, edgeMat, art, plane, shards, floor, backdrop, core, glowIn, glowOut, launch, ring, glints };
+    return { root, geo, slabs, pyr, pyrBack, pyrFront, pyrMirror, edges, edgeMat, skyTarget, skyMat, skyScene, skyCam, art, plane, shards, floor, backdrop, core, glowIn, glowOut, launch, ring, glints };
   }, [gl, lowCost]);
 
   useEffect(() => {
@@ -139,8 +147,9 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       const bu = (world.backdrop.material as THREE.ShaderMaterial).uniforms;
       bu.centre.value = v3(palette.backdrop[0]); bu.edge.value = v3(palette.backdrop[1]); bu.floorCol.value = v3(palette.floor[0]);
       bu.sky.value = 1;
-      bu.auroraA.value = v3(palette.sky.aurora[0]); bu.auroraB.value = v3(palette.sky.aurora[1]); bu.auroraC.value = v3(palette.sky.aurora[2]);
       bu.skyTop.value = v3(palette.sky.top); bu.skyHorizon.value = v3(palette.sky.horizon);
+      const su = world.skyMat.uniforms;
+      su.auroraA.value = v3(palette.sky.aurora[0]); su.auroraB.value = v3(palette.sky.aurora[1]); su.auroraC.value = v3(palette.sky.aurora[2]);
       world.launch.uniforms.color.value.set(palette.launch); world.ring.uniforms.color.value.set(palette.ring);
     };
     apply();
@@ -174,6 +183,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
       Object.values(world.art.tex).forEach(t => t.dispose());
       [world.pyrBack, world.pyrFront, world.pyrMirror].forEach(m => (m.material as THREE.Material).dispose());
       world.pyrBack.geometry.dispose(); world.edges.forEach(m => m.geometry.dispose()); world.edgeMat.dispose();
+      world.skyTarget.dispose(); world.skyMat.dispose(); world.skyScene.traverse(o => { if (o instanceof THREE.Mesh) o.geometry.dispose(); });
       [world.plane, world.shards, world.floor, world.backdrop, world.core, world.glints].forEach(m => { m.geometry.dispose(); (m.material as THREE.Material).dispose(); });
       [world.glowIn, world.glowOut, world.launch, world.ring].forEach(r => r.dispose());
       post.composer.dispose(); post.bloom.dispose();
@@ -199,8 +209,9 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     const q = quality.current;
     if (delta > 0 && delta < .25) {
       q.avg += (delta * 1000 - q.avg) * .08;
-      q.slow = q.avg > 24 ? q.slow + 1 : 0;
-      if (q.slow > 45 && q.level < 2) {
+      // step down sooner, so a slower machine settles into a steady frame rate within half a second
+      q.slow = q.avg > 21 ? q.slow + 1 : 0;
+      if (q.slow > 18 && q.level < 2) {
         q.level++; q.slow = 0;
         setDpr(q.level === 1 ? 1.25 : 1);
         if (q.level === 2) post.bloom.enabled = false;
@@ -254,7 +265,7 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     world.pyr.position.set(Math.sin(s.p * 2900) * shake, Math.sin(s.p * 3700) * shake * .5, 0);
     // it turns slowly on its own, so it reads as a real object from every side
     const now = performance.now() / 1000, spin = reduce ? 0 : now * .2;
-    if (!reduce && whole > .001 && onScreen.current) busy = true;
+    const ambient = !reduce && onScreen.current && now - sky.current.ambient > 1 / 20;
     world.pyr.rotation.set(0, -pose.yaw + PYR_TURN + spin, Math.sin(s.p * 3100) * shake * 1.2);
     world.pyr.scale.setScalar(s.p < .5 ? 1 + (1 - whole) * .1 : .9 + whole * .1);
     for (const m of [world.pyrBack, world.pyrFront, world.pyrMirror]) {
@@ -297,10 +308,22 @@ function PrismWorld({ onReady, lowCost }: { onReady: () => void; lowCost: boolea
     const bu = (world.backdrop.material as THREE.ShaderMaterial).uniforms;
     bu.focus.value.set(.5 + pose.sculptX / 70, .32);
     if (bu.sky.value > 0) {
-      const t = reduce ? 0 : performance.now() / 1000;
-      bu.time.value = t; bu.hue.value = auroraHue(t);
-      if (!reduce && onScreen.current) busy = true;
+      const t = reduce ? 0 : now;
+      bu.time.value = t;
+      // The curtains move slowly, so they are redrawn into their small texture about fifteen times a
+      // second, and never more often than every fourth frame: on a slow machine they cost almost nothing.
+      sky.current.n++;
+      if (t - sky.current.at > 1 / 15 && sky.current.n - sky.current.frame >= 4) {
+        sky.current.at = t; sky.current.frame = sky.current.n;
+        world.skyMat.uniforms.time.value = t; world.skyMat.uniforms.hue.value = auroraHue(t);
+        gl.setRenderTarget(world.skyTarget);
+        gl.render(world.skyScene, world.skyCam);
+        gl.setRenderTarget(null);
+      }
     }
+    // the sky and the turning pyramid keep the scene awake on their own, at a modest rate;
+    // while the visitor scrolls the story asks for frames itself, so nothing is held back
+    if (ambient && (bu.sky.value > 0 || whole > .001)) { sky.current.ambient = now; busy = true; }
     v.m.makeTranslation(0, 2 * fy, 0).multiply(v.s.makeScale(1, -1, 1));
     world.slabs.forEach((sl, i) => {
       sl.mirror.matrixWorld.multiplyMatrices(v.m, sl.glass.matrixWorld);
