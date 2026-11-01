@@ -278,15 +278,7 @@ export function Contact() {
             <button className="btn btn-outline btn-glow" type="submit" data-magnet disabled={sending} aria-busy={sending}>{sending ? 'Sending…' : <>Send enquiry <Arrow /></>}</button>
           </form>
         )}
-        <aside className="contact-side" data-reveal>
-          <h3>What happens next</h3>
-          <ol className="next">
-            <li data-lit><span>01</span>We read your brief and note our questions.</li>
-            <li data-lit><span>02</span>We arrange a short call to understand the goals.</li>
-            <li data-lit><span>03</span>You receive a scoped proposal with a clear price and timeline.</li>
-          </ol>
-          <p className="contact-direct">Prefer email? <a href={`mailto:${EMAIL}`}>{EMAIL}</a></p>
-        </aside>
+        <p className="contact-direct" data-reveal>Prefer email? <a href={`mailto:${EMAIL}`}>{EMAIL}</a></p>
       </div>
     </section>
   );
@@ -299,15 +291,6 @@ export function Footer() {
   const toTop = (e: React.MouseEvent) => { e.preventDefault(); story.goTo(-1); };
   return (
     <footer className="site-footer" ref={ref}>
-      <div className="footer-cta">
-        <p className="eyebrow" data-reveal>Have an idea?</p>
-        <Split as="h2" className="footer-cta-title" text="Let’s refract it into a product." />
-        <div className="footer-cta-actions" data-reveal>
-          <a className="btn btn-outline btn-glow" href="#contact" data-magnet>Start a project <Arrow /></a>
-          <a className="footer-mail" href="mailto:refract@refract-tech.com">refract@refract-tech.com</a>
-        </div>
-      </div>
-
       <div className="footer-grid">
         <div className="footer-brand" data-reveal>
           <a href="#top" aria-label="Refract, back to top" onClick={toTop}><Logo stacked /></a>
